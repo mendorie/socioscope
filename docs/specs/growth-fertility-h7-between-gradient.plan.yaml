@@ -59,8 +59,8 @@ items:
     depends_on: [h7-analysis]
     agent: analyst
     acceptance: "記事で使う図 6 枚以内。新しい推定なし（h7 の関数を import して再計算）"
-    status: in_progress
-    pr:
+    status: merged
+    pr: https://github.com/mendorie/socioscope/pull/42
   - id: h7-article
     title: "docs(articles): note 記事「なぜ豊かな国ほど子どもが少ないのか」"
     scope:
@@ -68,5 +68,5 @@ items:
     depends_on: [h7-summary-figs]
     agent: analyst
     acceptance: "要約第 1 文が A/B/C または量つき混合の断定形。言えないことは 3 項目以内。/yomiyasu で推敲済み"
-    status: todo
-    pr:
+    status: merged
+    pr: https://github.com/mendorie/socioscope/pull/43
