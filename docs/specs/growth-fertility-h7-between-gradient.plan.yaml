@@ -49,8 +49,8 @@ items:
     depends_on: [h7-wdi-indicators, h7-onset]
     agent: analyst
     acceptance: "2 回実行で図の sha256 と stdout が一致。スコアカードの判定が stdout に出る。report はテンプレート準拠・チェックリスト回答付き。methodology-reviewer APPROVED"
-    status: in_progress
-    pr:
+    status: merged
+    pr: https://github.com/mendorie/socioscope/pull/40
   - id: h7-summary-figs
     title: "analysis(growth-fertility): H7 一般読者向け日本語図"
     scope:
@@ -59,7 +59,7 @@ items:
     depends_on: [h7-analysis]
     agent: analyst
     acceptance: "記事で使う図 6 枚以内。新しい推定なし（h7 の関数を import して再計算）"
-    status: todo
+    status: in_progress
     pr:
   - id: h7-article
     title: "docs(articles): note 記事「なぜ豊かな国ほど子どもが少ないのか」"
