@@ -37,7 +37,7 @@ workspace = true
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-extend-exclude = ["data", "notebooks"]
+extend-exclude = ["data", "notebooks", ".claude/skills/yomiyasu"]  # yomiyasu は上流（nanaism/yomiyasu）をそのまま vendoring
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "S", "SIM", "RUF"]

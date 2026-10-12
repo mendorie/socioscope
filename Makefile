@@ -1,4 +1,4 @@
-.PHONY: sync doctor check lint fmt type test db notebook
+.PHONY: sync doctor check lint fmt type test db notebook note-lint
 
 # venv はドット名でない `venv/` に置く（ADR 0005）。
 # ~/Desktop・~/Documents は iCloud Drive 同期の対象で、ドット始まりの項目とその配下に
@@ -49,3 +49,6 @@ db:              ## data/**/*.parquet から socioscope.duckdb を再生成
 
 notebook:        ## marimo で探索ノートブックを開く
 	uv run --group notebooks marimo edit notebooks
+
+note-lint:       ## note 記事草稿（docs/articles/*.md）を yomiyasu の静的検査にかける（指摘は見直し候補、ゲートではない）
+	@for f in docs/articles/*.md; do echo "== $$f"; python3 -I .claude/skills/yomiyasu/scripts/yomiyasu_lint.py "$$f"; done
