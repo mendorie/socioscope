@@ -426,6 +426,11 @@ def run_t2(
         strata.append((q, est))
         if verbose:
             print(est.line())
+            sd = _f(sub["ln_gdp"].std())
+            print(
+                f"  ln_gdp within quintile {q}: SD {_num(sd, '.3f')}, "
+                f"mean {_mean(sub['ln_gdp']):.3f}"
+            )
     aux = None
     if onsets is not None:
         on = pl.DataFrame(

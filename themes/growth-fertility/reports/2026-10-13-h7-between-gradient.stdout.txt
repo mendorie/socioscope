@@ -44,18 +44,23 @@ onset table: 217 countries with a 1960-75 TFR; eligible (peak>=4.5) 157; onset i
 [M T2 q1] composite quintile 1                             n=  725 G= 60
   ln_gdp: -0.7088 (se 0.1997) [-1.1003, -0.3174]
   r2=0.2121
+  ln_gdp within quintile 1: SD 0.697, mean 7.909
 [M T2 q2] composite quintile 2                             n=  724 G= 86
   ln_gdp: -0.3444 (se 0.1923) [-0.7212, +0.0324]
   r2=0.1010
+  ln_gdp within quintile 2: SD 0.577, mean 8.791
 [M T2 q3] composite quintile 3                             n=  724 G= 79
   ln_gdp: -0.4341 (se 0.2130) [-0.8517, -0.0166]
   r2=0.2337
+  ln_gdp within quintile 3: SD 0.605, mean 9.510
 [M T2 q4] composite quintile 4                             n=  724 G= 69
   ln_gdp: -0.0077 (se 0.1594) [-0.3201, +0.3047]
   r2=0.1038
+  ln_gdp within quintile 4: SD 0.600, mean 10.155
 [M T2 q5] composite quintile 5                             n=  725 G= 44
   ln_gdp: +0.0226 (se 0.1148) [-0.2024, +0.2476]
   r2=0.1020
+  ln_gdp within quintile 5: SD 0.356, mean 10.847
 [M T2 aux] >= 30 years since onset                         n= 1220 G= 91
   ln_gdp: -0.5401 (se 0.0920) [-0.7204, -0.3598]
   r2=0.3447
