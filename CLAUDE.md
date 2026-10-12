@@ -55,4 +55,5 @@ docs/            adrs（決定記録）/ specs（spec・plan manifest）/ method
 | レビュー↔修正の自動反復 | `/review-loop` |
 | 品質ゲート | `/check` |
 | ADR の作成・更新 | `/adr` |
+| note 記事・report の日本語推敲（AI調の比喩・曖昧な主述・装飾を直す） | `/yomiyasu`（外部スキル、`.claude/skills/yomiyasu/`）/ `make note-lint` |
 | commit → push → PR | `/ship` |
