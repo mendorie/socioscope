@@ -11,7 +11,7 @@ items:
     depends_on: []
     agent: planner
     acceptance: "H7 の答え候補 A/B/C・検定 T1〜T6・判定基準・頑健性・言えないことが、データを見る前に design に書かれている"
-    status: pr_open
+    status: merged
     pr: https://github.com/mendorie/socioscope/pull/36
   - id: h7-wdi-indicators
     title: "feat(growth-fertility): WDI に NY.GDP.PCAP.KD / SE.PRM.ENRR.FE / SP.DYN.IMRT.IN を追加"
@@ -26,8 +26,8 @@ items:
     depends_on: [h7-design]
     agent: pipeline-dev
     acceptance: "mart growth_fertility_panel に gdp_pcap_const / fem_prim_enrol / infant_mortality 列が入り、既存・新規テスト green。manifest に取得日。1960 年時点の被覆率を stdout で確認"
-    status: todo
-    pr:
+    status: merged
+    pr: https://github.com/mendorie/socioscope/pull/38
   - id: h7-onset
     title: "feat(growth-fertility): 人口転換開始年の純粋関数（transition.py）"
     scope:
@@ -36,8 +36,8 @@ items:
     depends_on: [h7-design]
     agent: pipeline-dev
     acceptance: "TFR 系列 → 開始年 or None（閾値・低下率・移動平均幅をパラメータ化）。単調低下・一時回復・閾値未満・欠損の人工系列で期待どおり。既存 mart で 155 ± 数か国"
-    status: todo
-    pr:
+    status: merged
+    pr: https://github.com/mendorie/socioscope/pull/37
   - id: h7-analysis
     title: "analysis(growth-fertility): H7 T1〜T6 とスコアカード、report"
     scope:
@@ -49,7 +49,7 @@ items:
     depends_on: [h7-wdi-indicators, h7-onset]
     agent: analyst
     acceptance: "2 回実行で図の sha256 と stdout が一致。スコアカードの判定が stdout に出る。report はテンプレート準拠・チェックリスト回答付き。methodology-reviewer APPROVED"
-    status: todo
+    status: in_progress
     pr:
   - id: h7-summary-figs
     title: "analysis(growth-fertility): H7 一般読者向け日本語図"
