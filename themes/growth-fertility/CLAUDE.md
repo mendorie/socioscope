@@ -12,6 +12,7 @@ src/theme_growth_fertility/
   kostat.py      国家データ処（韓国）신혼부부통계 報道資料 PDF（KOGL 第 1 類型）: RELEASES（基準年→静的 URL）、pypdf テキスト抽出、所得区間×子ども表の 3 レイアウト解析（fail-closed）
   surveys.py     H6: Testa (2012) 付表（Eurobarometer 75.4, 2011）と BiB (2025) Table 1（GGS-II 2020–23）の PDF テキスト → 理想・意図・実際の子ども数の行（純粋、fail-closed、読めない行は issues で報告）、`build_ideals_mart`
   eurobarometer.py  H6: Standard Eurobarometer の波（`WAVES`、dataset_id 固定）、JSON-LD → Volume A 配布物の解決（`vol_a`）、xlsx/xls/zip → 「今後 12 か月の期待」4 項目の国別割合（openpyxl / xlrd、純粋）、`build_expectations_mart`
+  transition.py  H7: 人口転換開始年の純粋関数 `transition_onset`（1960–1975 の TFR 最大値 ≥ 4.5 → 10% 低下後二度と戻らない最初の年。閾値・低下率・移動平均幅をパラメータ化、欠損は飛ばす）と mart 行 → 国別表 `onset_table`
   pipeline.py    fetch / stage / mart（Port 経由。I/O はここだけ。各ソースは独立に stage される。H5 は `# ---- H5` ブロックの `_fetch_h5/_stage_h5/_mart_h5` と `_fetch_kostat/...`、H6 は末尾 `# ---- H6` ブロックの `_fetch_h6/_stage_h6/_mart_h6`）
   wiring.py      PIPELINE（entry point）。stage 関数の登録のみ
   analysis/      report 用スクリプト（決定的、seed 固定）
