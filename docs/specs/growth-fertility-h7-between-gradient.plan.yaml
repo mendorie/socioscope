@@ -1,0 +1,72 @@
+# plan manifest（ADR 0004）: growth-fertility H7「なぜ国間では豊かな国ほど TFR が低いのか」
+feature: growth-fertility-h7-between-gradient
+spec: docs/specs/growth-fertility-h7-between-gradient.md
+items:
+  - id: h7-design
+    title: "docs(growth-fertility): H7 事前登録と plan manifest"
+    scope:
+      - design/themes/growth-fertility.md
+      - docs/specs/growth-fertility-h7-between-gradient.md
+      - docs/specs/growth-fertility-h7-between-gradient.plan.yaml
+    depends_on: []
+    agent: planner
+    acceptance: "H7 の答え候補 A/B/C・検定 T1〜T6・判定基準・頑健性・言えないことが、データを見る前に design に書かれている"
+    status: pr_open
+    pr: https://github.com/mendorie/socioscope/pull/36
+  - id: h7-wdi-indicators
+    title: "feat(growth-fertility): WDI に NY.GDP.PCAP.KD / SE.PRM.ENRR.FE / SP.DYN.IMRT.IN を追加"
+    scope:
+      - themes/growth-fertility/src/theme_growth_fertility/worldbank.py
+      - themes/growth-fertility/src/theme_growth_fertility/pipeline.py
+      - themes/growth-fertility/tests/test_worldbank.py
+      - themes/growth-fertility/tests/test_pipeline.py
+      - themes/growth-fertility/tests/fixtures
+      - themes/growth-fertility/CLAUDE.md
+      - design/data-sources.md
+    depends_on: [h7-design]
+    agent: pipeline-dev
+    acceptance: "mart growth_fertility_panel に gdp_pcap_const / fem_prim_enrol / infant_mortality 列が入り、既存・新規テスト green。manifest に取得日。1960 年時点の被覆率を stdout で確認"
+    status: todo
+    pr:
+  - id: h7-onset
+    title: "feat(growth-fertility): 人口転換開始年の純粋関数（transition.py）"
+    scope:
+      - themes/growth-fertility/src/theme_growth_fertility/transition.py
+      - themes/growth-fertility/tests/test_transition.py
+    depends_on: [h7-design]
+    agent: pipeline-dev
+    acceptance: "TFR 系列 → 開始年 or None（閾値・低下率・移動平均幅をパラメータ化）。単調低下・一時回復・閾値未満・欠損の人工系列で期待どおり。既存 mart で 155 ± 数か国"
+    status: todo
+    pr:
+  - id: h7-analysis
+    title: "analysis(growth-fertility): H7 T1〜T6 とスコアカード、report"
+    scope:
+      - themes/growth-fertility/src/theme_growth_fertility/analysis/a20261019_h7_between_gradient.py
+      - themes/growth-fertility/tests/test_analysis_h7.py
+      - themes/growth-fertility/reports/2026-10-19-h7-between-gradient.md
+      - themes/growth-fertility/reports/2026-10-19-h7-between-gradient.stdout.txt
+      - themes/growth-fertility/reports/figures
+    depends_on: [h7-wdi-indicators, h7-onset]
+    agent: analyst
+    acceptance: "2 回実行で図の sha256 と stdout が一致。スコアカードの判定が stdout に出る。report はテンプレート準拠・チェックリスト回答付き。methodology-reviewer APPROVED"
+    status: todo
+    pr:
+  - id: h7-summary-figs
+    title: "analysis(growth-fertility): H7 一般読者向け日本語図"
+    scope:
+      - themes/growth-fertility/src/theme_growth_fertility/analysis/s20261020_h7_summary.py
+      - themes/growth-fertility/reports/figures/summary_h7
+    depends_on: [h7-analysis]
+    agent: analyst
+    acceptance: "記事で使う図 6 枚以内。新しい推定なし（h7 の関数を import して再計算）"
+    status: todo
+    pr:
+  - id: h7-article
+    title: "docs(articles): note 記事「なぜ豊かな国ほど子どもが少ないのか」"
+    scope:
+      - docs/articles
+    depends_on: [h7-summary-figs]
+    agent: analyst
+    acceptance: "要約第 1 文が A/B/C または量つき混合の断定形。言えないことは 3 項目以内。/yomiyasu で推敲済み"
+    status: todo
+    pr:
