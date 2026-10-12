@@ -1,0 +1,352 @@
+== data ==
+panel: 14322 rows, 217 economies, years 1960-2025
+non-null countries by year:
+shape: (8, 9)
+┌──────┬─────┬────────────────┬──────────────┬──────────────┬──────────┬───────────────┬────────────────┬──────────────────┐
+│ year ┆ tfr ┆ gdp_pcap_const ┆ gdp_pcap_ppp ┆ u5_mortality ┆ life_exp ┆ fem_sec_enrol ┆ fem_prim_enrol ┆ infant_mortality │
+│ ---  ┆ --- ┆ ---            ┆ ---          ┆ ---          ┆ ---      ┆ ---           ┆ ---            ┆ ---              │
+│ i64  ┆ u32 ┆ u32            ┆ u32          ┆ u32          ┆ u32      ┆ u32           ┆ u32            ┆ u32              │
+╞══════╪═════╪════════════════╪══════════════╪══════════════╪══════════╪═══════════════╪════════════════╪══════════════════╡
+│ 1960 ┆ 216 ┆ 107            ┆ 0            ┆ 131          ┆ 215      ┆ 0             ┆ 0              ┆ 130              │
+│ 1970 ┆ 216 ┆ 140            ┆ 0            ┆ 157          ┆ 216      ┆ 32            ┆ 38             ┆ 155              │
+│ 1980 ┆ 216 ┆ 159            ┆ 0            ┆ 179          ┆ 216      ┆ 71            ┆ 90             ┆ 179              │
+│ 1990 ┆ 217 ┆ 192            ┆ 185          ┆ 196          ┆ 217      ┆ 75            ┆ 95             ┆ 196              │
+│ 2000 ┆ 217 ┆ 199            ┆ 192          ┆ 196          ┆ 217      ┆ 110           ┆ 135            ┆ 196              │
+│ 2010 ┆ 217 ┆ 210            ┆ 198          ┆ 196          ┆ 217      ┆ 148           ┆ 164            ┆ 196              │
+│ 2020 ┆ 217 ┆ 208            ┆ 199          ┆ 196          ┆ 217      ┆ 144           ┆ 164            ┆ 196              │
+│ 2024 ┆ 217 ┆ 199            ┆ 195          ┆ 196          ┆ 217      ┆ 109           ┆ 134            ┆ 196              │
+└──────┴─────┴────────────────┴──────────────┴──────────────┴──────────┴───────────────┴────────────────┴──────────────────┘
+T1/T2 frame (H4 same sample): n=3622 G=171 years 1990-2024
+onset table: 217 countries with a 1960-75 TFR; eligible (peak>=4.5) 157; onset identified 155; median onset 1975.0; onset <= 1990: 125; already transitioned by 1960 (peak < 4.5): 60
+
+== T1 Gelbach decomposition (H4 same sample, PPP income) ==
+[M T1 base] tfr ~ ln_gdp + C(year)                         n= 3622 G=171
+  ln_gdp: -0.9412 (se 0.0755) [-1.0891, -0.7933]
+  r2=0.6248
+[M T1 full] + all stage vars                               n= 3622 G=171
+  ln_gdp: -0.1846 (se 0.1106) [-0.4014, +0.0322]
+  u5_mortality: +0.0143 (se 0.0025) [+0.0094, +0.0193]
+  fem_sec_enrol: -0.0160 (se 0.0037) [-0.0232, -0.0088]
+  urban_share: +0.0054 (se 0.0043) [-0.0031, +0.0139]
+  fem_lfp: -0.0046 (se 0.0041) [-0.0126, +0.0035]
+  life_exp: -0.0184 (se 0.0146) [-0.0470, +0.0101]
+  r2=0.7958
+  delta[u5_mortality  ] = -0.3945  (41.9% of beta0)
+  delta[fem_sec_enrol ] = -0.3422  (36.4% of beta0)
+  delta[urban_share   ] = +0.0842  (-8.9% of beta0)
+  delta[fem_lfp       ] = +0.0071  (-0.8% of beta0)
+  delta[life_exp      ] = -0.1113  (11.8% of beta0)
+  check: sum(delta) = -0.756571; beta0 - beta_full = -0.756571
+  -> [M] T1 S = 0.804 (beta0 -0.941, beta_full -0.185, n=3622, G=171): points ['B', 'C']
+
+== T2 composite stage index quintiles (PC1) ==
+  [M] composite=pc1 loadings: ln_u5 -0.586, life_exp +0.579, fem_sec_enrol +0.566
+[M T2 q1] composite quintile 1                             n=  725 G= 60
+  ln_gdp: -0.7088 (se 0.1997) [-1.1003, -0.3174]
+  r2=0.2121
+[M T2 q2] composite quintile 2                             n=  724 G= 86
+  ln_gdp: -0.3444 (se 0.1923) [-0.7212, +0.0324]
+  r2=0.1010
+[M T2 q3] composite quintile 3                             n=  724 G= 79
+  ln_gdp: -0.4341 (se 0.2130) [-0.8517, -0.0166]
+  r2=0.2337
+[M T2 q4] composite quintile 4                             n=  724 G= 69
+  ln_gdp: -0.0077 (se 0.1594) [-0.3201, +0.3047]
+  r2=0.1038
+[M T2 q5] composite quintile 5                             n=  725 G= 44
+  ln_gdp: +0.0226 (se 0.1148) [-0.2024, +0.2476]
+  r2=0.1020
+[M T2 aux] >= 30 years since onset                         n= 1220 G= 91
+  ln_gdp: -0.5401 (se 0.0920) [-0.7204, -0.3598]
+  r2=0.3447
+  -> [M] T2 top-quintile slope +0.023 [-0.202, +0.248]: points ['B', 'C']; middle quintiles q2-q4: -0.344, -0.434, -0.008
+
+== T3 income at transition onset (constant 2015 US$) ==
+  [M] onsets identified 155; income at onset observed 119 (missing 36: gdp_pcap_const not available in onset year)
+  income at onset (2015 US$) p10/p25/p50/p75/p90 = 454 / 767 / 1,738 / 3,776 / 9,818
+  U5MR at onset (n=127) p10/p50/p90 = 59 / 105 / 179
+  -> [M] T3 income p90/p10 = 21.60 (n=119); U5MR p90/p10 = 3.04: points ['B']
+  T3 descriptive regression sample: 76 countries (1960 GDP observed)
+[T3 reg] onset_year ~ ln_gdp1960                           n=   76 G= 76
+  ln_gdp1960: -5.9577 (se 1.5222) [-8.9411, -2.9742]
+  r2=0.1854
+[T3 reg] onset_year ~ region_earlier_share                 n=   76 G= 76
+  region_earlier_share: +23.4597 (se 5.6511) [+12.3837, +34.5357]
+  r2=0.2388
+[T3 reg] onset_year ~ ln_gdp1960 + region_earlier_share    n=   76 G= 76
+  ln_gdp1960: -5.0463 (se 1.3032) [-7.6004, -2.4921]
+  region_earlier_share: +20.7966 (se 5.0993) [+10.8022, +30.7910]
+  r2=0.3687
+
+== T4 ordering within countries ==
+  (i) ln_gdp_c: t=-20 -0.249 (G=47); t=-10 -0.138 (G=76); t=-5 -0.080 (G=104); t=+0 +0.000 (G=119); t=+5 +0.067 (G=118); t=+10 +0.129 (G=116); t=+20 +0.290 (G=110); t=+30 +0.485 (G=96); t=+40 +0.627 (G=76)
+  (i) ln_u5: t=-20 +0.605 (G=58); t=-10 +0.339 (G=93); t=-5 +0.181 (G=119); t=+0 +0.000 (G=127); t=+5 -0.196 (G=125); t=+10 -0.391 (G=124); t=+20 -0.802 (G=116); t=+30 -1.205 (G=101); t=+40 -1.560 (G=79)
+  (i) fem_prim_enrol: t=-20 -33.647 (G=16); t=-10 -17.227 (G=39); t=-5 -9.831 (G=44); t=+0 +0.000 (G=68); t=+5 +5.523 (G=60); t=+10 +9.578 (G=49); t=+20 +17.523 (G=50); t=+30 +21.915 (G=39); t=+40 +16.614 (G=25)
+  (i) fem_sec_enrol: t=-20 -11.774 (G=9); t=-10 -7.967 (G=20); t=-5 -6.244 (G=25); t=+0 +0.000 (G=46); t=+5 +9.806 (G=34); t=+10 +17.055 (G=31); t=+20 +25.807 (G=31); t=+30 +40.625 (G=26); t=+40 +41.673 (G=14)
+  (i) tfr: t=-20 +0.702 (G=69); t=-10 +0.629 (G=115); t=-5 +0.475 (G=144); t=+0 +0.000 (G=155); t=+5 -0.728 (G=153); t=+10 -1.354 (G=152); t=+20 -2.247 (G=144); t=+30 -2.907 (G=129); t=+40 -3.279 (G=107)
+  [M] (ii) countries with pre-onset growth observed: 76 of 155; mean pre +0.0138 vs world +0.0172; share pre > world = 42.1%
+  [M] (ii) post-onset (0..+10) n=116: mean +0.0129 vs world +0.0170; share post > world = 47.4%
+  [M] (iii) enrolment source in sample: primary=119, secondary=299
+  [M] (iii) periods: 1970, 1980, 1990, 2000, 2010
+[M T4(iii)] d10 raw                                        n=  418 G=170
+  d_ln_gdp_c: +0.2127 (se 0.1931) [-0.1658, +0.5912]
+  d_ln_u5: +0.2896 (se 0.2525) [-0.2054, +0.7846]
+  d_enrol: -0.0033 (se 0.0026) [-0.0084, +0.0017]
+  r2=0.5941
+[M T4(iii)] d10 standardised                               n=  418 G=170
+  d_ln_gdp_c: +0.1077 (se 0.0978) [-0.0840, +0.2995]
+  d_ln_u5: +0.1302 (se 0.1135) [-0.0923, +0.3527]
+  d_enrol: -0.0945 (se 0.0729) [-0.2375, +0.0484]
+  r2=0.5941
+[M T4(iii)] d10 standardised, education-free               n=  922 G=192
+  d_ln_gdp_c: +0.1743 (se 0.0464) [+0.0833, +0.2653]
+  d_ln_u5: +0.1987 (se 0.0489) [+0.1029, +0.2945]
+  r2=0.3699
+[M T4(iv)] d10 lagged changes                              n=  732 G=190
+  lag_d_ln_gdp_c: +0.0558 (se 0.1099) [-0.1596, +0.2713]
+  lag_d_ln_u5: +0.3248 (se 0.1486) [+0.0335, +0.6161]
+  r2=0.4839
+  -> [M] T4 share=42.1% (n=76); std d10: gdp +0.108, u5 +0.130, enrol -0.095 -> stage_dominates=False; lag gdp +0.056 [-0.160,+0.271], lag u5 +0.325 [+0.033,+0.616] -> lagged_income_only=False: points none
+-- T4 width 5 years (robustness)
+  [R d5] (ii) countries with pre-onset growth observed: 76 of 155; mean pre +0.0138 vs world +0.0172; share pre > world = 42.1%
+  [R d5] (ii) post-onset (0..+10) n=116: mean +0.0129 vs world +0.0170; share post > world = 47.4%
+  [R d5] (iii) enrolment source in sample: primary=285, secondary=682
+  [R d5] (iii) periods: 1970, 1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015
+[R d5 T4(iii)] d5 raw                                      n=  967 G=186
+  d_ln_gdp_c: +0.1513 (se 0.0904) [-0.0260, +0.3285]
+  d_ln_u5: +0.3550 (se 0.1248) [+0.1104, +0.5997]
+  d_enrol: -0.0027 (se 0.0013) [-0.0053, -0.0002]
+  r2=0.4663
+[R d5 T4(iii)] d5 standardised                             n=  967 G=186
+  d_ln_gdp_c: +0.0785 (se 0.0470) [-0.0135, +0.1706]
+  d_ln_u5: +0.1499 (se 0.0527) [+0.0466, +0.2531]
+  d_enrol: -0.0880 (se 0.0424) [-0.1711, -0.0049]
+  r2=0.4663
+[R d5 T4(iii)] d5 standardised, education-free             n= 1877 G=194
+  d_ln_gdp_c: +0.0895 (se 0.0355) [+0.0200, +0.1591]
+  d_ln_u5: +0.1035 (se 0.0515) [+0.0026, +0.2044]
+  r2=0.2888
+[R d5 T4(iv)] d5 lagged changes                            n= 1686 G=193
+  lag_d_ln_gdp_c: +0.1516 (se 0.0567) [+0.0405, +0.2627]
+  lag_d_ln_u5: +0.2739 (se 0.1145) [+0.0494, +0.4983]
+  r2=0.3244
+  -> [R d5] T4 share=42.1% (n=76); std d5: gdp +0.079, u5 +0.150, enrol -0.088 -> stage_dominates=True; lag gdp +0.152 [+0.040,+0.263], lag u5 +0.274 [+0.049,+0.498] -> lagged_income_only=False: points ['B']
+-- T4 width 20 years (robustness)
+  [R d20] (ii) countries with pre-onset growth observed: 76 of 155; mean pre +0.0138 vs world +0.0172; share pre > world = 42.1%
+  [R d20] (ii) post-onset (0..+10) n=116: mean +0.0129 vs world +0.0170; share post > world = 47.4%
+  [R d20] (iii) enrolment source in sample: primary=59, secondary=121
+  [R d20] (iii) periods: 1980, 2000
+[R d20 T4(iii)] d20 raw                                    n=  180 G=122
+  d_ln_gdp_c: +0.1344 (se 0.5499) [-0.9433, +1.2121]
+  d_ln_u5: +0.6565 (se 0.4218) [-0.1702, +1.4831]
+  d_enrol: -0.0160 (se 0.0113) [-0.0381, +0.0061]
+  r2=0.8115
+[R d20 T4(iii)] d20 standardised                           n=  180 G=122
+  d_ln_gdp_c: +0.0633 (se 0.2590) [-0.4443, +0.5709]
+  d_ln_u5: +0.2916 (se 0.1873) [-0.0756, +0.6588]
+  d_enrol: -0.3587 (se 0.2534) [-0.8553, +0.1380]
+  r2=0.8115
+[R d20 T4(iii)] d20 standardised, education-free           n=  421 G=188
+  d_ln_gdp_c: +0.1093 (se 0.1376) [-0.1604, +0.3790]
+  d_ln_u5: +0.2910 (se 0.1098) [+0.0757, +0.5062]
+  r2=0.5252
+[R d20 T4(iv)] d20 lagged changes                          n=  233 G=147
+  lag_d_ln_gdp_c: -0.7515 (se 0.5277) [-1.7858, +0.2828]
+  lag_d_ln_u5: -0.6824 (se 0.7621) [-2.1761, +0.8113]
+  r2=0.7477
+  -> [R d20] T4 share=42.1% (n=76); std d20: gdp +0.063, u5 +0.292, enrol -0.359 -> stage_dominates=True; lag gdp -0.751 [-1.786,+0.283], lag u5 -0.682 [-2.176,+0.811] -> lagged_income_only=False: points ['B']
+
+== T5 counter-examples (four quadrants) ==
+  [M] T5 sample 199 countries (start = first year with gdp_pcap_const; start==1960: 106, later: 93, latest start 2013)
+shape: (4, 8)
+┌─────────────────────┬─────┬────────────────┬──────┬────────────────────┬───────────────────────┬──────────────────┬──────────────┐
+│ quadrant            ┆ n   ┆ med_u5_decline ┆ n_u5 ┆ med_u5_log_decline ┆ med_prim_enrol_change ┆ med_income_ratio ┆ med_tfr_drop │
+│ ---                 ┆ --- ┆ ---            ┆ ---  ┆ ---                ┆ ---                   ┆ ---              ┆ ---          │
+│ str                 ┆ u32 ┆ f64            ┆ u32  ┆ f64                ┆ f64                   ┆ f64              ┆ f64          │
+╞═════════════════════╪═════╪════════════════╪══════╪════════════════════╪═══════════════════════╪══════════════════╪══════════════╡
+│ not_richer_fell     ┆ 66  ┆ 90.25          ┆ 54   ┆ 1.562436           ┆ 19.122666             ┆ 1.526024         ┆ 3.491        │
+│ not_richer_not_fell ┆ 52  ┆ 23.6           ┆ 39   ┆ 1.498772           ┆ -1.992462             ┆ 1.78746          ┆ 0.8885       │
+│ richer_fell         ┆ 51  ┆ 125.05         ┆ 44   ┆ 2.173607           ┆ 1.768196              ┆ 5.023289         ┆ 4.031        │
+│ richer_not_fell     ┆ 30  ┆ 26.75          ┆ 26   ┆ 2.016997           ┆ -0.709351             ┆ 3.853216         ┆ 1.1195       │
+└─────────────────────┴─────┴────────────────┴──────┴────────────────────┴───────────────────────┴──────────────────┴──────────────┘
+  overall median U5MR decline (per 1000) = 69.3; all-sample median log decline = 1.730
+  not_richer_fell (66):
+    AFG Afghanistan                  start 2000 income x1.21 TFR 7.57->4.76 U5MR 132->53
+    AGO Angola                       start 1980 income x0.88 TFR 7.46->5.05 U5MR 233->49
+    ARE United Arab Emirates         start 1970 income x0.85 TFR 6.52->1.21 U5MR 96->5
+    BDI Burundi                      start 1960 income x1.06 TFR 7.00->4.79 U5MR n/a->47
+    BHR Bahrain                      start 1970 income x1.49 TFR 6.43->1.80 U5MR 78->9
+    BHS Bahamas, The                 start 1960 income x1.81 TFR 5.09->1.37 U5MR n/a->12
+    BMU Bermuda                      start 1960 income x2.92 TFR 3.63->1.41 U5MR n/a->n/a
+    BOL Bolivia                      start 1960 income x2.39 TFR 6.27->2.52 U5MR 285->16
+    BRB Barbados                     start 1960 income x2.65 TFR 4.71->1.71 U5MR 85->10
+    BRN Brunei Darussalam            start 1974 income x0.46 TFR 5.18->1.73 U5MR 38->10
+    CAN Canada                       start 1960 income x2.92 TFR 3.81->1.25 U5MR 33->5
+    CIV Cote d'Ivoire                start 1960 income x1.60 TFR 7.69->4.23 U5MR 319->64
+    COM Comoros                      start 1980 income x1.20 TFR 7.15->3.82 U5MR 174->39
+    CUB Cuba                         start 1970 income x2.82 TFR 3.98->1.45 U5MR 38->9
+    DZA Algeria                      start 1960 income x2.00 TFR 7.50->2.72 U5MR 239->22
+    ECU Ecuador                      start 1960 income x2.51 TFR 6.72->1.81 U5MR 176->13
+    FJI Fiji                         start 1960 income x2.78 TFR 6.36->2.27 U5MR 79->29
+    FSM Micronesia, Fed. Sts.        start 1970 income x1.77 TFR 6.93->2.74 U5MR 83->22
+    GHA Ghana                        start 1960 income x1.97 TFR 6.89->3.34 U5MR 209->36
+    GIN Guinea                       start 1970 income x2.30 TFR 6.24->4.13 U5MR 321->92
+    GMB Gambia, The                  start 1966 income x1.40 TFR 6.18->3.91 U5MR 320->42
+    GNB Guinea-Bissau                start 1970 income x1.48 TFR 6.04->3.76 U5MR n/a->67
+    GTM Guatemala                    start 1960 income x2.42 TFR 7.00->2.29 U5MR 220->20
+    HTI Haiti                        start 1960 income x0.67 TFR 6.18->2.62 U5MR 294->53
+    IRN Iran, Islamic Rep.           start 1960 income x2.49 TFR 7.52->1.68 U5MR n/a->11
+    JAM Jamaica                      start 1966 income x1.47 TFR 5.69->1.35 U5MR 65->18
+    JOR Jordan                       start 1976 income x1.39 TFR 7.83->2.60 U5MR 67->13
+    KEN Kenya                        start 1960 income x2.34 TFR 7.65->3.17 U5MR 197->39
+    KIR Kiribati                     start 1970 income x1.39 TFR 5.71->3.12 U5MR 141->53
+    KWT Kuwait                       start 1970 income x0.35 TFR 7.03->1.56 U5MR 70->8
+    LBR Liberia                      start 1960 income x0.27 TFR 6.39->3.86 U5MR 310->86
+    LBY Libya                        start 1960 income x2.73 TFR 7.51->2.30 U5MR 277->10
+    LCA St. Lucia                    start 1977 income x2.88 TFR 4.97->1.39 U5MR 40->17
+    MDG Madagascar                   start 1960 income x0.56 TFR 7.34->3.91 U5MR n/a->62
+    MEX Mexico                       start 1960 income x2.48 TFR 6.76->1.89 U5MR 155->13
+    MHL Marshall Islands             start 1970 income x2.86 TFR 8.07->2.86 U5MR 79->27
+    MWI Malawi                       start 1960 income x2.12 TFR 7.04->3.59 U5MR n/a->49
+    NAM Namibia                      start 1980 income x1.14 TFR 6.24->3.21 U5MR 103->40
+    NIC Nicaragua                    start 1960 income x1.37 TFR 7.16->2.21 U5MR 192->11
+    NZL New Zealand                  start 1960 income x2.33 TFR 4.24->1.57 U5MR 28->5
+    PER Peru                         start 1960 income x2.49 TFR 6.94->1.97 U5MR 231->13
+    PLW Palau                        start 1970 income x1.14 TFR 6.39->1.88 U5MR 81->21
+    PNG Papua New Guinea             start 1960 income x1.96 TFR 6.02->3.07 U5MR 198->39
+    PSE West Bank and Gaza           start 1994 income x1.06 TFR 6.33->3.25 U5MR 38->38
+    PYF French Polynesia             start 1965 income x0.92 TFR 6.00->1.49 U5MR n/a->n/a
+    QAT Qatar                        start 1970 income x0.78 TFR 6.23->1.72 U5MR 66->6
+    SAU Saudi Arabia                 start 1960 income x1.57 TFR 7.63->2.31 U5MR n/a->6
+    SDN Sudan                        start 1960 income x0.68 TFR 6.66->4.26 U5MR 179->62
+    SEN Senegal                      start 1960 income x1.32 TFR 7.00->3.77 U5MR 295->36
+    SLB Solomon Islands              start 1980 income x0.82 TFR 6.77->3.51 U5MR 53->20
+    SLE Sierra Leone                 start 1960 income x1.29 TFR 6.17->3.70 U5MR 390->90
+    SLV El Salvador                  start 1965 income x1.74 TFR 6.64->1.77 U5MR 180->10
+    STP Sao Tome and Principe        start 1970 income x1.39 TFR 6.47->3.60 U5MR 86->14
+    SUR Suriname                     start 1960 income x1.84 TFR 6.59->2.23 U5MR n/a->16
+    TGO Togo                         start 1960 income x2.35 TFR 6.80->4.12 U5MR 260->56
+    TJK Tajikistan                   start 1985 income x1.06 TFR 5.94->3.04 U5MR 114->28
+    TLS Timor-Leste                  start 1990 income x1.81 TFR 5.81->2.63 U5MR 228->48
+    TON Tonga                        start 1981 income x1.85 TFR 5.55->3.10 U5MR 29->10
+    TUN Tunisia                      start 1961 income x2.82 TFR 7.16->1.82 U5MR n/a->12
+    UGA Uganda                       start 1982 income x2.75 TFR 7.11->4.17 U5MR 215->49
+    VEN Venezuela, RB                start 1960 income x0.37 TFR 6.38->2.08 U5MR 80->24
+    VUT Vanuatu                      start 1979 income x0.96 TFR 5.73->3.57 U5MR 72->17
+    WSM Samoa                        start 1970 income x2.01 TFR 7.34->3.80 U5MR 72->15
+    ZAF South Africa                 start 1960 income x1.43 TFR 6.11->2.21 U5MR n/a->35
+    ZMB Zambia                       start 1960 income x1.13 TFR 6.95->4.04 U5MR 205->48
+    ZWE Zimbabwe                     start 1960 income x1.24 TFR 7.20->3.67 U5MR 154->65
+  richer_not_fell (30):
+    ARM Armenia                      start 1990 income x3.27 TFR 2.71->1.70 U5MR 49->10
+    ATG Antigua and Barbuda          start 1977 income x3.02 TFR 2.78->1.58 U5MR 20->9
+    AUS Australia                    start 1960 income x3.08 TFR 3.45->1.48 U5MR 25->4
+    AUT Austria                      start 1960 income x3.86 TFR 2.69->1.31 U5MR 43->3
+    BEL Belgium                      start 1960 income x3.84 TFR 2.54->1.44 U5MR 34->4
+    BIH Bosnia and Herzegovina       start 1990 income x8.52 TFR 1.79->1.49 U5MR 18->7
+    CYP Cyprus                       start 1975 income x5.31 TFR 2.11->1.38 U5MR 34->5
+    DEU Germany                      start 1960 income x3.49 TFR 2.37->1.36 U5MR n/a->4
+    DNK Denmark                      start 1960 income x3.47 TFR 2.57->1.47 U5MR 25->4
+    ESP Spain                        start 1960 income x4.65 TFR 2.86->1.10 U5MR 55->3
+    FIN Finland                      start 1960 income x4.04 TFR 2.72->1.25 U5MR 27->2
+    FRA France                       start 1960 income x3.68 TFR 2.85->1.61 U5MR 28->4
+    GBR United Kingdom               start 1960 income x3.13 TFR 2.69->1.55 U5MR 27->5
+    GEO Georgia                      start 1960 income x4.59 TFR 2.94->1.80 U5MR n/a->9
+    GNQ Equatorial Guinea            start 1980 income x10.69 TFR 5.83->4.12 U5MR n/a->68
+    GRC Greece                       start 1960 income x4.31 TFR 2.23->1.24 U5MR 46->4
+    GRD Grenada                      start 1977 income x3.30 TFR 3.46->1.47 U5MR 40->18
+    HUN Hungary                      start 1960 income x7.94 TFR 2.02->1.41 U5MR 54->4
+    ISR Israel                       start 1960 income x4.76 TFR 3.87->2.87 U5MR 47->3
+    ITA Italy                        start 1960 income x3.55 TFR 2.40->1.18 U5MR 52->3
+    JPN Japan                        start 1960 income x5.86 TFR 2.00->1.15 U5MR 40->2
+    KNA St. Kitts and Nevis          start 1977 income x4.85 TFR 3.48->1.53 U5MR 56->16
+    LUX Luxembourg                   start 1960 income x3.74 TFR 2.29->1.25 U5MR 37->2
+    MCO Monaco                       start 1970 income x3.39 TFR 2.50->2.10 U5MR n/a->3
+    MLT Malta                        start 1970 income x11.01 TFR 2.03->1.01 U5MR 28->5
+    NLD Netherlands                  start 1960 income x3.56 TFR 3.12->1.43 U5MR 21->4
+    NOR Norway                       start 1960 income x4.35 TFR 2.85->1.45 U5MR 23->2
+    POL Poland                       start 1990 income x3.52 TFR 2.06->1.14 U5MR 17->4
+    PRT Portugal                     start 1960 income x5.57 TFR 3.16->1.41 U5MR 114->3
+    SWE Sweden                       start 1960 income x3.23 TFR 2.17->1.43 U5MR 20->2
+  -> [M] T5 counts {'richer_fell': 51, 'richer_not_fell': 30, 'not_richer_fell': 66, 'not_richer_not_fell': 52}; not_richer_fell median U5MR decline 90.2 vs overall 69.3 (ok=True): points ['B']
+-- EXPLORATORY (not pre-registered; does not enter the scorecard): T5 restricted to countries with a 1960-75 TFR peak >= 4.5 (pre-transition), because a country starting near TFR 2-3 cannot fall by 2.0
+  -> [X eligible only] T5 counts {'richer_fell': 48, 'richer_not_fell': 5, 'not_richer_fell': 62, 'not_richer_not_fell': 30}; not_richer_fell median U5MR decline 117.3 vs overall 125.1 (ok=False): points none
+  richer_not_fell in main T5: 30, of which pre-transition in 1960-75 (peak >= 4.5): 5 (ARM, ATG, GNQ, GRD, KNA)
+
+== T6 post-onset growth (descriptive, no points) ==
+  [M] T6 (descriptive, no points): n=56; mean growth pre(-10..0) +0.0173, +10..+30 +0.0172; share +10..+30 > pre = 50.0%; relative to world mean (n=54): share higher = 44.4%
+
+== SCORECARD (main specification) ==
+  T1 Gelbach S                                     0.804                            A=0 B=1 C=1
+  T2 top-quintile slope [95% CI]                   +0.023 [-0.202, +0.248]          A=0 B=1 C=1
+  T3 income p90/p10                                21.60                            A=0 B=1 C=0
+  T4 share / stage_dominates / lagged_income_only  0.421 / False / False            A=0 B=0 C=0
+  T5 not_richer_fell / richer_not_fell             66 / 30                          A=0 B=1 C=0
+  TOTAL A=0 B=4 C=2
+  SELECTED: B (4 points)
+  quantities for the mixture sentence: S = 0.804 of beta0 -0.941; remaining income slope beta_full = -0.185 (19.6% of beta0); T2 top slope +0.023; middle quintiles (q2-q4) mean -0.262 (27.8% of pooled -0.941)
+
+== ROBUSTNESS (pre-registered list) ==
+-- sample variants: full scorecard per variant
+-- drop oil states: T1/T2 n=3295 G=152; T3-T5 countries=197
+  -> [R drop oil states] T1 S = 0.647 (beta0 -1.058, beta_full -0.374, n=3295, G=152): points ['B', 'C']
+  -> [R drop oil states] T2 top-quintile slope -0.008 [-0.248, +0.233]: points ['B', 'C']; middle quintiles q2-q4: -0.474, -0.835, -0.554
+  -> [R drop oil states] T3 income p90/p10 = 12.68 (n=103); U5MR p90/p10 = 2.92: points ['B']
+  -> [R drop oil states] T4 share=40.0% (n=65); std d10: gdp +0.041, u5 +0.097, enrol -0.067 -> stage_dominates=True; lag gdp -0.136 [-0.351,+0.078], lag u5 +0.116 [-0.151,+0.384] -> lagged_income_only=False: points ['B']
+  -> [R drop oil states] T5 counts {'richer_fell': 47, 'richer_not_fell': 29, 'not_richer_fell': 55, 'not_richer_not_fell': 48}; not_richer_fell median U5MR decline 117.3 vs overall 67.3 (ok=True): points ['B']
+  => [R drop oil states] points A=0 B=5 C=2: B (5 points)
+-- drop pop < 1,000,000: T1/T2 n=3099 G=148; T3-T5 countries=160
+  -> [R drop pop < 1,000,000] T1 S = 0.850 (beta0 -0.994, beta_full -0.149, n=3099, G=148): points ['B', 'C']
+  -> [R drop pop < 1,000,000] T2 top-quintile slope +0.056 [-0.215, +0.327]: points ['B', 'C']; middle quintiles q2-q4: -0.228, -0.259, +0.040
+  -> [R drop pop < 1,000,000] T3 income p90/p10 = 17.61 (n=98); U5MR p90/p10 = 3.01: points ['B']
+  -> [R drop pop < 1,000,000] T4 share=39.7% (n=68); std d10: gdp +0.126, u5 +0.125, enrol -0.137 -> stage_dominates=False; lag gdp +0.127 [-0.077,+0.330], lag u5 +0.378 [+0.066,+0.690] -> lagged_income_only=False: points none
+  -> [R drop pop < 1,000,000] T5 counts {'richer_fell': 43, 'richer_not_fell': 24, 'not_richer_fell': 48, 'not_richer_not_fell': 40}; not_richer_fell median U5MR decline 161.1 vs overall 84.7 (ok=True): points ['B']
+  => [R drop pop < 1,000,000] points A=0 B=4 C=2: B (4 points)
+-- drop pop < 100,000: T1/T2 n=3620 G=171; T3-T5 countries=193
+  -> [R drop pop < 100,000] T1 S = 0.807 (beta0 -0.941, beta_full -0.182, n=3620, G=171): points ['B', 'C']
+  -> [R drop pop < 100,000] T2 top-quintile slope +0.022 [-0.204, +0.248]: points ['B', 'C']; middle quintiles q2-q4: -0.351, -0.422, -0.007
+  -> [R drop pop < 100,000] T3 income p90/p10 = 18.97 (n=115); U5MR p90/p10 = 3.04: points ['B']
+  -> [R drop pop < 100,000] T4 share=42.7% (n=75); std d10: gdp +0.097, u5 +0.138, enrol -0.099 -> stage_dominates=True; lag gdp +0.075 [-0.148,+0.298], lag u5 +0.360 [+0.058,+0.662] -> lagged_income_only=False: points ['B']
+  -> [R drop pop < 100,000] T5 counts {'richer_fell': 50, 'richer_not_fell': 27, 'not_richer_fell': 63, 'not_richer_not_fell': 44}; not_richer_fell median U5MR decline 104.5 vs overall 73.7 (ok=True): points ['B']
+  => [R drop pop < 100,000] points A=0 B=5 C=2: B (5 points)
+-- drop 2020-2024: T1/T2 n=3046 G=170; T3-T5 countries=217
+  -> [R drop 2020-2024] T1 S = 0.832 (beta0 -0.966, beta_full -0.163, n=3046, G=170): points ['B', 'C']
+  -> [R drop 2020-2024] T2 top-quintile slope +0.076 [-0.161, +0.314]: points ['B', 'C']; middle quintiles q2-q4: -0.293, -0.408, -0.002
+  -> [R drop 2020-2024] T3 income p90/p10 = 22.58 (n=117); U5MR p90/p10 = 3.06: points ['B']
+  -> [R drop 2020-2024] T4 share=41.9% (n=74); std d10: gdp +0.211, u5 +0.172, enrol -0.026 -> stage_dominates=False; lag gdp +0.114 [-0.229,+0.456], lag u5 +0.249 [-0.140,+0.638] -> lagged_income_only=False: points none
+  -> [R drop 2020-2024] T5 counts {'richer_fell': 46, 'richer_not_fell': 31, 'not_richer_fell': 63, 'not_richer_not_fell': 68}; not_richer_fell median U5MR decline 83.5 vs overall 64.0 (ok=True): points ['B']
+  => [R drop 2020-2024] points A=0 B=4 C=2: B (4 points)
+-- onset definitions (T2 aux, T3, T4, T6; T1 and T5 do not use onsets)
+  [peak>=4.0] eligible 164, onsets 162
+  -> [R onset peak>=4.0] T2 top-quintile slope +0.023 [-0.202, +0.248]: points ['B', 'C']; middle quintiles q2-q4: -0.344, -0.434, -0.008
+  [R onset peak>=4.0] T2 aux >=30y since onset: -0.495 [-0.644, -0.347] n=1310 G=95
+  -> [R onset peak>=4.0] T3 income p90/p10 = 29.88 (n=122); U5MR p90/p10 = 3.23: points ['B']
+  -> [R onset peak>=4.0] T4 share=42.9% (n=77); std d10: gdp +0.108, u5 +0.130, enrol -0.095 -> stage_dominates=False; lag gdp +0.056 [-0.160,+0.271], lag u5 +0.325 [+0.033,+0.616] -> lagged_income_only=False: points none
+  [R onset peak>=4.0] T6 (descriptive, no points): n=57; mean growth pre(-10..0) +0.0176, +10..+30 +0.0178; share +10..+30 > pre = 50.9%; relative to world mean (n=55): share higher = 45.5%
+  [peak>=5.0] eligible 146, onsets 144
+  -> [R onset peak>=5.0] T2 top-quintile slope +0.023 [-0.202, +0.248]: points ['B', 'C']; middle quintiles q2-q4: -0.344, -0.434, -0.008
+  [R onset peak>=5.0] T2 aux >=30y since onset: -0.532 [-0.709, -0.354] n=1156 G=88
+  -> [R onset peak>=5.0] T3 income p90/p10 = 22.92 (n=115); U5MR p90/p10 = 2.99: points ['B']
+  -> [R onset peak>=5.0] T4 share=42.1% (n=76); std d10: gdp +0.108, u5 +0.130, enrol -0.095 -> stage_dominates=False; lag gdp +0.056 [-0.160,+0.271], lag u5 +0.325 [+0.033,+0.616] -> lagged_income_only=False: points none
+  [R onset peak>=5.0] T6 (descriptive, no points): n=56; mean growth pre(-10..0) +0.0173, +10..+30 +0.0172; share +10..+30 > pre = 50.0%; relative to world mean (n=54): share higher = 44.4%
+  [drop 15%] eligible 157, onsets 154
+  -> [R onset drop 15%] T2 top-quintile slope +0.023 [-0.202, +0.248]: points ['B', 'C']; middle quintiles q2-q4: -0.344, -0.434, -0.008
+  [R onset drop 15%] T2 aux >=30y since onset: -0.474 [-0.648, -0.299] n=1027 G=82
+  -> [R onset drop 15%] T3 income p90/p10 = 22.75 (n=120); U5MR p90/p10 = 2.74: points ['B']
+  -> [R onset drop 15%] T4 share=39.3% (n=84); std d10: gdp +0.108, u5 +0.130, enrol -0.095 -> stage_dominates=False; lag gdp +0.056 [-0.160,+0.271], lag u5 +0.325 [+0.033,+0.616] -> lagged_income_only=False: points none
+  [R onset drop 15%] T6 (descriptive, no points): n=60; mean growth pre(-10..0) +0.0106, +10..+30 +0.0152; share +10..+30 > pre = 55.0%; relative to world mean (n=59): share higher = 50.8%
+  [5-yr moving average] eligible 157, onsets 152
+  -> [R onset 5-yr moving average] T2 top-quintile slope +0.023 [-0.202, +0.248]: points ['B', 'C']; middle quintiles q2-q4: -0.344, -0.434, -0.008
+  [R onset 5-yr moving average] T2 aux >=30y since onset: -0.529 [-0.705, -0.352] n=1181 G=90
+  -> [R onset 5-yr moving average] T3 income p90/p10 = 21.42 (n=117); U5MR p90/p10 = 3.03: points ['B']
+  -> [R onset 5-yr moving average] T4 share=44.3% (n=79); std d10: gdp +0.108, u5 +0.130, enrol -0.095 -> stage_dominates=False; lag gdp +0.056 [-0.160,+0.271], lag u5 +0.325 [+0.033,+0.616] -> lagged_income_only=False: points none
+  [R onset 5-yr moving average] T6 (descriptive, no points): n=58; mean growth pre(-10..0) +0.0169, +10..+30 +0.0179; share +10..+30 > pre = 50.0%; relative to world mean (n=58): share higher = 46.6%
+-- income series: constant 2015 US$ instead of PPP in T1/T2 (same rows)
+  -> [R const US$] T1 S = 1.033 (beta0 -0.711, beta_full +0.023, n=3622, G=171): points ['B', 'C']
+  -> [R const US$] T2 top-quintile slope +0.105 [+0.005, +0.206]: points none; middle quintiles q2-q4: -0.194, -0.126, +0.072
+-- composite stage index: mortality only (H4 replication) / standardised mean of 3
+  -> [R composite u5only] T2 top-quintile slope +0.029 [-0.160, +0.217]: points ['B', 'C']; middle quintiles q2-q4: -0.532, -0.566, +0.015
+  -> [R composite zmean] T2 top-quintile slope +0.024 [-0.201, +0.249]: points ['B', 'C']; middle quintiles q2-q4: -0.341, -0.434, -0.010
+-- T4 difference width 5 / 20 years: see [R d5] / [R d20] above
+-- T1 with 4 stage variables (no fem_sec_enrol)
+  -> [R 4 vars] T1 S = 0.670 (beta0 -1.041, beta_full -0.343, n=5995, G=173): points ['B', 'C']
