@@ -11,8 +11,8 @@ items:
     depends_on: []
     agent: planner
     acceptance: "H7 の答え候補 A/B/C・検定 T1〜T6・判定基準・頑健性・言えないことが、データを見る前に design に書かれている"
-    status: in_progress
-    pr:
+    status: pr_open
+    pr: https://github.com/mendorie/socioscope/pull/36
   - id: h7-wdi-indicators
     title: "feat(growth-fertility): WDI に NY.GDP.PCAP.KD / SE.PRM.ENRR.FE / SP.DYN.IMRT.IN を追加"
     scope:
