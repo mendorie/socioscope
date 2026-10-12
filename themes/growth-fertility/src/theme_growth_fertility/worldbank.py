@@ -22,6 +22,10 @@ INDICATORS: dict[str, str] = {
     "urban_share": "SP.URB.TOTL.IN.ZS",  # Urban population (% of total population)
     "fem_lfp": "SL.TLF.CACT.FE.ZS",  # Labor force participation rate, female 15+ (%, ILO est.)
     "life_exp": "SP.DYN.LE00.IN",  # Life expectancy at birth, total (years)
+    # H7 between-country gradient (design/themes/growth-fertility.md "### H7")
+    "gdp_pcap_const": "NY.GDP.PCAP.KD",  # GDP per capita (constant 2015 US$), 1960-
+    "fem_prim_enrol": "SE.PRM.ENRR.FE",  # School enrollment, primary, female (% gross)
+    "infant_mortality": "SP.DYN.IMRT.IN",  # Mortality rate, infant (per 1,000 live births)
 }
 
 

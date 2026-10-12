@@ -143,6 +143,9 @@ def test_stage_then_mart_build_panel_from_raw() -> None:
         "urban_share": 1.36,
         "fem_lfp": 1.36,
         "life_exp": 1.36,
+        "gdp_pcap_const": 1.36,
+        "fem_prim_enrol": 1.36,
+        "infant_mortality": 1.36,
     }
     assert [p["iso3"] for p in panel] == ["JPN", "JPN", "USA"]
 
@@ -430,6 +433,26 @@ def test_wdi_stage_indicators_are_registered() -> None:
     assert wb.INDICATORS["urban_share"] == "SP.URB.TOTL.IN.ZS"
     assert wb.INDICATORS["fem_lfp"] == "SL.TLF.CACT.FE.ZS"
     assert wb.INDICATORS["life_exp"] == "SP.DYN.LE00.IN"
+
+
+def test_wdi_h7_indicators_are_registered() -> None:
+    assert wb.INDICATORS["gdp_pcap_const"] == "NY.GDP.PCAP.KD"
+    assert wb.INDICATORS["fem_prim_enrol"] == "SE.PRM.ENRR.FE"
+    assert wb.INDICATORS["infant_mortality"] == "SP.DYN.IMRT.IN"
+
+
+def test_stage_writes_h7_indicator_tables_and_mart_has_columns() -> None:
+    ctx = make_ctx(all_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    staged = PIPELINE.run(Stage.STAGE, ctx)
+    for key in ("gdp_pcap_const", "fem_prim_enrol", "infant_mortality"):
+        assert f"staged/worldbank/{key}" in staged.written
+        rows = ctx.tables.read_table(f"staged/worldbank/{key}")
+        assert set(rows[0]) == {"iso3", "country", "year", "value", "indicator", "source"}
+        assert rows[0]["source"] == wb.SOURCE
+    PIPELINE.run(Stage.MART, ctx)
+    panel = ctx.tables.read_table("marts/growth_fertility_panel")
+    assert {"gdp_pcap_const", "fem_prim_enrol", "infant_mortality"} <= set(panel[0])
 
 
 def test_fetch_stores_dhs_files_with_citation_license() -> None:
