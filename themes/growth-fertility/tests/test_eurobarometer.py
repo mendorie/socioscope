@@ -165,6 +165,17 @@ def test_waves_are_fixed_std91_to_std105_with_unique_seasons() -> None:
     assert "CC BY 4.0" in eb.LICENSE and "2011/833/EU" in eb.LICENSE
 
 
+def test_std105_is_withdrawn_upstream_and_kept_from_the_committed_raw() -> None:
+    """The STD105 open-data record disappeared from data.europa.eu in October 2026 (hub record
+    404, Volume A download key 500, no replacement id); the raw fetched on 2026-10-06 is
+    committed (ADR 0002 exception), so the wave stays in WAVES but must not be re-fetched."""
+    std105 = next(w for w in eb.WAVES if w.code == "STD105")
+    assert std105.dataset_id == "s3613_105_2_std105_eng"  # still the id the raw was fetched from
+    assert std105.withdrawn is not None and "2026-10" in std105.withdrawn
+    assert [w.code for w in eb.WAVES if w.withdrawn] == ["STD105"]
+    assert std101().withdrawn is None
+
+
 def jsonld(titles_and_urls: list[tuple[object, str]]) -> bytes:
     graph: list[dict[str, object]] = [{"@id": "x", "@type": "dcat:Dataset"}]
     for title, url in titles_and_urls:
