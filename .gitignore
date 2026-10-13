@@ -19,6 +19,13 @@ build/
 data/raw/**
 !data/raw/.gitkeep
 !data/raw/manifest.jsonl
+# ADR 0002 の例外: 上流（data.europa.eu）から撤回された小さな CC BY 4.0 raw は manifest committed: true で同梱
+!data/raw/growth-fertility/
+data/raw/growth-fertility/**
+!data/raw/growth-fertility/eurobarometer_std/
+data/raw/growth-fertility/eurobarometer_std/**
+!data/raw/growth-fertility/eurobarometer_std/eb_STD105_meta.json
+!data/raw/growth-fertility/eurobarometer_std/eb_STD105_vol_a.xlsx
 *.duckdb
 *.duckdb.wal
 

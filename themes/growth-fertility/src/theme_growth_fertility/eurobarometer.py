@@ -6,6 +6,8 @@ wave, distributed through data.europa.eu. Two-step resolution: the dataset's JSO
 and its static download URL (``webgate.ec.europa.eu/.../odp/download?key=...``; no key or
 login needed). Waves are pinned in ``WAVES`` (dataset ids found with the hub search API on
 2026-10-06: ``.../api/hub/search/search?q=Standard%20Eurobarometer``); fetch never searches.
+A wave whose record later disappears upstream is marked ``withdrawn`` and served from the raw
+committed to git (ADR 0002 exception for small, redistributable raws); fetch skips it.
 
 Workbook layout (checked on STD91–STD105): one sheet per item; the question text is in the
 first rows ("What are your expectations for the next twelve/12 months: will the next twelve
@@ -53,6 +55,9 @@ class Wave:
     fieldwork_year: int
     fieldwork_half: int
     fieldwork_start: str
+    withdrawn: str | None = None
+    """Set when the open-data record is gone upstream: why/when, so fetch does not request it
+    and the committed raw (``data/raw/...``, manifest ``committed: true``) is the source."""
 
     @property
     def jsonld_url(self) -> str:
@@ -80,7 +85,18 @@ WAVES: tuple[Wave, ...] = (
     Wave("STD102", "s3215_102_2_std102_eng", 2024, 2, "2024-10"),
     Wave("STD103", "s3372_103_3_std103_eng", 2025, 1, "2025-03"),
     Wave("STD104", "s3378_104_1_std104_eng", 2025, 2, "2025-10"),
-    Wave("STD105", "s3613_105_2_std105_eng", 2026, 1, "2026-03"),
+    Wave(
+        "STD105",
+        "s3613_105_2_std105_eng",
+        2026,
+        1,
+        "2026-03",
+        withdrawn=(
+            "open-data record withdrawn upstream in 2026-10 (hub record 404, Volume A download "
+            "key 500, no replacement id; survey page lists no open-data publication); raw "
+            "fetched 2026-10-06 is committed"
+        ),
+    ),
 )
 
 ITEMS: dict[str, str] = {

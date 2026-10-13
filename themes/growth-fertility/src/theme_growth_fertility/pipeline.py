@@ -696,6 +696,9 @@ def _fetch_h6(ctx: Context, written: list[str], skipped: list[str]) -> tuple[lis
         )
         written.append(rec.relative_path)
     for wave in ebm.WAVES:
+        if wave.withdrawn is not None:
+            skipped.append(f"{wave.meta_raw_name}: not requested, {wave.withdrawn} (committed raw)")
+            continue
         try:
             meta = ctx.fetcher.fetch(wave.jsonld_url)
         except FetchError as e:

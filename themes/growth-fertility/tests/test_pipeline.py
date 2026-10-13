@@ -920,7 +920,8 @@ def test_fetch_h6_stores_pdfs_and_resolves_volume_a_from_jsonld(pdf_from_pages) 
     assert "growth-fertility/eurobarometer_std/eb_STD101_meta.json" in result.written
     assert "growth-fertility/eurobarometer_std/eb_STD101_vol_a.xlsx" in result.written
     assert len(result.written) == 4
-    # the other 14 waves: one skipped entry each (JSON-LD missing -> workbook not attempted)
+    # the other 14 waves: one skipped entry each (JSON-LD missing -> workbook not attempted;
+    # STD105 withdrawn upstream -> not even requested)
     assert sum(s.startswith("eb_STD") and "meta" in s for s in result.skipped) == len(ebm.WAVES) - 1
     assert VOL_A_URL in ctx.fetcher.requested  # type: ignore[attr-defined]
     recs = {r.name: r for r in ctx.raw.records()}
@@ -930,6 +931,37 @@ def test_fetch_h6_stores_pdfs_and_resolves_volume_a_from_jsonld(pdf_from_pages) 
     assert recs["eb_STD101_vol_a.xlsx"].url == VOL_A_URL
     assert recs["eb_STD101_meta.json"].url == STD101.jsonld_url
     assert recs["eb_STD101_meta.json"].source == ebm.SOURCE
+
+
+def test_fetch_h6_does_not_request_a_withdrawn_wave_and_says_why() -> None:
+    std105 = next(w for w in ebm.WAVES if w.code == "STD105")
+    ctx = make_ctx({std105.jsonld_url: jsonld_with_vol_a("STD105_VOL_A.xlsx", VOL_A_URL)})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert std105.jsonld_url not in ctx.fetcher.requested  # type: ignore[attr-defined]
+    assert result.written == ()
+    (entry,) = [s for s in result.skipped if s.startswith("eb_STD105_meta")]
+    assert "withdrawn" in entry and "committed raw" in entry
+
+
+def test_stage_h6_stages_a_withdrawn_wave_from_its_raw(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    std105 = next(w for w in ebm.WAVES if w.code == "STD105")
+    ctx = make_ctx({})  # nothing fetchable: both committed raws are already in the store
+    for name, url, payload in (
+        (
+            std105.meta_raw_name,
+            std105.jsonld_url,
+            jsonld_with_vol_a("STD105_VOL_A.xlsx", VOL_A_URL),
+        ),
+        ("eb_STD105_vol_a.xlsx", VOL_A_URL, vol_a_xlsx()),
+    ):
+        ctx.raw.put(
+            theme=pipeline.THEME, source=ebm.SOURCE, name=name, url=url,
+            license=ebm.LICENSE, payload=payload,
+        )  # fmt: skip
+    PIPELINE.run(Stage.STAGE, ctx)
+    rows = ctx.tables.read_table(pipeline.EB_EXPECT_TABLE)
+    assert {r["wave"] for r in rows} == {std105.code}
+    assert all(r["fieldwork_start"] == "2026-03" for r in rows)
 
 
 def test_fetch_h6_skips_workbook_when_jsonld_is_unusable() -> None:
