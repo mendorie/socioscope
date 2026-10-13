@@ -39,8 +39,8 @@ def canvas() -> tuple[plt.Figure, plt.Axes]:
     return fig, bg
 
 
-def title_block(bg: plt.Axes, title: str, sub: str, *, y: float = 600) -> None:
-    bg.text(64, y, title, fontsize=40, fontweight=900, color=INK, va="top", ha="left")
+def title_block(bg: plt.Axes, title: str, sub: str, *, y: float = 600, size: float = 40) -> None:
+    bg.text(64, y, title, fontsize=size, fontweight=900, color=INK, va="top", ha="left")
     bg.text(66, y - 70, sub, fontsize=17, color=MUTED, va="top", ha="left")
 
 
@@ -254,6 +254,111 @@ def wealth() -> Path:
     return out
 
 
+def growth_fertility_h7() -> Path:
+    """H7: 転換開始時の所得のばらつき（左）と、転換が終わった国の間の平らな関係（右）。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "themes" / "growth-fertility" / "src"))
+    from theme_growth_fertility.transition import onset_table
+
+    panel = pl.read_parquet(MARTS / "growth_fertility_panel.parquet")
+    onset = {
+        r["iso3"]: r["onset_year"]
+        for r in onset_table(panel.select("iso3", "year", "tfr").to_dicts())
+        if r["onset_year"] is not None
+    }
+    at_onset = np.array(
+        [
+            r["gdp_pcap_const"]
+            for r in panel.filter(pl.col("gdp_pcap_const").is_not_null())
+            .select("iso3", "year", "gdp_pcap_const")
+            .to_dicts()
+            if onset.get(r["iso3"]) == r["year"]
+        ]
+    )
+    p10, p90 = np.percentile(at_onset, 10), np.percentile(at_onset, 90)
+
+    w = panel.filter(
+        (pl.col("year") == 2024)
+        & pl.col("tfr").is_not_null()
+        & pl.col("gdp_pcap_ppp").is_not_null()
+        & pl.col("u5_mortality").is_not_null()
+        & (pl.col("population") >= 1_000_000)
+    )
+    done = (w["u5_mortality"] < 10).to_numpy()
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "豊かな国ほど子どもが少ないのは、豊かさのせいではない",
+        "下がり始めた年の所得は国によって 21.6 倍違い、転換が終わった国の間では関係が消える",
+        size=33,
+    )
+
+    # left: income at transition onset (log histogram)
+    ax1 = fig.add_axes([0.07, 0.13, 0.40, 0.52])
+    bins = np.logspace(np.log10(150), np.log10(40000), 22)
+    ax1.hist(at_onset, bins=bins, color=BLUE, alpha=0.85, lw=0)
+    ax1.set_xscale("log")
+    top = ax1.get_ylim()[1] * 1.35
+    ax1.set_ylim(0, top)
+    for v, lab in ((p10, "下位 10%"), (p90, "上位 10%")):
+        ax1.axvline(v, color=ORANGE, lw=2.5, ls="--")
+        ax1.text(
+            v,
+            top * 0.99,
+            f"{lab}\n${v:,.0f}",
+            color=ORANGE,
+            fontsize=11,
+            ha="center",
+            va="top",
+            fontweight="bold",
+        )
+    ax1.set_xticks([300, 1000, 3000, 10000, 30000])
+    ax1.set_xticklabels(
+        ["$300", "$1,000", "$3,000", "$10,000", "$30,000"], fontsize=11, color=MUTED
+    )
+    ax1.set_yticks([])
+    ax1.tick_params(colors=MUTED, length=0)
+    for sp in ax1.spines.values():
+        sp.set_visible(False)
+    ax1.set_facecolor(PAPER)
+    tag(bg, 92, 470, f"出生率が下がり始めた年の一人当たり GDP（{len(at_onset)} か国）", BLUE)
+
+    # right: TFR vs GDP 2024, completed-transition countries highlighted with flat fit
+    ax2 = fig.add_axes([0.57, 0.13, 0.38, 0.52])
+    x = np.log(w["gdp_pcap_ppp"].to_numpy())
+    y = w["tfr"].to_numpy()
+    s = np.sqrt(w["population"].to_numpy() / 1e6) * 3 + 8
+    ax2.scatter(x[~done], y[~done], s=s[~done], c=MUTED, alpha=0.25, lw=0)
+    ax2.scatter(x[done], y[done], s=s[done], c=ORANGE, alpha=0.6, lw=0, zorder=5)
+    b, a = np.polyfit(x[done], y[done], 1)
+    xs = np.linspace(x[done].min(), x[done].max(), 2)
+    ax2.plot(xs, a + b * xs, color=ORANGE, lw=5, solid_capstyle="round", zorder=6)
+    ax2.set_xticks([math.log(v) for v in (1000, 10000, 100000)])
+    ax2.set_xticklabels(["$1,000", "$10,000", "$100,000"], fontsize=11, color=MUTED)
+    ax2.set_yticks([1, 2, 3, 4, 5, 6])
+    ax2.tick_params(colors=MUTED, labelsize=11, length=0)
+    ax2.set_ylim(0.5, 7)
+    for sp in ax2.spines.values():
+        sp.set_visible(False)
+    ax2.set_facecolor(PAPER)
+    tag(bg, 730, 470, "転換が終わった国（橙）だけなら、右下がりは消える", ORANGE)
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: World Bank WDI（CC BY 4.0）/ socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-13-note-why-rich-countries-have-fewer-children.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
-    for p in (growth_fertility(), wealth()):
+    for p in (growth_fertility(), wealth(), growth_fertility_h7()):
         print(p)
