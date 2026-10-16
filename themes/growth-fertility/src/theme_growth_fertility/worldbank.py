@@ -26,6 +26,11 @@ INDICATORS: dict[str, str] = {
     "gdp_pcap_const": "NY.GDP.PCAP.KD",  # GDP per capita (constant 2015 US$), 1960-
     "fem_prim_enrol": "SE.PRM.ENRR.FE",  # School enrollment, primary, female (% gross)
     "infant_mortality": "SP.DYN.IMRT.IN",  # Mortality rate, infant (per 1,000 live births)
+    # H8 mechanisms: marriage / wanted fertility / contraception (design "### H8")
+    "smam_fe": "SP.DYN.SMAM.FE",  # Age at first marriage, female (UN World Marriage Data)
+    "wanted_tfr_wdi": "SP.DYN.WFRT",  # Wanted fertility rate (births per woman)
+    "married_by18": "SP.M18.2024.FE.ZS",  # Women first married by age 18 (% of women 20-24)
+    "contraceptive_any": "SP.DYN.CONU.ZS",  # Contraceptive prevalence, any method (% married 15-49)
 }
 
 

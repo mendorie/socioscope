@@ -37,7 +37,11 @@ tests/           fixtures/（実レスポンスの縮約）＋ Fake による状
 | `staged/worldbank/gdp_pcap_const` | 〃 | 〃（`NY.GDP.PCAP.KD`、H7。2015 年固定 US$、1960 年以降。時間方向と転換開始時所得に使う） |
 | `staged/worldbank/fem_prim_enrol` | 〃 | 〃（`SE.PRM.ENRR.FE`、H7。1990 年以前の教育段階の代理） |
 | `staged/worldbank/infant_mortality` | 〃 | 〃（`SP.DYN.IMRT.IN`、H7。死亡率の頑健性） |
-| `marts/growth_fertility_panel` | iso3×year | iso3, country, year, region, income_group, tfr, gdp_pcap_ppp, gdp_growth, population, u5_mortality, fem_sec_enrol, urban_share, fem_lfp, life_exp, gdp_pcap_const, fem_prim_enrol, infant_mortality（217 経済 × 1960–2025 = 14,322 行） |
+| `staged/worldbank/smam_fe` | 〃 | 〃（`SP.DYN.SMAM.FE`、H8。女性の平均初婚年齢、UN World Marriage Data 由来。2,073 国・年、212 か国、1970–2018 が中心。出典混在で跳ぶ値がある: 例 FRA 2005 31.0 → 2008 22.7 → 2012 32.0。mart はそのまま、整形は分析側） |
+| `staged/worldbank/wanted_tfr_wdi` | 〃 | 〃（`SP.DYN.WFRT`、H8。Wanted fertility rate。309 国・年、86 か国、1985–2023） |
+| `staged/worldbank/married_by18` | 〃 | 〃（`SP.M18.2024.FE.ZS`、H8。20–24 歳女性のうち 18 歳未満で結婚した割合 %。428 国・年、146 か国、1985–2025） |
+| `staged/worldbank/contraceptive_any` | 〃 | 〃（`SP.DYN.CONU.ZS`、H8。既婚女性 15–49 の避妊実行率、全方法 %。1,256 国・年、184 か国、1961–2024） |
+| `marts/growth_fertility_panel` | iso3×year | iso3, country, year, region, income_group, tfr, gdp_pcap_ppp, gdp_growth, population, u5_mortality, fem_sec_enrol, urban_share, fem_lfp, life_exp, gdp_pcap_const, fem_prim_enrol, infant_mortality, smam_fe, wanted_tfr_wdi, married_by18, contraceptive_any（217 経済 × 1960–2025 = 14,322 行、21 列） |
 | `staged/dhs/tfr_by_wealth_quintile` | 調査×五分位 | iso3, country, dhs_country_code, survey_id, survey_year, survey_type(DHS/MIS/AIS), quintile(1..5), quintile_label, value, ci_low, ci_high, denominator_weighted, source(`dhs_api`)（ISO3 の付かない国コードの行は除外） |
 | `marts/dhs_tfr_by_wealth_quintile` | 〃 | staged と同列。`survey_year, iso3, quintile` でソート（313 調査 × 5 = 1,565 行、2026-10-05 取得） |
 | `staged/estat/kiso_income_dist_ts` | population×year×所得階級 | population(all/with_children), survey_year, year（所得年）, income_class, income_class_lower_yen, income_class_upper_yen, share_pct, source, stat_inf_id（1985–2024 × 25 階級 × 2 = 2,000 行） |
