@@ -20,7 +20,7 @@
 - 日本国内: 所得階層別の有配偶率・子ども数（国民生活基礎調査・出生動向基本調査の公表集計表）
 
 ## データ候補
-World Bank WDI（**実装済み**: `SP.DYN.TFRT.IN`, `NY.GDP.PCAP.PP.KD`, `NY.GDP.MKTP.KD.ZG`、サンプル絞り込み用に `SP.POP.TOTL`、集計地域除外用に `/v2/country` メタデータ）、UN WPP、OECD、日本: e-Stat・社人研（`design/data-sources.md`）。
+World Bank WDI（**実装済み**: `SP.DYN.TFRT.IN`, `NY.GDP.PCAP.PP.KD`, `NY.GDP.MKTP.KD.ZG`、サンプル絞り込み用に `SP.POP.TOTL`、集計地域除外用に `/v2/country` メタデータ。H4・H7 の段階指標は各節を参照。H8（2026-10-17）: `SP.DYN.SMAM.FE` = `smam_fe`, `SP.DYN.WFRT` = `wanted_tfr_wdi`, `SP.M18.2024.FE.ZS` = `married_by18`, `SP.DYN.CONU.ZS` = `contraceptive_any`）、UN WPP、OECD、日本: e-Stat・社人研（`design/data-sources.md`）。
 
 ### 日本国内（H3）: e-Stat 国民生活基礎調査 — **実装済み**（2026-10-04）
 appId 不要の統計表 CSV（`stat-search/file-download?statInfId=…&fileKind=1`）。mart は `marts/jp_income_class_fertility`（long 形式: survey, survey_year, year, income_class, income_class_lower_yen, income_class_upper_yen, sex, metric, value, denominator, source）。

@@ -154,6 +154,10 @@ def test_stage_then_mart_build_panel_from_raw() -> None:
         "gdp_pcap_const": 1.36,
         "fem_prim_enrol": 1.36,
         "infant_mortality": 1.36,
+        "smam_fe": 1.36,
+        "wanted_tfr_wdi": 1.36,
+        "married_by18": 1.36,
+        "contraceptive_any": 1.36,
     }
     assert [p["iso3"] for p in panel] == ["JPN", "JPN", "USA"]
 
@@ -462,6 +466,37 @@ def test_stage_writes_h7_indicator_tables_and_mart_has_columns() -> None:
     PIPELINE.run(Stage.MART, ctx)
     panel = ctx.tables.read_table("marts/growth_fertility_panel")
     assert {"gdp_pcap_const", "fem_prim_enrol", "infant_mortality"} <= set(panel[0])
+
+
+H8_WDI = {
+    "smam_fe": "SP.DYN.SMAM.FE",
+    "wanted_tfr_wdi": "SP.DYN.WFRT",
+    "married_by18": "SP.M18.2024.FE.ZS",
+    "contraceptive_any": "SP.DYN.CONU.ZS",
+}
+
+
+def test_wdi_h8_indicators_are_registered() -> None:
+    for key, code in H8_WDI.items():
+        assert wb.INDICATORS[key] == code
+        assert wb.indicator_url(code) == (
+            f"https://api.worldbank.org/v2/country/all/indicator/{code}?format=json&per_page=20000"
+        )
+
+
+def test_stage_writes_h8_indicator_tables_and_mart_has_columns() -> None:
+    ctx = make_ctx(all_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    staged = PIPELINE.run(Stage.STAGE, ctx)
+    for key, code in H8_WDI.items():
+        assert f"staged/worldbank/{key}" in staged.written
+        rows = ctx.tables.read_table(f"staged/worldbank/{key}")
+        assert set(rows[0]) == {"iso3", "country", "year", "value", "indicator", "source"}
+        assert rows[0]["source"] == wb.SOURCE
+        assert any(r.url == wb.indicator_url(code) for r in ctx.raw.records())
+    PIPELINE.run(Stage.MART, ctx)
+    panel = ctx.tables.read_table("marts/growth_fertility_panel")
+    assert set(H8_WDI) <= set(panel[0])
 
 
 def test_fetch_stores_dhs_files_with_citation_license() -> None:
