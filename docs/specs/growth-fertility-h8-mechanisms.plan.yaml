@@ -56,7 +56,7 @@ items:
     depends_on: [h8-wdi-marriage, h8-dhs-mechanisms]
     agent: analyst
     acceptance: "2 回実行で図の sha256 と stdout が一致。スコアカード判定と最終仮説の文が stdout に出る。report はテンプレート準拠・チェックリスト回答付き。methodology-reviewer APPROVED"
-    status: pr_open
+    status: merged
     pr: https://github.com/mendorie/socioscope/pull/51
   - id: h8-summary-figs
     title: "analysis(growth-fertility): H8 一般読者向け日本語図"
@@ -67,8 +67,8 @@ items:
     depends_on: [h8-analysis]
     agent: analyst
     acceptance: "記事で使う図 6 枚以内。新しい推定なし（h8 の関数を import して再計算）。captions.md 付き"
-    status: todo
-    pr:
+    status: pr_open
+    pr: PENDING
   - id: h8-article
     title: "docs(articles): note 記事 part3「子どもが死ななくなり、女の子が学校に行くと、なぜ出生率が下がるのか」"
     scope:
