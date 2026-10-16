@@ -1,0 +1,231 @@
+== Data ==
+dhs_mechanisms: rows=22652 surveys=374 countries=87 years=1985–2025
+survey types: {'AIS': 11, 'DHS': 322, 'MIS': 41}
+  survey-level tfr                            surveys= 368 countries= 87
+  survey-level wanted_tfr                     surveys= 320 countries= 86
+  survey-level ideal_children                 surveys= 320 countries= 86
+  survey-level u5_5                           surveys= 329 countries= 87
+  survey-level u5_10                          surveys= 329 countries= 87
+  survey-level sec                            surveys= 345 countries= 78
+  survey-level cm                             surveys= 318 countries= 84
+  survey-level age_first_marriage             surveys= 326 countries= 87
+  survey-level modern_contraception_married   surveys= 324 countries= 87
+  survey-level want_no_more                   surveys= 322 countries= 87
+  ASFR 7 groups complete: 359; in-union 7 groups complete: 330; Cm computable: 318
+  check |5ΣASFR/1000 − TFR|: max=0.055 mean=0.025
+  survey×education cells: 1489; with wanted & tfr: 1221
+  no region (not in WDI panel): []
+growth_fertility_panel: rows=14322 economies=217
+  smam_fe              obs= 2073 countries=212 years=1960–2019
+  married_by18         obs=  428 countries=146 years=1985–2025
+  contraceptive_any    obs= 1256 countries=184 years=1961–2024
+  wanted_tfr_wdi       obs=  309 countries= 86 years=1985–2023
+  fem_sec_enrol        obs= 5700 countries=207 years=1970–2025
+WDI SP.DYN.WFRT vs DHS wanted TFR (same iso3-year): n=256 max|diff|=0.000 share exact(<=0.05)=1.000
+
+== T1 wanted vs unwanted decomposition (M5) ==
+[M] T1 chain gap>=3: pairs(all)=223 fell=173 countries=60  ΣΔTFR=-87.00 ΣΔwanted=-65.70  s_w=0.755  median pair ratio=0.750  -> wanted
+[M] T1 first_last gap>=8: pairs(all)=56 fell=50 countries=50  ΣΔTFR=-75.00 ΣΔwanted=-55.20  s_w=0.736  median pair ratio=0.727  -> wanted
+
+== T2 child mortality within country (M1) ==
+[M] T2a ideal                      n=290 G=77  ln_u5: +0.013 [-0.283, +0.310]  sec: -0.003 [-0.013, +0.008]
+[M] T2b tfr-ideal                  n=290 G=77  ln_u5: +0.192 [-0.161, +0.544]  sec: -0.007 [-0.020, +0.006]
+[M] T2c tfr                        n=290 G=77  ln_u5: +0.205 [-0.194, +0.604]  sec: -0.009 [-0.025, +0.007]
+[M] T2 M1 verdict: no
+[M] T2c tfr, max sample (ideal not required)               n=  300 G= 78
+  ln_u5: +0.2029 (se 0.2017) [-0.1924, +0.5982]
+  sec: -0.0099 (se 0.0077) [-0.0250, +0.0052]
+  survey_year: -0.0337 (se 0.0111) [-0.0555, -0.0120]
+  r2=0.9520
+[M] T2d U5MR<40: surveys=61 median ideal=2.80 median TFR=2.60 share TFR<ideal=0.557  -> M1 alone cannot explain low fertility
+[M] T2 allocation: (a) ideal +0.013 / (b) excess +0.192 of (c) +0.205 -> replacement (excess)
+
+== T3 marriage (M2) ==
+[M] T3a AFM Secondary−None: surveys=315 countries=82 median=+3.30 y, share>=+2y=0.813; Higher−None: n=136 median=+6.40 y
+[M] T3b Cm first_last gap>=8: pairs fell=49 countries=49 ΣΔlnTFR=-17.142 ΣΔlnCm=-5.696  s_m=0.332  -> M2 support
+[M] T3c Cm ~ sec + ln u5 (within)                          n=  288 G= 75
+  sec: -0.0004 (se 0.0006) [-0.0015, +0.0008]
+  ln_u5: -0.0229 (se 0.0096) [-0.0418, -0.0040]
+  survey_year: -0.0030 (se 0.0007) [-0.0044, -0.0017]
+  r2=0.9578
+
+== T4 education gradient: wanted vs unwanted (M3 vs M5) ==
+[M] T4 cells n=1221 surveys=317 G=85  Secondary − None: g_w=-1.542 [-1.825, -1.259]  g_u=-0.517 [-0.670, -0.364]
+[M]    Higher − None: wanted -2.073 [-2.442, -1.704]  unwanted -0.825 [-1.009, -0.640]; Primary − None wanted -0.599 [-0.760, -0.437]
+[M] T4 verdict: M3 support, M5-from-T4 False
+[M] T4 aux modern contraception (married) ~ educ + survey FE n= 1242 G= 87
+  e_pri: +8.5646 (se 0.7929) [+7.0106, +10.1185]
+  e_sec: +15.6046 (se 1.3100) [+13.0372, +18.1721]
+  e_hi: +18.4565 (se 1.6806) [+15.1626, +21.7503]
+  r2=0.8927
+
+== T5 interaction education × child mortality (M4) ==
+[M] T5 n=1256 G=85  γ_Sec−γ_None=-1.072 [-1.293, -0.851]  Higher×lu=-1.381 [-1.632, -1.130]  gradient at mean ln U5 (71/1000)=-1.492  widening U5MR 150→30 = -1.725 children  -> M4 no
+
+== T6 global WDI long differences (stage 2) ==
+SMAM cleaning rule (>=3 obs, |v − country median| >= 4 y): dropped 194 of 2073 observations
+[M] stage1 TFR0>=3.0                         n=145 G=80  ln U5MR: +0.028 [-0.173, +0.229]  female sec. enrolment: -0.179 [-0.372, +0.014]  female mean age at marriage: -0.142 [-0.299, +0.014]  ln GDP pc (const.): +0.029 [-0.236, +0.295]
+[M] stage2 TFR0<3.0                          n=80 G=59  ln U5MR: -0.092 [-0.442, +0.259]  female sec. enrolment: -0.120 [-0.208, -0.033]  female mean age at marriage: -0.041 [-0.203, +0.121]  ln GDP pc (const.): +0.123 [-0.156, +0.403]
+[M] stage-2 leader: female sec. enrolment  share of Σ|b|=0.321
+
+== T6 auxiliaries (re-shown, no new estimation) ==
+  EU TFR by education DNK 2021: ED0-2=1.12 ED5-8=1.73 gap(ED5-8 − ED0-2)=+0.61
+  EU TFR by education FIN 2024: ED0-2=0.54 ED5-8=1.37 gap(ED5-8 − ED0-2)=+0.83
+  EU TFR by education NOR 2022: ED0-2=1.71 ED5-8=1.38 gap(ED5-8 − ED0-2)=-0.33
+  EU TFR by education SWE 2024: ED0-2=1.97 ED5-8=1.25 gap(ED5-8 − ED0-2)=-0.72
+  EU census 2021 women 25–39 married share (pooled) ED0-2: 0.470 (31 countries)
+  EU census 2021 women 25–39 married share (pooled) ED3-4: 0.446 (31 countries)
+  EU census 2021 women 25–39 married share (pooled) ED5-8: 0.442 (31 countries)
+  Japan 2022 age 30–34 female income 0-50      ever-married 0.770
+  Japan 2022 age 30–34 female income 100-150   ever-married 0.719
+  Japan 2022 age 30–34 female income 1000-1250 ever-married 0.676
+  Japan 2022 age 30–34 female income 300-400   ever-married 0.506
+  Japan 2022 age 30–34 female income 600-700   ever-married 0.624
+  Japan 2022 age 30–34 male   income 0-50      ever-married 0.299
+  Japan 2022 age 30–34 male   income 100-150   ever-married 0.196
+  Japan 2022 age 30–34 male   income 1000-1250 ever-married 0.760
+  Japan 2022 age 30–34 male   income 300-400   ever-married 0.447
+  Japan 2022 age 30–34 male   income 600-700   ever-married 0.735
+
+== Scorecard (pre-registered, main specification) ==
+typical change 1990→latest (DHS, first→last >= 8 y, n=52 countries): median Δln U5MR=-0.801, median Δ secondary+ share=+0.235
+M1 quantity = b(T2c) +0.205 × -0.801 = -0.164 children; M3 quantity = g_w -1.542 × +0.235 = -0.362 children
+  M1 (T2c b=+0.205 [-0.194,+0.604]): no
+  M2 (T3 share>=2y=0.813, s_m=0.332): support
+  M3 (T4 g_w=-1.542 hi=-1.259, g_u=-0.517): support
+  M4 (T5 γ=-1.072 [-1.293,-0.851], widening=-1.725): no
+  M5 (T1 s_w=0.755 -> wanted; T4 |g_u|>=|g_w|: False): no
+  stage-2 leader (T6): female sec. enrolment share=0.321; ln U5MR CI excludes 0 in stage 2: False
+
+== Exploratory E10: Kitagawa decomposition by education (post hoc) ==
+E10 wanted_tfr 2 groups (p from women_secondary_plus): countries=45 ΣΔ(reconstructed)=-36.83 Σrate=-23.36 Σcomp=-13.47  composition share=0.366 (median per country 0.356, n=43); median |reconstructed − observed Δtotal|=0.06
+      median within-group change first→last: None+Primary -0.75, Secondary+Higher -0.08
+E10 wanted_tfr 4 groups (p = married-women proxy): countries=48 ΣΔ(reconstructed)=-44.48 Σrate=-29.09 Σcomp=-15.39  composition share=0.346 (median per country 0.419, n=46); median |reconstructed − observed Δtotal|=0.07
+      median within-group change first→last: No education -0.75, Primary -0.40, Secondary -0.10, Higher -0.10
+      No education group wanted_tfr first→last: median -0.75, mean -0.88, fell in 41/48
+E10 tfr        2 groups (p from women_secondary_plus): countries=45 ΣΔ(reconstructed)=-52.65 Σrate=-34.51 Σcomp=-18.14  composition share=0.344 (median per country 0.362, n=45); median |reconstructed − observed Δtotal|=0.07
+      median within-group change first→last: None+Primary -0.78, Secondary+Higher -0.20
+E10 tfr        4 groups (p = married-women proxy): countries=47 ΣΔ(reconstructed)=-60.65 Σrate=-38.85 Σcomp=-21.80  composition share=0.359 (median per country 0.379, n=47); median |reconstructed − observed Δtotal|=0.08
+      median within-group change first→last: No education -1.00, Primary -0.80, Secondary -0.20, Higher -0.10
+      No education group tfr first→last: median -1.00, mean -1.16, fell in 43/47
+E10b No-education cell wanted_tfr (within)                 n=  305 G= 79
+  ln_u5: -0.1784 (se 0.2257) [-0.6207, +0.2639]
+  mcpr_none: -0.0373 (se 0.0089) [-0.0548, -0.0198]
+  survey_year: -0.0130 (se 0.0132) [-0.0388, +0.0129]
+  r2=0.9186
+E10b No-education cell tfr (within)                        n=  304 G= 78
+  ln_u5: +0.0784 (se 0.2864) [-0.4830, +0.6398]
+  mcpr_none: -0.0408 (se 0.0101) [-0.0607, -0.0210]
+  survey_year: -0.0122 (se 0.0141) [-0.0400, +0.0155]
+  r2=0.8844
+
+FINAL HYPOTHESIS:
+出生率が 6 人から 3 人前後へ下がる段階は、女子教育による『望む数』の低下（M3）が担い（ただし量としては、学歴構成の変化で説明できるのは望む出生の低下の約 4 割（37%）、TFR 低下の約 3 割（28%）にとどまる）、子どもの死亡率の低下（M1、保険としての多産が要らなくなる）は同じ国の中の年トレンドを除くと TFR との関連が確かめられず、望まない出生の減少（M5）の上限（1 − s_w）は約 2 割（24%）にとどまる。3 人前後から 2 人未満へ下がる段階は、女子の就学の広がり（M3 の経路）が最も整合的な候補で、標準化係数の比で約 3 割（32%）（低下に占める割合ではない）を占め、死亡率の関連は確かめられない。結婚（同棲を含む）している割合の低下は、TFR 低下の約 3 割（33%）にあたる。
+(the bracket after 「（M3）が担い」 is from exploratory E10)
+
+== Robustness (pre-registered list, all reported) ==
+[R first→last] T1 s_w=0.736 (n=50)
+[R DHS only] T1 chain gap>=3: pairs(all)=223 fell=173 countries=60  ΣΔTFR=-87.00 ΣΔwanted=-65.70  s_w=0.755  median pair ratio=0.750  -> wanted
+[R DHS only] T2a ideal             n=290 G=77  ln_u5: +0.013 [-0.283, +0.310]  sec: -0.003 [-0.013, +0.008]
+[R DHS only] T2b tfr-ideal         n=290 G=77  ln_u5: +0.192 [-0.161, +0.544]  sec: -0.007 [-0.020, +0.006]
+[R DHS only] T2c tfr               n=290 G=77  ln_u5: +0.205 [-0.194, +0.604]  sec: -0.009 [-0.025, +0.007]
+[R DHS only] T2 M1 verdict: no
+[R DHS only] T3a AFM Secondary−None: surveys=304 countries=82 median=+3.30 y, share>=+2y=0.809; Higher−None: n=132 median=+6.35 y
+[R DHS only] T3b Cm first_last gap>=8: pairs fell=49 countries=49 ΣΔlnTFR=-17.142 ΣΔlnCm=-5.696  s_m=0.332  -> M2 support
+[R DHS only] T4 cells n=1221 surveys=317 G=85  Secondary − None: g_w=-1.542 [-1.825, -1.259]  g_u=-0.517 [-0.670, -0.364]
+[R DHS only]    Higher − None: wanted -2.073 [-2.442, -1.704]  unwanted -0.825 [-1.009, -0.640]; Primary − None wanted -0.599 [-0.760, -0.437]
+[R DHS only] T4 verdict: M3 support, M5-from-T4 False
+[R DHS only] T5 n=1256 G=85  γ_Sec−γ_None=-1.072 [-1.293, -0.851]  Higher×lu=-1.381 [-1.632, -1.130]  gradient at mean ln U5 (71/1000)=-1.492  widening U5MR 150→30 = -1.725 children  -> M4 no
+[R 1990+] T1 chain gap>=3: pairs(all)=205 fell=155 countries=59  ΣΔTFR=-74.70 ΣΔwanted=-55.10  s_w=0.738  median pair ratio=0.750  -> wanted
+[R 1990+] T2a ideal                n=290 G=77  ln_u5: +0.013 [-0.283, +0.310]  sec: -0.003 [-0.013, +0.008]
+[R 1990+] T2b tfr-ideal            n=290 G=77  ln_u5: +0.192 [-0.161, +0.544]  sec: -0.007 [-0.020, +0.006]
+[R 1990+] T2c tfr                  n=290 G=77  ln_u5: +0.205 [-0.194, +0.604]  sec: -0.009 [-0.025, +0.007]
+[R 1990+] T2 M1 verdict: no
+[R 1990+] T3a AFM Secondary−None: surveys=290 countries=73 median=+3.20 y, share>=+2y=0.800; Higher−None: n=123 median=+6.40 y
+[R 1990+] T3b Cm first_last gap>=8: pairs fell=48 countries=48 ΣΔlnTFR=-14.848 ΣΔlnCm=-5.074  s_m=0.342  -> M2 support
+[R 1990+] T4 cells n=1130 surveys=292 G=78  Secondary − None: g_w=-1.511 [-1.805, -1.217]  g_u=-0.486 [-0.632, -0.341]
+[R 1990+]    Higher − None: wanted -2.076 [-2.459, -1.694]  unwanted -0.788 [-0.961, -0.614]; Primary − None wanted -0.579 [-0.745, -0.413]
+[R 1990+] T4 verdict: M3 support, M5-from-T4 False
+[R 1990+] T5 n=1157 G=78  γ_Sec−γ_None=-1.085 [-1.317, -0.853]  Higher×lu=-1.444 [-1.698, -1.191]  gradient at mean ln U5 (69/1000)=-1.461  widening U5MR 150→30 = -1.746 children  -> M4 no
+[R gap>=8] T1 chain gap>=8: pairs(all)=109 fell=97 countries=50  ΣΔTFR=-72.70 ΣΔwanted=-54.00  s_w=0.743  median pair ratio=0.700  -> wanted
+[R adjacent chain gap>=3] T3a AFM Secondary−None: surveys=315 countries=82 median=+3.30 y, share>=+2y=0.813; Higher−None: n=136 median=+6.40 y
+[R adjacent chain gap>=3] T3b Cm chain gap>=3: pairs fell=173 countries=58 ΣΔlnTFR=-19.946 ΣΔlnCm=-5.889  s_m=0.315  -> M2 support
+[R excl LatAm+S.Africa] T3a AFM Secondary−None: surveys=315 countries=82 median=+3.30 y, share>=+2y=0.813; Higher−None: n=136 median=+6.40 y
+[R excl LatAm+S.Africa] T3b Cm first_last gap>=8 excl LatAm+S.Africa: pairs fell=40 countries=40 ΣΔlnTFR=-13.648 ΣΔlnCm=-4.153  s_m=0.304  -> M2 support
+[R U5MR 10y] T2a ideal             n=290 G=77  ln_u5_10: +0.051 [-0.274, +0.375]  sec: -0.002 [-0.013, +0.009]
+[R U5MR 10y] T2b tfr-ideal         n=290 G=77  ln_u5_10: +0.347 [-0.083, +0.776]  sec: -0.006 [-0.019, +0.008]
+[R U5MR 10y] T2c tfr               n=290 G=77  ln_u5_10: +0.397 [-0.038, +0.832]  sec: -0.008 [-0.024, +0.008]
+[R U5MR 10y] T2 M1 verdict: no
+[R U5MR 10y] T5 n=1256 G=85  γ_Sec−γ_None=-1.106 [-1.329, -0.884]  Higher×lu=-1.408 [-1.660, -1.157]  gradient at mean ln U5 (78/1000)=-1.494  widening U5MR 150→30 = -1.780 children  -> M4 no
+[R country-equal] T1 chain gap>=3 eq-weight: pairs(all)=223 fell=173 countries=60  ΣΔTFR=-87.00 ΣΔwanted=-65.70  s_w=0.793  median pair ratio=0.750  -> wanted
+[R country-equal] T2a ideal        n=290 G=77  ln_u5: +0.004 [-0.250, +0.259]  sec: -0.007 [-0.019, +0.005]
+[R country-equal] T2b tfr-ideal    n=290 G=77  ln_u5: +0.078 [-0.280, +0.436]  sec: -0.007 [-0.020, +0.006]
+[R country-equal] T2c tfr          n=290 G=77  ln_u5: +0.082 [-0.304, +0.468]  sec: -0.014 [-0.031, +0.002]
+[R country-equal] T2 M1 verdict: no
+[R country-equal] T3a AFM Secondary−None: surveys=315 countries=82 median=+3.30 y, share>=+2y=0.776 (country-equal); Higher−None: n=136 median=+6.40 y
+[R country-equal] T3b Cm first_last gap>=8: pairs fell=49 countries=49 ΣΔlnTFR=-17.142 ΣΔlnCm=-5.696  s_m=0.332  -> M2 support
+[R country-equal] T4 cells n=1221 surveys=317 G=85  Secondary − None: g_w=-1.508 [-1.738, -1.278]  g_u=-0.537 [-0.678, -0.397]
+[R country-equal]    Higher − None: wanted -2.033 [-2.325, -1.740]  unwanted -0.814 [-0.974, -0.654]; Primary − None wanted -0.575 [-0.719, -0.430]
+[R country-equal] T4 verdict: M3 support, M5-from-T4 False
+[R country-equal] T5 n=1256 G=85  γ_Sec−γ_None=-0.950 [-1.243, -0.657]  Higher×lu=-1.280 [-1.597, -0.964]  gradient at mean ln U5 (71/1000)=-1.452  widening U5MR 150→30 = -1.529 children  -> M4 no
+[R 2 groups (cell approx.)] T4 cells n=1221 surveys=317 G=85  Post-primary − (None/Primary): g_w=-1.490 [-1.748, -1.231]  g_u=-0.608 [-0.737, -0.480]
+[R 2 groups (cell approx.)] T4 verdict: M3 support, M5-from-T4 False
+
+-- T6 robustness --
+[R 5-year] stage1 TFR0>=3.0                  n=239 G=87  ln U5MR: +0.031 [-0.052, +0.113]  female sec. enrolment: -0.002 [-0.044, +0.041]  female mean age at marriage: -0.006 [-0.049, +0.037]  ln GDP pc (const.): +0.015 [-0.048, +0.078]
+[R 5-year] stage2 TFR0<3.0                   n=161 G=71  ln U5MR: -0.049 [-0.173, +0.074]  female sec. enrolment: -0.039 [-0.057, -0.021]  female mean age at marriage: -0.006 [-0.039, +0.028]  ln GDP pc (const.): +0.037 [-0.044, +0.117]
+[R 5-year] stage-2 leader: female sec. enrolment  share of Σ|b|=0.296
+[R 20-year] stage1 TFR0>=3.0                 n=73 G=56  ln U5MR: +0.204 [-0.963, +1.370]  female sec. enrolment: +0.077 [-1.678, +1.832]  female mean age at marriage: -0.301 [-0.857, +0.255]  ln GDP pc (const.): +0.061 [-0.990, +1.112]
+[R 20-year] stage2 TFR0<3.0: too few rows (n=8)
+[R SMAM untrimmed] stage1 TFR0>=3.0          n=150 G=82  ln U5MR: +0.024 [-0.191, +0.239]  female sec. enrolment: -0.196 [-0.390, -0.003]  female mean age at marriage: -0.099 [-0.252, +0.053]  ln GDP pc (const.): +0.035 [-0.228, +0.298]
+[R SMAM untrimmed] stage2 TFR0<3.0           n=99 G=68  ln U5MR: -0.126 [-0.321, +0.070]  female sec. enrolment: -0.104 [-0.171, -0.037]  female mean age at marriage: -0.081 [-0.229, +0.068]  ln GDP pc (const.): +0.087 [-0.070, +0.244]
+[R SMAM untrimmed] stage-2 leader: female sec. enrolment  share of Σ|b|=0.262
+[R married_by18 for SMAM] stage1 TFR0>=3.0   n=47 G=29  ln U5MR: +0.206 [-0.178, +0.590]  female sec. enrolment: +0.038 [-0.172, +0.248]  married by 18 (%): +0.104 [-0.129, +0.338]  ln GDP pc (const.): +0.010 [-0.404, +0.425]
+[R married_by18 for SMAM] stage2 TFR0<3.0    n=10 G=9  ln U5MR: +0.111 [+nan, +nan]  female sec. enrolment: -0.031 [+nan, +nan]  married by 18 (%): -0.074 [+nan, +nan]  ln GDP pc (const.): +0.116 [+nan, +nan]
+[R married_by18 for SMAM] stage-2 leader: none (all CIs include 0)  share of Σ|b|=0.000
+[R + contraceptive_any] stage1 TFR0>=3.0     n=88 G=54  ln U5MR: -0.173 [-0.431, +0.085]  female sec. enrolment: -0.059 [-0.242, +0.123]  female mean age at marriage: -0.108 [-0.315, +0.099]  ln GDP pc (const.): -0.145 [-0.369, +0.079]  contraceptive use (%): -0.233 [-0.419, -0.047]
+[R + contraceptive_any] stage2 TFR0<3.0      n=26 G=23  ln U5MR: +0.042 [+nan, +nan]  female sec. enrolment: +0.078 [+nan, +nan]  female mean age at marriage: +0.105 [+nan, +nan]  ln GDP pc (const.): -0.101 [+nan, +nan]  contraceptive use (%): -0.102 [+nan, +nan]
+[R + contraceptive_any] stage-2 leader: none (all CIs include 0)  share of Σ|b|=0.000
+[R excl 2020–24] stage1 TFR0>=3.0            n=144 G=80  ln U5MR: +0.029 [-0.174, +0.233]  female sec. enrolment: -0.175 [-0.376, +0.025]  female mean age at marriage: -0.145 [-0.306, +0.015]  ln GDP pc (const.): +0.031 [-0.240, +0.301]
+[R excl 2020–24] stage2 TFR0<3.0             n=80 G=59  ln U5MR: -0.119 [-0.453, +0.216]  female sec. enrolment: -0.122 [-0.224, -0.021]  female mean age at marriage: -0.046 [-0.207, +0.115]  ln GDP pc (const.): +0.102 [-0.150, +0.355]
+[R excl 2020–24] stage-2 leader: female sec. enrolment  share of Σ|b|=0.314
+[R excl oil states] stage1 TFR0>=3.0         n=138 G=74  ln U5MR: +0.025 [-0.174, +0.224]  female sec. enrolment: -0.187 [-0.381, +0.007]  female mean age at marriage: -0.140 [-0.291, +0.012]  ln GDP pc (const.): +0.018 [-0.236, +0.273]
+[R excl oil states] stage2 TFR0<3.0          n=76 G=55  ln U5MR: -0.092 [-0.436, +0.252]  female sec. enrolment: -0.120 [-0.205, -0.035]  female mean age at marriage: -0.041 [-0.202, +0.120]  ln GDP pc (const.): +0.122 [-0.148, +0.391]
+[R excl oil states] stage-2 leader: female sec. enrolment  share of Σ|b|=0.320
+[R excl pop<1m] stage1 TFR0>=3.0             n=124 G=64  ln U5MR: +0.001 [-0.197, +0.198]  female sec. enrolment: -0.159 [-0.342, +0.025]  female mean age at marriage: -0.140 [-0.296, +0.016]  ln GDP pc (const.): +0.001 [-0.251, +0.253]
+[R excl pop<1m] stage2 TFR0<3.0              n=68 G=51  ln U5MR: -0.176 [-0.572, +0.221]  female sec. enrolment: -0.133 [-0.241, -0.024]  female mean age at marriage: -0.014 [-0.121, +0.094]  ln GDP pc (const.): +0.108 [-0.205, +0.422]
+[R excl pop<1m] stage-2 leader: female sec. enrolment  share of Σ|b|=0.308
+[R cut 2.5] stage1 TFR0>=2.5                 n=162 G=87  ln U5MR: +0.021 [-0.180, +0.221]  female sec. enrolment: -0.110 [-0.287, +0.067]  female mean age at marriage: -0.193 [-0.376, -0.010]  ln GDP pc (const.): +0.049 [-0.166, +0.264]
+[R cut 2.5] stage2 TFR0<2.5                  n=63 G=46  ln U5MR: -0.004 [-0.267, +0.258]  female sec. enrolment: -0.139 [-0.243, -0.035]  female mean age at marriage: -0.022 [-0.093, +0.050]  ln GDP pc (const.): +0.240 [+0.089, +0.391]
+[R cut 2.5] stage-2 leader: ln GDP pc (const.)  share of Σ|b|=0.593
+[R cut 3.5] stage1 TFR0>=3.5                 n=122 G=68  ln U5MR: +0.050 [-0.173, +0.272]  female sec. enrolment: -0.167 [-0.375, +0.041]  female mean age at marriage: -0.138 [-0.309, +0.034]  ln GDP pc (const.): -0.014 [-0.374, +0.346]
+[R cut 3.5] stage2 TFR0<3.5                  n=103 G=72  ln U5MR: -0.127 [-0.478, +0.224]  female sec. enrolment: -0.074 [-0.231, +0.084]  female mean age at marriage: -0.001 [-0.151, +0.149]  ln GDP pc (const.): +0.079 [-0.227, +0.386]
+[R cut 3.5] stage-2 leader: none (all CIs include 0)  share of Σ|b|=0.000
+-- T5 WDI panel version: Δ10 TFR ~ Δsec + Δsec×1[U5MR start < 50] + FE --
+[R WDI] T5 Δ10 TFR ~ Δsec × 1[U5<50]                       n=  553 G=180
+  d_sec: -0.0101 (se 0.0055) [-0.0208, +0.0006]
+  d_sec_low: +0.0037 (se 0.0063) [-0.0087, +0.0161]
+  low_u5: +0.5178 (se 0.1709) [+0.1828, +0.8528]
+  r2=0.5641
+
+== Exploratory (post hoc; not used in any verdict) ==
+E1 first→last, TFR fell, Cm & wanted both present: n=49; ΣΔlnCm/ΣΔlnTFR=0.332; ΣΔln wanted/ΣΔlnTFR=0.891
+E2 s_m start TFR >= 5: n=30 s_m=0.379
+E2 s_m start TFR 3–5: n=17 s_m=0.228
+E2 s_m start TFR < 3: n=2 s_m=1.391
+E3 s_w start TFR >= 5: n=78 s_w=0.869
+E3 s_w start TFR 3–5: n=74 s_w=0.592
+E3 s_w start TFR < 3: n=21 s_w=0.667
+E4 T2c within, surveys with TFR >= 4: n=172 G=49 ln_u5 +0.614 [+0.159, +1.070] sec -0.022 [-0.039, -0.006]
+E4 T2c within, surveys with TFR < 4: n=128 G=44 ln_u5 -0.131 [-0.532, +0.270] sec +0.003 [-0.014, +0.021]
+E5 wanted TFR within: n=290 G=77 ln_u5 +0.050 [-0.340, +0.440] sec(per pp) -0.003 [-0.016, +0.010]
+E6 T5 on ln wanted TFR: n=1256 G=85 e_sec (log gap at mean) -0.396 [-0.456, -0.336]  e_sec×lu -0.236 [-0.338, -0.133] (negative = proportional gap also narrows as U5MR falls)
+E7 T2 country FE only (no trend)   n=290  tfr: ln_u5 +0.565 [+0.215, +0.915]  ideal: ln_u5 +0.191 [-0.043, +0.425]
+E7 T2 trend, no sec                n=290  tfr: ln_u5 +0.198 [-0.213, +0.609]  ideal: ln_u5 +0.012 [-0.288, +0.312]
+E7 T2 no trend, no sec             n=290  tfr: ln_u5 +1.057 [+0.792, +1.322]  ideal: ln_u5 +0.391 [+0.246, +0.537]
+[E8 cut 2.1] stage1 TFR0>=2.1                n=176 G=92  ln U5MR: +0.034 [-0.191, +0.260]  female sec. enrolment: -0.063 [-0.260, +0.134]  female mean age at marriage: -0.162 [-0.353, +0.030]  ln GDP pc (const.): +0.131 [-0.082, +0.344]
+[E8 cut 2.1] stage2 TFR0<2.1                 n=49 G=39  ln U5MR: -0.106 [-0.414, +0.203]  female sec. enrolment: -0.118 [-0.275, +0.040]  female mean age at marriage: +0.009 [-0.137, +0.154]  ln GDP pc (const.): +0.130 [-0.408, +0.668]
+[E8 cut 2.1] stage-2 leader: none (all CIs include 0)  share of Σ|b|=0.000
+[E9 no SMAM] stage1 TFR0>=3.0                n=309 G=114  ln U5MR: +0.049 [-0.061, +0.160]  female sec. enrolment: -0.137 [-0.235, -0.038]  ln GDP pc (const.): +0.042 [-0.084, +0.167]
+[E9 no SMAM] stage2 TFR0<3.0                 n=219 G=111  ln U5MR: +0.002 [-0.105, +0.108]  female sec. enrolment: -0.044 [-0.105, +0.017]  ln GDP pc (const.): +0.066 [-0.056, +0.189]
+[E9 no SMAM] stage-2 leader: none (all CIs include 0)  share of Σ|b|=0.000
