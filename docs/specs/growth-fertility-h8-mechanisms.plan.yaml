@@ -11,8 +11,8 @@ items:
     depends_on: []
     agent: planner
     acceptance: "M1〜M5・T1〜T6・判定基準・最終仮説の文型・頑健性・言えないことが、データを見る前に design に書かれている"
-    status: in_progress
-    pr:
+    status: merged
+    pr: https://github.com/mendorie/socioscope/pull/48
   - id: h8-wdi-marriage
     title: "feat(growth-fertility): WDI に SP.DYN.SMAM.FE / SP.DYN.WFRT / SP.M18.2024.FE.ZS / SP.DYN.CONU.ZS を追加"
     scope:
@@ -26,8 +26,8 @@ items:
     depends_on: [h8-design]
     agent: pipeline-dev
     acceptance: "mart growth_fertility_panel に smam_fe / wanted_tfr_wdi / married_by18 / contraceptive_any 列が入り、既存・新規テスト green。manifest に取得日。各列の非欠損数と国数を stdout で確認"
-    status: todo
-    pr:
+    status: merged
+    pr: https://github.com/mendorie/socioscope/pull/49
   - id: h8-dhs-mechanisms
     title: "feat(growth-fertility): DHS API を複数指標×内訳に拡張し marts/dhs_mechanisms を作る"
     scope:
@@ -43,8 +43,8 @@ items:
     depends_on: [h8-design]
     agent: pipeline-dev
     acceptance: "spec §1a の 11 metric（ASFR 7 本含む）× 内訳が long mart に入り、既存 dhs_tfr_by_wealth_quintile は無変更。ページ分割は fail-closed。fixture は実レスポンスの縮約。調査数・国数を stdout で確認"
-    status: todo
-    pr:
+    status: merged
+    pr: https://github.com/mendorie/socioscope/pull/50
   - id: h8-analysis
     title: "analysis(growth-fertility): H8 T1〜T6・スコアカード・最終仮説、report"
     scope:
@@ -56,7 +56,7 @@ items:
     depends_on: [h8-wdi-marriage, h8-dhs-mechanisms]
     agent: analyst
     acceptance: "2 回実行で図の sha256 と stdout が一致。スコアカード判定と最終仮説の文が stdout に出る。report はテンプレート準拠・チェックリスト回答付き。methodology-reviewer APPROVED"
-    status: todo
+    status: pr_open
     pr:
   - id: h8-summary-figs
     title: "analysis(growth-fertility): H8 一般読者向け日本語図"
