@@ -133,6 +133,7 @@ def fetch(ctx: Context) -> StageResult:
     skipped.extend(h5_skipped)
     written, skipped = _fetch_kostat(ctx, written, skipped)
     written, skipped = _fetch_h6(ctx, written, skipped)
+    written, skipped = _fetch_h8(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -212,6 +213,7 @@ def stage(ctx: Context) -> StageResult:
     h5_written, h5_skipped = _stage_h5(ctx)
     dhs_written, dhs_skipped = _stage_kostat(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h6(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h8(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -470,6 +472,7 @@ def mart(ctx: Context) -> StageResult:
     skipped.extend(h5_skipped)
     written, skipped = _mart_kostat(ctx, written, skipped)
     written, skipped = _mart_h6(ctx, written, skipped)
+    written, skipped = _mart_h8(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -813,4 +816,76 @@ def _mart_h6(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list
     else:
         ctx.tables.write_table(EXPECT_MART, ebm.build_expectations_mart(expectations))
         written.append(EXPECT_MART)
+    return written, skipped
+
+
+# ---- H8: DHS mechanisms (several indicators x breakdowns, one long table) ------------------
+# Reuses the H4 countries raw (``DHS_RAW_COUNTRIES``) for the ISO3 mapping. Each request is its
+# own raw file; a missing raw is skipped and the others are staged. The H4 raw/staged/mart
+# (``dhs_tfr_by_wealth_quintile``) are not touched.
+
+DHS_H8_TABLE = "staged/dhs/mechanisms"
+DHS_H8_MART = "marts/dhs_mechanisms"
+
+
+def _fetch_h8(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    for req in dhs.H8_REQUESTS:
+        try:
+            payload = ctx.fetcher.fetch(req.url)
+        except FetchError as e:
+            skipped.append(f"{req.raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=dhs.SOURCE,
+            name=req.raw_name,
+            url=req.url,
+            license=dhs.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h8(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    """All H8 raws -> one long table. Fails closed without the countries raw (no ISO3)."""
+    countries = ctx.raw.get(theme=THEME, source=dhs.SOURCE, name=DHS_RAW_COUNTRIES)
+    if countries is None:
+        skipped.append(f"{DHS_RAW_COUNTRIES}: raw missing (run fetch); DHS mechanisms not staged")
+        return written, skipped
+    iso3_by_code = dhs.iso3_map(countries)
+    rows: list[dict[str, object]] = []
+    found = False
+    for req in dhs.H8_REQUESTS:
+        payload = ctx.raw.get(theme=THEME, source=dhs.SOURCE, name=req.raw_name)
+        if payload is None:
+            skipped.append(f"{req.raw_name}: raw missing (run fetch)")
+            continue
+        found = True
+        rows.extend(
+            dhs.mechanism_rows(
+                payload,
+                iso3_by_dhs_code=iso3_by_code,
+                allowed_categories=req.allowed_categories,
+            )
+        )
+        unmapped = dhs.mechanism_unmapped_codes(payload, iso3_by_dhs_code=iso3_by_code)
+        if unmapped:
+            skipped.append(
+                f"{req.raw_name}: no ISO3 for DHS country codes {unmapped}; rows dropped"
+            )
+    if found:
+        ctx.tables.write_table(DHS_H8_TABLE, rows)
+        written.append(DHS_H8_TABLE)
+    return written, skipped
+
+
+def _mart_h8(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    try:
+        rows = ctx.tables.read_table(DHS_H8_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{DHS_H8_TABLE}: staged table missing (run stage)")
+    else:
+        ctx.tables.write_table(DHS_H8_MART, dhs.build_mechanisms_mart(rows))
+        written.append(DHS_H8_MART)
     return written, skipped

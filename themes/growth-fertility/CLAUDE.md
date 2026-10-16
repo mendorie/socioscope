@@ -6,14 +6,14 @@
 src/theme_growth_fertility/
   worldbank.py   World Bank WDI API の URL 組み立てと JSON → 行 の純粋変換（決定的・テスト対象）
   estat.py       e-Stat 統計表（appId 不要）の URL 組み立てと ファイル → 行 の純粋変換（fail-closed）: 国民生活基礎調査 CSV（CP932）と 就業構造基本調査 第40表 xlsx（標準ライブラリで解析）
-  dhs.py         DHS Program Indicator Data API（キー不要・引用義務）の URL 組み立てと JSON → 行 の純粋変換（TFR × 富裕五分位、ISO3 付け、fail-closed）
+  dhs.py         DHS Program Indicator Data API（キー不要・引用義務）の URL 組み立てと JSON → 行 の純粋変換（TFR × 富裕五分位、ISO3 付け、fail-closed）。H8: `H8_REQUESTS`（22 リクエスト = 指標群 × 内訳、raw 名 → URL）、`METRICS`（IndicatorId → metric 名 17 本）、`mechanism_rows`（閉じた指標・内訳だけ通す long 行）、`build_mechanisms_mart`（ソート・キー重複は ValueError）
   oecd.py        OECD SOCX（SDMX REST、鍵不要）家族支出 TP51 の URL 組み立てと CSV → 行（STRUCTURE_ID・次元コード照合、38 加盟国に限定、fail-closed）。他テーマの oecd.py は import しない
   eurostat.py    Eurostat dissemination API（JSON-stat 2.0）の国別 Request、`jsonstat_rows`（疎 value の展開）、staged 行変換、mart 集計（有配偶率・出生順位別 TFR・学歴別 TFR）の純粋関数
   kostat.py      国家データ処（韓国）신혼부부통계 報道資料 PDF（KOGL 第 1 類型）: RELEASES（基準年→静的 URL）、pypdf テキスト抽出、所得区間×子ども表の 3 レイアウト解析（fail-closed）
   surveys.py     H6: Testa (2012) 付表（Eurobarometer 75.4, 2011）と BiB (2025) Table 1（GGS-II 2020–23）の PDF テキスト → 理想・意図・実際の子ども数の行（純粋、fail-closed、読めない行は issues で報告）、`build_ideals_mart`
   eurobarometer.py  H6: Standard Eurobarometer の波（`WAVES`、dataset_id 固定）、JSON-LD → Volume A 配布物の解決（`vol_a`）、xlsx/xls/zip → 「今後 12 か月の期待」4 項目の国別割合（openpyxl / xlrd、純粋）、`build_expectations_mart`
   transition.py  H7: 人口転換開始年の純粋関数 `transition_onset`（1960–1975 の TFR 最大値 ≥ 4.5 → 10% 低下後二度と戻らない最初の年。閾値・低下率・移動平均幅をパラメータ化、欠損は飛ばす）と mart 行 → 国別表 `onset_table`
-  pipeline.py    fetch / stage / mart（Port 経由。I/O はここだけ。各ソースは独立に stage される。H5 は `# ---- H5` ブロックの `_fetch_h5/_stage_h5/_mart_h5` と `_fetch_kostat/...`、H6 は末尾 `# ---- H6` ブロックの `_fetch_h6/_stage_h6/_mart_h6`）
+  pipeline.py    fetch / stage / mart（Port 経由。I/O はここだけ。各ソースは独立に stage される。H5 は `# ---- H5` ブロックの `_fetch_h5/_stage_h5/_mart_h5` と `_fetch_kostat/...`、H6 は `# ---- H6` ブロックの `_fetch_h6/_stage_h6/_mart_h6`、H8 は末尾 `# ---- H8` ブロックの `_fetch_h8/_stage_h8/_mart_h8`（H4 の countries raw を再利用、無ければ fail-closed））
   wiring.py      PIPELINE（entry point）。stage 関数の登録のみ
   analysis/      report 用スクリプト（決定的、seed 固定）
 queries/         DuckDB 用 SQL（? バインド）
@@ -40,6 +40,8 @@ tests/           fixtures/（実レスポンスの縮約）＋ Fake による状
 | `marts/growth_fertility_panel` | iso3×year | iso3, country, year, region, income_group, tfr, gdp_pcap_ppp, gdp_growth, population, u5_mortality, fem_sec_enrol, urban_share, fem_lfp, life_exp, gdp_pcap_const, fem_prim_enrol, infant_mortality（217 経済 × 1960–2025 = 14,322 行） |
 | `staged/dhs/tfr_by_wealth_quintile` | 調査×五分位 | iso3, country, dhs_country_code, survey_id, survey_year, survey_type(DHS/MIS/AIS), quintile(1..5), quintile_label, value, ci_low, ci_high, denominator_weighted, source(`dhs_api`)（ISO3 の付かない国コードの行は除外） |
 | `marts/dhs_tfr_by_wealth_quintile` | 〃 | staged と同列。`survey_year, iso3, quintile` でソート（313 調査 × 5 = 1,565 行、2026-10-05 取得） |
+| `staged/dhs/mechanisms` | 調査×指標×内訳ラベル×by_variable（long） | iso3, country, dhs_country_code, survey_id, survey_year, survey_type, indicator_id, metric, characteristic_category(Total/Total 15-49/Total 25-49/Education/Wealth quintile/Age (5-year groups)), characteristic_label, by_variable（U5MR の Total のみ "Five/Ten years preceding the survey"、他は空）, is_preferred(0/1), value, ci_low, ci_high, denominator_weighted, source(`dhs_api`)。H8: metric = tfr / asfr_15…asfr_45 / wanted_tfr / ideal_children / want_no_more / u5mr / age_first_marriage / never_married_25_49 / in_union / women_secondary_plus / modern_contraception_married（17 本。定義は `dhs.METRICS` と `design/data-sources.md` の H8 節）。22 raw を結合、ISO3 の無い行は除外 |
+| `marts/dhs_mechanisms` | 〃 | staged と同列。`survey_year, iso3, survey_id, metric, characteristic_category, characteristic_label, by_variable` でソート、キー一意（22,652 行、374 調査、87 か国、1985–2025、2026-10-17 取得） |
 | `staged/estat/kiso_income_dist_ts` | population×year×所得階級 | population(all/with_children), survey_year, year（所得年）, income_class, income_class_lower_yen, income_class_upper_yen, share_pct, source, stat_inf_id（1985–2024 × 25 階級 × 2 = 2,000 行） |
 | `staged/estat/kiso_workers_marital_income` | 調査波×配偶者の有無×性×所得階級 | survey_year, year, marital(total/married/unmarried), sex(total/male/female), income_class…, workers_per_100k, source, stat_inf_id（5 波 × 9 × 18 = 810 行） |
 | `staged/estat/kiso_hh_type_income` | 調査波×所得階級 | survey_year, year, income_class…, households_per_10k, with_children_per_10k, single_mother_per_10k, source, stat_inf_id（5 波 × 26 = 130 行） |

@@ -29,6 +29,8 @@ EUROSTAT_FIXTURE_BY_DATASET = {
 H5_REQUESTS = 1 + len(es.requests())
 # H6 items: two PDFs + one Standard Eurobarometer wave each (JSON-LD then Volume A workbook)
 H6_ITEMS = 2 + len(ebm.WAVES)
+# H8 items: one DHS request per indicator group x breakdown
+H8_ITEMS = len(dhs.H8_REQUESTS)
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -72,6 +74,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H5_REQUESTS
         + len(kostat.RELEASES)
         + H6_ITEMS
+        + H8_ITEMS
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -98,7 +101,10 @@ def test_fetch_also_stores_country_metadata() -> None:
     assert "growth-fertility/worldbank_wdi/countries.json" in result.written
     estat_keys = tuple(t.key for t in estat.TABLES)
     h6 = (surveys.TESTA_RAW, surveys.BIB_RAW, "eb_STD")
-    assert all(s.startswith((*estat_keys, "eurostat_", "newlywed_", *h6)) for s in result.skipped)
+    assert all(
+        s.startswith((*estat_keys, "eurostat_", "newlywed_", *h6, "dhs_h8_"))
+        for s in result.skipped
+    )
 
 
 def test_stage_then_mart_build_panel_from_raw() -> None:
@@ -108,6 +114,7 @@ def test_stage_then_mart_build_panel_from_raw() -> None:
     assert set(staged.written) == {f"staged/worldbank/{k}" for k in wb.INDICATORS} | {
         "staged/worldbank/countries",
         pipeline.DHS_TABLE,
+        pipeline.DHS_H8_TABLE,  # the H4 wealth-quintile URL doubles as one H8 request
         pipeline.OECD_TABLE,
         *pipeline.EU_TABLES.values(),
     }
@@ -126,6 +133,7 @@ def test_stage_then_mart_build_panel_from_raw() -> None:
         pipeline.EU_CENSUS_MART,
         pipeline.EU_TFR_ORDER_MART,
         pipeline.EU_TFR_EDU_MART,
+        pipeline.DHS_H8_MART,
     )
     panel = ctx.tables.read_table("marts/growth_fertility_panel")
     assert panel[0] == {
@@ -163,6 +171,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H5_REQUESTS
         + len(kostat.RELEASES)
         + H6_ITEMS
+        + 1  # H8: the countries raw is missing -> one fail-closed message
     )
 
 
@@ -193,7 +202,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
     # no World Bank / DHS / OECD / Eurostat responses
     assert (
         len(result.skipped)
-        == len(wb.INDICATORS) + 1 + 2 + H5_REQUESTS + len(kostat.RELEASES) + H6_ITEMS
+        == len(wb.INDICATORS) + 1 + 2 + H5_REQUESTS + len(kostat.RELEASES) + H6_ITEMS + H8_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -461,6 +470,8 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
     assert result.written == (
         "growth-fertility/dhs_api/dhs_tfr_wealth.json",
         "growth-fertility/dhs_api/dhs_countries.json",
+        # same URL as the H4 wealth-quintile file, stored again under its H8 name
+        "growth-fertility/dhs_api/dhs_h8_FE_FRTR_W_TFR_wealth_quintile.json",
     )
     assert (
         len(result.skipped)
@@ -470,6 +481,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H5_REQUESTS
         + len(kostat.RELEASES)
         + H6_ITEMS
+        + (H8_ITEMS - 1)  # the wealth-quintile request shares the H4 URL
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -484,7 +496,8 @@ def test_stage_dhs_writes_long_table_and_reports_unmapped_codes() -> None:
     ctx = make_ctx(dhs_responses())
     PIPELINE.run(Stage.FETCH, ctx)
     result = PIPELINE.run(Stage.STAGE, ctx)
-    assert result.written == (pipeline.DHS_TABLE,)  # WB / e-Stat absent -> independent
+    # WB / e-Stat absent -> independent; the shared wealth URL also feeds the H8 table
+    assert result.written == (pipeline.DHS_TABLE, pipeline.DHS_H8_TABLE)
     assert any("OS" in s and "iso3" in s.lower() for s in result.skipped)
     rows = ctx.tables.read_table(pipeline.DHS_TABLE)
     assert len(rows) == 7
@@ -505,7 +518,7 @@ def test_mart_dhs_from_staged_only() -> None:
     PIPELINE.run(Stage.FETCH, ctx)
     PIPELINE.run(Stage.STAGE, ctx)
     result = PIPELINE.run(Stage.MART, ctx)
-    assert result.written == (pipeline.DHS_MART,)
+    assert result.written == (pipeline.DHS_MART, pipeline.DHS_H8_MART)
     rows = ctx.tables.read_table(pipeline.DHS_MART)
     assert set(rows[0]) == {
         "iso3",
@@ -560,6 +573,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + (H5_REQUESTS - 6)
         + len(kostat.RELEASES)
         + H6_ITEMS
+        + H8_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -1049,3 +1063,131 @@ def test_mart_h6_ideals_written_from_one_survey_and_skipped_without_any(pdf_from
     result = PIPELINE.run(Stage.MART, empty)
     assert pipeline.IDEALS_MART not in result.written and pipeline.EXPECT_MART not in result.written
     assert any(s.startswith(pipeline.SURVEYS_EB_TABLE) for s in result.skipped)
+
+
+# ---------------------------------------------------------------- H8: DHS mechanisms (long mart)
+
+H8_COLUMNS = [
+    "iso3",
+    "country",
+    "dhs_country_code",
+    "survey_id",
+    "survey_year",
+    "survey_type",
+    "indicator_id",
+    "metric",
+    "characteristic_category",
+    "characteristic_label",
+    "by_variable",
+    "is_preferred",
+    "value",
+    "ci_low",
+    "ci_high",
+    "denominator_weighted",
+    "source",
+]
+
+
+def h8_responses() -> dict[str, bytes]:
+    return {r.url: (FIXTURES / r.raw_name).read_bytes() for r in dhs.H8_REQUESTS}
+
+
+def _h8_fixture_rows() -> int:
+    return sum(
+        len(json.loads((FIXTURES / r.raw_name).read_bytes())["Data"]) for r in dhs.H8_REQUESTS
+    )
+
+
+def test_fetch_h8_stores_every_request_with_citation_license() -> None:
+    ctx = make_ctx({**dhs_responses(), **h8_responses()})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    expected = tuple(f"growth-fertility/dhs_api/{r.raw_name}" for r in dhs.H8_REQUESTS)
+    assert result.written[-len(expected) :] == expected
+    recs = {r.name: r for r in ctx.raw.records() if r.name.startswith("dhs_h8_")}
+    assert set(recs) == {r.raw_name for r in dhs.H8_REQUESTS}
+    for req in dhs.H8_REQUESTS:
+        assert recs[req.raw_name].url == req.url
+        assert recs[req.raw_name].source == dhs.SOURCE
+        assert "The DHS Program Indicator Data API" in recs[req.raw_name].license
+    # the H4 raw files are untouched
+    assert ctx.raw.get(theme="growth-fertility", source="dhs_api", name="dhs_tfr_wealth.json") == (
+        DHS_DATA
+    )
+
+
+def test_stage_h8_writes_long_table_and_reports_unmapped_codes() -> None:
+    ctx = make_ctx({**dhs_responses(), **h8_responses()})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.DHS_TABLE, pipeline.DHS_H8_TABLE)
+    assert any("dhs_h8_FE_FRTR_W_TFR_total.json" in s and "OS" in s for s in result.skipped)
+    rows = ctx.tables.read_table(pipeline.DHS_H8_TABLE)
+    # dropped: OS rows in the TFR total and wealth files, the "Residence" row in the wealth file
+    assert len(rows) == _h8_fixture_rows() - 3
+    assert list(rows[0]) == H8_COLUMNS
+    assert {r["metric"] for r in rows} == set(dhs.METRICS.values())
+    assert {r["survey_id"] for r in rows} == {"AF2015DHS", "AL2008DHS", "KE2022DHS"}
+    assert {r["source"] for r in rows} == {"dhs_api"}
+    assert {r["characteristic_category"] for r in rows} == {
+        "Total",
+        "Total 15-49",
+        "Total 25-49",
+        "Education",
+        "Wealth quintile",
+        "Age (5-year groups)",
+    }
+    # the H4 staged table is unchanged by the H8 extension
+    assert len(ctx.tables.read_table(pipeline.DHS_TABLE)) == 7
+
+
+def test_stage_h8_missing_raw_is_skipped_and_the_rest_staged() -> None:
+    responses = {**dhs_responses(), **h8_responses()}
+    missing = dhs.H8_REQUESTS[5]
+    del responses[missing.url]
+    ctx = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert pipeline.DHS_H8_TABLE in result.written
+    assert any(s.startswith(f"{missing.raw_name}: raw missing") for s in result.skipped)
+    rows = ctx.tables.read_table(pipeline.DHS_H8_TABLE)
+    assert not any(
+        r["metric"] == "wanted_tfr" and r["characteristic_category"] == "Education" for r in rows
+    )
+    assert any(r["metric"] == "wanted_tfr" for r in rows)
+
+
+def test_stage_h8_without_country_metadata_fails_closed() -> None:
+    ctx = make_ctx(h8_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == ()
+    assert any("dhs_countries" in s and "mechanisms" in s for s in result.skipped)
+
+
+def test_mart_h8_is_sorted_staged_table_with_spec_columns() -> None:
+    ctx = make_ctx({**dhs_responses(), **h8_responses()})
+    PIPELINE.run(Stage.FETCH, ctx)
+    PIPELINE.run(Stage.STAGE, ctx)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.DHS_MART, pipeline.DHS_H8_MART)
+    rows = ctx.tables.read_table(pipeline.DHS_H8_MART)
+    assert list(rows[0]) == H8_COLUMNS
+    assert len(rows) == len(ctx.tables.read_table(pipeline.DHS_H8_TABLE))
+    keys = [tuple(r[k] for k in dhs.MECHANISM_KEY) for r in rows]
+    assert keys == sorted(keys) and len(set(keys)) == len(keys)
+    assert rows[0]["survey_id"] == "AL2008DHS" and rows[-1]["survey_id"] == "KE2022DHS"
+    u5 = [r for r in rows if r["metric"] == "u5mr" and r["characteristic_category"] == "Total"]
+    assert [(r["survey_id"], r["by_variable"][:4], r["is_preferred"]) for r in u5] == [
+        ("AF2015DHS", "Five", 1),
+        ("AF2015DHS", "Ten ", 0),
+        ("KE2022DHS", "Five", 1),
+    ]
+
+
+def test_mart_h8_duplicate_key_in_staged_fails_closed() -> None:
+    ctx = make_ctx({})
+    row = {k: "x" for k in H8_COLUMNS}
+    row.update(survey_year=2015, value=1.0)
+    ctx.tables.write_table(pipeline.DHS_H8_TABLE, [row, dict(row)])
+    with pytest.raises(ValueError, match="duplicate"):
+        PIPELINE.run(Stage.MART, ctx)
