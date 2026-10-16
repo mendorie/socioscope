@@ -359,6 +359,119 @@ def growth_fertility_h7() -> Path:
     return out
 
 
+def growth_fertility_h8() -> Path:
+    """H8: 出生率低下の内訳（望む／望まない、構成／群内）と学歴群ごとの望む数の変化。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "themes" / "growth-fertility" / "src"))
+    from theme_growth_fertility.analysis import a20261017_h8_mechanisms as h8
+    from theme_growth_fertility.analysis.s20261017_h8_summary import median_by_index
+
+    d = pl.read_parquet(ROOT / "data" / h8.DHS_MART)
+    panel = pl.read_parquet(ROOT / "data" / h8.PANEL_MART)
+    st = h8.survey_table(d, panel)
+    cells = h8.cell_table(d, st)
+    t1 = h8.run_t1(st, "S")
+    fell = set(
+        h8.pair_frame(st, ("tfr",), min_gap=8, mode="first_last")
+        .filter(pl.col("d_tfr") < 0)["iso3"]
+        .to_list()
+    )
+    g = h8.group_rates(cells, h8.edu_shares(d), st, "wanted_tfr")
+    two = h8.e10_rows(g, fell, two=True)
+    four = h8.e10_rows(g, fell, two=False)
+    comp = sum(r["comp"] for r in two)
+    rate = sum(r["rate"] for r in two)
+    s_comp = comp / (comp + rate)
+    med = median_by_index(four, "d_rates")
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "出生率を下げたのは「望む子どもの数」が減ったこと",
+        "低下の 4 分の 3 は望む数の減少。"
+        "その 6 割は学歴の高い女性が増えたからではなく、低学歴の女性の中で起きた",
+        size=33,
+    )
+
+    # left: two stacked bars (wanted vs unwanted; within-group vs composition)
+    ax1 = fig.add_axes([0.15, 0.14, 0.36, 0.50])
+    rows = [
+        ("出生率の低下", t1.s_w, "望む数の減少", "望まない出生の減少"),
+        ("望む数の低下", 1 - s_comp, "同じ学歴の中で減った", "学歴の高い女性が増えた"),
+    ]
+    for i, (lab, a, la, lb) in enumerate(rows):
+        y = 1 - i
+        ax1.barh(y, a, color=BLUE if i == 0 else ORANGE, height=0.6, lw=0)
+        ax1.barh(y, 1 - a, left=a, color="#cfd6e0", height=0.6, lw=0)
+        ax1.text(
+            a / 2,
+            y,
+            f"{la}\n{a:.0%}",
+            ha="center",
+            va="center",
+            color="white",
+            fontsize=13,
+            fontweight="bold",
+        )
+        ax1.text(
+            a + (1 - a) / 2,
+            y,
+            f"{lb}\n{1 - a:.0%}",
+            ha="center",
+            va="center",
+            color=INK,
+            fontsize=11,
+        )
+        ax1.text(-0.02, y, lab, ha="right", va="center", color=INK, fontsize=13, fontweight="bold")
+    ax1.set_xlim(0, 1)
+    ax1.set_ylim(-0.6, 1.6)
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    for sp in ax1.spines.values():
+        sp.set_visible(False)
+    ax1.set_facecolor(PAPER)
+    tag(bg, 92, 470, f"途上国 {t1.n_countries} か国の家計調査（DHS）", BLUE)
+
+    # right: change in wanted TFR by education group
+    ax2 = fig.add_axes([0.60, 0.14, 0.36, 0.50])
+    labs = ["教育なし", "初等", "中等", "高等"]
+    cols = [ORANGE, "#f29b7a", "#9fbbe3", "#9fbbe3"]
+    ax2.bar(labs, med, color=cols, width=0.65, lw=0)
+    for i, v in enumerate(med):
+        ax2.text(
+            i,
+            v - 0.03,
+            f"{v:+.2f} 人",
+            ha="center",
+            va="top",
+            color=INK,
+            fontsize=12,
+            fontweight="bold",
+        )
+    ax2.axhline(0, color=MUTED, lw=1)
+    ax2.set_ylim(min(med) - 0.3, 0.12)
+    ax2.set_yticks([])
+    ax2.tick_params(colors=INK, labelsize=12, length=0)
+    for sp in ax2.spines.values():
+        sp.set_visible(False)
+    ax2.set_facecolor(PAPER)
+    tag(bg, 770, 470, f"学歴別の望む出生の変化（{len(four)} か国の中央値）", ORANGE)
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: The DHS Program Indicator Data API（ICF）/ World Bank WDI / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-17-note-why-child-survival-and-girls-schooling-lower-fertility.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
-    for p in (growth_fertility(), wealth(), growth_fertility_h7()):
+    for p in (growth_fertility(), wealth(), growth_fertility_h7(), growth_fertility_h8()):
         print(p)
