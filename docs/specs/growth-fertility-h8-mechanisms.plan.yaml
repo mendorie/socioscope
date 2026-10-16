@@ -57,7 +57,7 @@ items:
     agent: analyst
     acceptance: "2 回実行で図の sha256 と stdout が一致。スコアカード判定と最終仮説の文が stdout に出る。report はテンプレート準拠・チェックリスト回答付き。methodology-reviewer APPROVED"
     status: pr_open
-    pr:
+    pr: https://github.com/mendorie/socioscope/pull/51
   - id: h8-summary-figs
     title: "analysis(growth-fertility): H8 一般読者向け日本語図"
     scope:
