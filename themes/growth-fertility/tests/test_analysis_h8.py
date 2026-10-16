@@ -324,7 +324,7 @@ def test_kitagawa_parts_sum_to_change() -> None:
     assert comp == pytest.approx((-0.3) * 5.5 + 0.3 * 2.75)
 
 
-def test_composition_clause_only_below_threshold() -> None:
+def test_m3_qualifier_inserted_after_m3() -> None:
     kw = dict(
         s_w=0.75,
         m1_contrib=-0.1,
@@ -335,5 +335,9 @@ def test_composition_clause_only_below_threshold() -> None:
         u5_sig2=False,
         verdicts={"M1": "no", "M3": "support"},
     )
-    assert h8.COMPOSITION_CLAUSE in h8.final_hypothesis(**kw, composition_share=0.2)  # type: ignore[arg-type]
-    assert h8.COMPOSITION_CLAUSE not in h8.final_hypothesis(**kw, composition_share=0.37)  # type: ignore[arg-type]
+    out = h8.final_hypothesis(**kw, composition_share=0.36)  # type: ignore[arg-type]
+    assert "（M3）が担い（ただし量としては" in out
+    assert "望む出生の低下の約 4 割（36%）" in out
+    assert "TFR 低下の約 3 割（27%）にとどまる）" in out
+    assert "学歴を問わず" not in out
+    assert "ただし量としては" not in h8.final_hypothesis(**kw)  # type: ignore[arg-type]

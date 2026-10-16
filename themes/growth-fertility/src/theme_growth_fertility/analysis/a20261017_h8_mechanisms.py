@@ -302,10 +302,13 @@ def kitagawa(
     return rate, comp
 
 
-COMPOSITION_CLAUSE = (
-    "ただしその M3 の大半は、学歴の高い女性が増えたことではなく、学歴を問わず望む数が"
-    "下がったことによる。"
-)
+def m3_qualifier(composition_share: float, s_w: float) -> str:
+    """E10 (exploratory) limit on M3's quantity, inserted right after 「（M3）が担い」:
+    composition share of the wanted-TFR fall, and of the TFR fall (s_w × share)."""
+    return (
+        f"（ただし量としては、学歴構成の変化で説明できるのは望む出生の低下の{_wari(composition_share)}、"
+        f"TFR 低下の{_wari(s_w * composition_share)}にとどまる）"
+    )
 
 
 def _wari(x: float) -> str:
@@ -357,12 +360,17 @@ def final_hypothesis(
     (negative = lowers TFR)."""
     if s_w >= 0.5:
         main, sub = stage1_actors(verdicts, m1_contrib, m3_contrib)
+        q = (
+            m3_qualifier(composition_share, s_w)
+            if main == "M3" and composition_share is not None
+            else ""
+        )
         if sub is not None:
-            mid = f"{STAGE1_NAME[main]}が主に担い、{STAGE1_NAME[sub]}が従として続き、"
+            mid = f"{STAGE1_NAME[main]}が主に担い{q}、{STAGE1_NAME[sub]}が従として続き、"
         else:
             other = "M3" if main == "M1" else "M1"
             mid = (
-                f"{STAGE1_NAME[main]}が担い、{STAGE1_NAME[other]}は同じ国の中の年トレンドを除くと"
+                f"{STAGE1_NAME[main]}が担い{q}、{STAGE1_NAME[other]}は同じ国の中の年トレンドを除くと"
                 " TFR との関連が確かめられず、"
             )
         s1 = (
@@ -370,8 +378,6 @@ def final_hypothesis(
             "望まない出生の減少（M5）の上限（1 − s_w）は"
             f"{_wari(max(0.0, 1.0 - s_w))}にとどまる。"
         )
-        if main == "M3" and composition_share is not None and composition_share < 0.3:
-            s1 += COMPOSITION_CLAUSE
     else:
         s1 = (
             f"出生率が 6 人から 3 人前後へ下がる段階は、{STAGE1_NAME['M5']}が"
@@ -1408,10 +1414,7 @@ def run(data_dir: Path, fig_dir: Path) -> None:
         composition_share=e10,
     )
     print("\nFINAL HYPOTHESIS:\n" + sentence)
-    if e10 < 0.3:
-        print(
-            "(the sentence after 「にとどまる。」 is from exploratory E10: composition share < 0.3)"
-        )
+    print("(the bracket after 「（M3）が担い」 is from exploratory E10)")
 
     robustness(st, cells, panel, t1_fl)
     exploratory(st, cells, base, ld)
