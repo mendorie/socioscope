@@ -97,8 +97,30 @@ M1 quantity = b(T2c) +0.205 × -0.801 = -0.164 children; M3 quantity = g_w -1.54
   M5 (T1 s_w=0.755 -> wanted; T4 |g_u|>=|g_w|: False): no
   stage-2 leader (T6): female sec. enrolment share=0.321; ln U5MR CI excludes 0 in stage 2: False
 
+== Exploratory E10: Kitagawa decomposition by education (post hoc) ==
+E10 wanted_tfr 2 groups (p from women_secondary_plus): countries=45 ΣΔ(reconstructed)=-36.83 Σrate=-23.36 Σcomp=-13.47  composition share=0.366 (median per country 0.356, n=43); median |reconstructed − observed Δtotal|=0.06
+      median within-group change first→last: None+Primary -0.75, Secondary+Higher -0.08
+E10 wanted_tfr 4 groups (p = married-women proxy): countries=48 ΣΔ(reconstructed)=-44.48 Σrate=-29.09 Σcomp=-15.39  composition share=0.346 (median per country 0.419, n=46); median |reconstructed − observed Δtotal|=0.07
+      median within-group change first→last: No education -0.75, Primary -0.40, Secondary -0.10, Higher -0.10
+      No education group wanted_tfr first→last: median -0.75, mean -0.88, fell in 41/48
+E10 tfr        2 groups (p from women_secondary_plus): countries=45 ΣΔ(reconstructed)=-52.65 Σrate=-34.51 Σcomp=-18.14  composition share=0.344 (median per country 0.362, n=45); median |reconstructed − observed Δtotal|=0.07
+      median within-group change first→last: None+Primary -0.78, Secondary+Higher -0.20
+E10 tfr        4 groups (p = married-women proxy): countries=47 ΣΔ(reconstructed)=-60.65 Σrate=-38.85 Σcomp=-21.80  composition share=0.359 (median per country 0.379, n=47); median |reconstructed − observed Δtotal|=0.08
+      median within-group change first→last: No education -1.00, Primary -0.80, Secondary -0.20, Higher -0.10
+      No education group tfr first→last: median -1.00, mean -1.16, fell in 43/47
+E10b No-education cell wanted_tfr (within)                 n=  305 G= 79
+  ln_u5: -0.1784 (se 0.2257) [-0.6207, +0.2639]
+  mcpr_none: -0.0373 (se 0.0089) [-0.0548, -0.0198]
+  survey_year: -0.0130 (se 0.0132) [-0.0388, +0.0129]
+  r2=0.9186
+E10b No-education cell tfr (within)                        n=  304 G= 78
+  ln_u5: +0.0784 (se 0.2864) [-0.4830, +0.6398]
+  mcpr_none: -0.0408 (se 0.0101) [-0.0607, -0.0210]
+  survey_year: -0.0122 (se 0.0141) [-0.0400, +0.0155]
+  r2=0.8844
+
 FINAL HYPOTHESIS:
-出生率が 6 人から 3 人前後へ下がる段階は、女子教育による『望む数』の低下（M3）が担い、子どもの死亡率の低下（M1、保険としての多産が要らなくなる）は同じ国の中の年トレンドを除くと TFR との関連が確かめられず、望まない出生の減少（M5）は約 2 割（24%）にとどまる。3 人前後から 2 人未満へ下がる段階は、女子の就学の広がり（M3 の経路）が約 3 割（32%）を担い、死亡率はもう効いていない。結婚（同棲を含む）している割合の低下は、TFR 低下の約 3 割（33%）にあたる。
+出生率が 6 人から 3 人前後へ下がる段階は、女子教育による『望む数』の低下（M3）が担い、子どもの死亡率の低下（M1、保険としての多産が要らなくなる）は同じ国の中の年トレンドを除くと TFR との関連が確かめられず、望まない出生の減少（M5）の上限（1 − s_w）は約 2 割（24%）にとどまる。3 人前後から 2 人未満へ下がる段階は、女子の就学の広がり（M3 の経路）が最も整合的な候補で、標準化係数の比で約 3 割（32%）（低下に占める割合ではない）を占め、死亡率の関連は確かめられない。結婚（同棲を含む）している割合の低下は、TFR 低下の約 3 割（33%）にあたる。
 
 == Robustness (pre-registered list, all reported) ==
 [R first→last] T1 s_w=0.736 (n=50)

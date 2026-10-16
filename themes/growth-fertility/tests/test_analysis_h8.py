@@ -277,8 +277,10 @@ def test_final_hypothesis_wanted_branch() -> None:
     )
     assert "（25%）にとどまる" in s
     assert "結婚が遅れること（M2" in s
-    assert "（45%）を担い" in s
-    assert "死亡率はもう効いていない" in s
+    assert "（45%）（低下に占める割合ではない）" in s
+    assert "M5）の上限（1 − s_w）" in s
+    assert "死亡率の関連は確かめられない" in s
+    assert "低下に占める割合ではない" in s
     assert "約 3 割（33%）" in s
 
 
@@ -310,3 +312,28 @@ def test_final_hypothesis_m5_and_unexplained_branch() -> None:
     )
     assert "望まない出生の減少（M5、家族計画）が約 7 割（70%）を担い" in s
     assert "どれでも説明できない" in s
+
+
+def test_kitagawa_parts_sum_to_change() -> None:
+    r0, r1, p0, p1 = [6.0, 3.0], [5.0, 2.5], [0.8, 0.2], [0.5, 0.5]
+    rate, comp = h8.kitagawa(r0, r1, p0, p1)
+    total = sum(a * b for a, b in zip(r1, p1, strict=True)) - sum(
+        a * b for a, b in zip(r0, p0, strict=True)
+    )
+    assert rate + comp == pytest.approx(total)
+    assert comp == pytest.approx((-0.3) * 5.5 + 0.3 * 2.75)
+
+
+def test_composition_clause_only_below_threshold() -> None:
+    kw = dict(
+        s_w=0.75,
+        m1_contrib=-0.1,
+        m3_contrib=-0.36,
+        s_m=0.33,
+        leader2="d_sec",
+        share2=0.32,
+        u5_sig2=False,
+        verdicts={"M1": "no", "M3": "support"},
+    )
+    assert h8.COMPOSITION_CLAUSE in h8.final_hypothesis(**kw, composition_share=0.2)  # type: ignore[arg-type]
+    assert h8.COMPOSITION_CLAUSE not in h8.final_hypothesis(**kw, composition_share=0.37)  # type: ignore[arg-type]

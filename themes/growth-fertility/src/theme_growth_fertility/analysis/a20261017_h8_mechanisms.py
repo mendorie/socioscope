@@ -292,6 +292,22 @@ def stage2_leader(
     return k, abs(sig[k][0]) / total
 
 
+def kitagawa(
+    r0: Sequence[float], r1: Sequence[float], p0: Sequence[float], p1: Sequence[float]
+) -> tuple[float, float]:
+    """Kitagawa decomposition of Δ(Σ p_e r_e) into (rate part, composition part):
+    Σ (r1 − r0)·(p0 + p1)/2 and Σ (p1 − p0)·(r0 + r1)/2. The two sum exactly to the change."""
+    rate = sum((b - a) * (c + d) / 2 for a, b, c, d in zip(r0, r1, p0, p1, strict=True))
+    comp = sum((d - c) * (a + b) / 2 for a, b, c, d in zip(r0, r1, p0, p1, strict=True))
+    return rate, comp
+
+
+COMPOSITION_CLAUSE = (
+    "ただしその M3 の大半は、学歴の高い女性が増えたことではなく、学歴を問わず望む数が"
+    "下がったことによる。"
+)
+
+
 def _wari(x: float) -> str:
     return f"約 {round(x * 10)} 割（{x:.0%}）"
 
@@ -335,6 +351,7 @@ def final_hypothesis(
     share2: float,
     u5_sig2: bool,
     verdicts: Mapping[str, str],
+    composition_share: float | None = None,
 ) -> str:
     """Fill the pre-registered sentence (spec §0 / §3 末尾). Contributions are TFR changes
     (negative = lowers TFR)."""
@@ -349,9 +366,12 @@ def final_hypothesis(
                 " TFR との関連が確かめられず、"
             )
         s1 = (
-            f"出生率が 6 人から 3 人前後へ下がる段階は、{mid}望まない出生の減少（M5）は"
+            f"出生率が 6 人から 3 人前後へ下がる段階は、{mid}"
+            "望まない出生の減少（M5）の上限（1 − s_w）は"
             f"{_wari(max(0.0, 1.0 - s_w))}にとどまる。"
         )
+        if main == "M3" and composition_share is not None and composition_share < 0.3:
+            s1 += COMPOSITION_CLAUSE
     else:
         s1 = (
             f"出生率が 6 人から 3 人前後へ下がる段階は、{STAGE1_NAME['M5']}が"
@@ -364,13 +384,13 @@ def final_hypothesis(
         )
     else:
         tail = (
-            "死亡率もまだ効いている。"
+            "死亡率の関連も残る。"
             if (u5_sig2 or leader2 == "d_ln_u5")
-            else "死亡率はもう効いていない。"
+            else "死亡率の関連は確かめられない。"
         )
         s2 = (
-            f"3 人前後から 2 人未満へ下がる段階は、{STAGE2_NAME[leader2]}が"
-            f"{_wari(share2)}を担い、{tail}"
+            f"3 人前後から 2 人未満へ下がる段階は、{STAGE2_NAME[leader2]}が最も整合的な候補で、"
+            f"標準化係数の比で{_wari(share2)}（低下に占める割合ではない）を占め、{tail}"
         )
     s3 = f"結婚（同棲を含む）している割合の低下は、TFR 低下の{_wari(s_m)}にあたる。"
     return s1 + s2 + s3
@@ -1375,6 +1395,7 @@ def run(data_dir: Path, fig_dir: Path) -> None:
         f"  stage-2 leader (T6): {T6_LABEL[leader2] if leader2 else 'none'} share={share2:.3f}; "
         f"ln U5MR CI excludes 0 in stage 2: {u5_sig2}"
     )
+    e10 = run_e10(d, st, cells, fig_dir / "h8_09_e10_kitagawa.png")
     sentence = final_hypothesis(
         s_w=t1.s_w,
         m1_contrib=m1_contrib,
@@ -1384,8 +1405,13 @@ def run(data_dir: Path, fig_dir: Path) -> None:
         share2=share2,
         u5_sig2=u5_sig2,
         verdicts=score,
+        composition_share=e10,
     )
     print("\nFINAL HYPOTHESIS:\n" + sentence)
+    if e10 < 0.3:
+        print(
+            "(the sentence after 「にとどまる。」 is from exploratory E10: composition share < 0.3)"
+        )
 
     robustness(st, cells, panel, t1_fl)
     exploratory(st, cells, base, ld)
@@ -1457,6 +1483,191 @@ def robustness(st: pl.DataFrame, cells: pl.DataFrame, panel: pl.DataFrame, t1_fl
         fe=False,
     )
     print(e.line())
+
+
+def edu_shares(d: pl.DataFrame) -> pl.DataFrame:
+    """Proxy education composition per survey: weighted denominators of the
+    modern_contraception_married Education cells (MARRIED women 15-49; the tfr / wanted_tfr
+    Education rows carry no denominator). Columns survey_id, edu, w_mar (share within survey)."""
+    m = d.filter(
+        (pl.col("metric") == "modern_contraception_married")
+        & (pl.col("characteristic_category") == "Education")
+        & pl.col("denominator_weighted").is_not_null()
+    ).select("survey_id", pl.col("characteristic_label").alias("edu"), "denominator_weighted")
+    return m.with_columns(
+        (
+            pl.col("denominator_weighted") / pl.col("denominator_weighted").sum().over("survey_id")
+        ).alias("w_mar")
+    ).drop("denominator_weighted")
+
+
+def group_rates(
+    cells: pl.DataFrame, shares: pl.DataFrame, st: pl.DataFrame, y: str
+) -> pl.DataFrame:
+    """Per survey (all 4 education cells required): 4-group rates and married-women shares;
+    2-group rates r_lo / r_hi = married-share-weighted mean within (None+Primary) /
+    (Secondary+Higher); p_hi2 = women_secondary_plus / 100 (all women 15-49)."""
+    c = (
+        cells.select("survey_id", "iso3", "survey_year", "edu", y)
+        .drop_nulls()
+        .join(shares, on=["survey_id", "edu"], how="inner")
+    )
+    full = c.group_by("survey_id").agg(pl.len().alias("k")).filter(pl.col("k") == 4)
+    c = c.join(full.select("survey_id"), on="survey_id", how="inner")
+    wide_r = c.pivot(
+        on="edu", index=["survey_id", "iso3", "survey_year"], values=y, aggregate_function=None
+    )
+    wide_p = c.pivot(on="edu", index="survey_id", values="w_mar", aggregate_function=None)
+    wide_p = wide_p.rename({k: f"p_{k}" for k in EDU})
+    out = wide_r.join(wide_p, on="survey_id").join(
+        st.select("survey_id", "sec", pl.col(y).alias("y_total")), on="survey_id", how="left"
+    )
+    lo = pl.col("p_No education") + pl.col("p_Primary")
+    hi = pl.col("p_Secondary") + pl.col("p_Higher")
+    return out.with_columns(
+        (
+            (
+                pl.col("No education") * pl.col("p_No education")
+                + pl.col("Primary") * pl.col("p_Primary")
+            )
+            / lo
+        ).alias("r_lo"),
+        (
+            (pl.col("Secondary") * pl.col("p_Secondary") + pl.col("Higher") * pl.col("p_Higher"))
+            / hi
+        ).alias("r_hi"),
+        (pl.col("sec") / 100.0).alias("p_hi2"),
+    ).sort("iso3", "survey_year", "survey_id")
+
+
+def e10_rows(g: pl.DataFrame, fell_iso: set[str], *, two: bool) -> list[dict[str, Any]]:
+    need = ["r_lo", "r_hi", "p_hi2"] if two else [*EDU, *[f"p_{k}" for k in EDU]]
+    s = g.drop_nulls(need).filter(pl.col("iso3").is_in(sorted(fell_iso)))
+    rows: list[dict[str, Any]] = []
+    for (iso,), h in s.group_by(["iso3"], maintain_order=True):
+        a, b = h.row(0, named=True), h.row(h.height - 1, named=True)
+        if int(b["survey_year"]) - int(a["survey_year"]) < 8:
+            continue
+        if two:
+            r0, r1 = [a["r_lo"], a["r_hi"]], [b["r_lo"], b["r_hi"]]
+            p0, p1 = [1 - a["p_hi2"], a["p_hi2"]], [1 - b["p_hi2"], b["p_hi2"]]
+        else:
+            r0, r1 = [a[k] for k in EDU], [b[k] for k in EDU]
+            p0, p1 = [a[f"p_{k}"] for k in EDU], [b[f"p_{k}"] for k in EDU]
+        rate, comp = kitagawa(r0, r1, p0, p1)
+        obs = (
+            None
+            if a["y_total"] is None or b["y_total"] is None
+            else float(b["y_total"]) - float(a["y_total"])
+        )
+        rows.append(
+            {
+                "iso3": iso,
+                "rate": rate,
+                "comp": comp,
+                "d_obs": obs,
+                "d_rates": [r1[i] - r0[i] for i in range(len(r0))],
+            }
+        )
+    return rows
+
+
+def run_e10(d: pl.DataFrame, st: pl.DataFrame, cells: pl.DataFrame, fig: Path) -> float:
+    """E10 (exploratory): Kitagawa composition vs within-group rate change, first→last (>= 8 y,
+    TFR fell). Returns the pooled composition share of the 2-group wanted-TFR version."""
+    print("\n== Exploratory E10: Kitagawa decomposition by education (post hoc) ==")
+    shares = edu_shares(d)
+    fell_iso = set(
+        pair_frame(st, ("tfr",), min_gap=8, mode="first_last")
+        .filter(pl.col("d_tfr") < 0)["iso3"]
+        .to_list()
+    )
+    main_share = math.nan
+    plot: dict[str, list[dict[str, Any]]] = {}
+    for y in ("wanted_tfr", "tfr"):
+        g = group_rates(cells, shares, st, y)
+        for two in (True, False):
+            version = (
+                "2 groups (p from women_secondary_plus)"
+                if two
+                else "4 groups (p = married-women proxy)"
+            )
+            rows = e10_rows(g, fell_iso, two=two)
+            if not rows:
+                continue
+            tot = sum(r["rate"] + r["comp"] for r in rows)
+            share = sum(r["comp"] for r in rows) / tot
+            per = [r["comp"] / (r["rate"] + r["comp"]) for r in rows if r["rate"] + r["comp"] < 0]
+            gaps = [abs(r["rate"] + r["comp"] - r["d_obs"]) for r in rows if r["d_obs"] is not None]
+            k = len(rows[0]["d_rates"])
+            med = [statistics.median(r["d_rates"][i] for r in rows) for i in range(k)]
+            labs = ["None+Primary", "Secondary+Higher"] if two else list(EDU)
+            print(
+                f"E10 {y:<10} {version}: countries={len(rows)} ΣΔ(reconstructed)={tot:+.2f} "
+                f"Σrate={sum(r['rate'] for r in rows):+.2f} "
+                f"Σcomp={sum(r['comp'] for r in rows):+.2f}  composition share={share:.3f} "
+                f"(median per country {statistics.median(per):.3f}, n={len(per)}); "
+                f"median |reconstructed − observed Δtotal|={statistics.median(gaps):.2f}"
+            )
+            print(
+                "      median within-group change first→last: "
+                + ", ".join(f"{lab} {v:+.2f}" for lab, v in zip(labs, med, strict=True))
+            )
+            if not two:
+                d0 = [r["d_rates"][0] for r in rows]
+                print(
+                    f"      No education group {y} first→last: "
+                    f"median {statistics.median(d0):+.2f}, "
+                    f"mean {statistics.mean(d0):+.2f}, fell in {sum(v < 0 for v in d0)}/{len(d0)}"
+                )
+            if y == "wanted_tfr":
+                plot["two" if two else "four"] = rows
+                if two:
+                    main_share = share
+    ne = (
+        cells.filter(pl.col("edu") == "No education")
+        .drop_nulls(["wanted_tfr", "ln_u5", "modern_contraception_married"])
+        .rename({"modern_contraception_married": "mcpr_none"})
+    )
+    for y in ("wanted_tfr", "tfr"):
+        e = fit(
+            ne.drop_nulls([y]),
+            f"{y} ~ ln_u5 + mcpr_none + C(iso3) + survey_year",
+            label=f"E10b No-education cell {y} (within)",
+            fe=False,
+        )
+        print(e.line())
+    fig_e10(plot, fig)
+    return main_share
+
+
+def fig_e10(plot: Mapping[str, list[dict[str, Any]]], path: Path) -> None:
+    plt = _plt()
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 5.0))
+    titles = ("2 groups: shares from women's secondary+ %", "4 groups: married-women shares")
+    for ax, key, title in zip(axes, ("two", "four"), titles, strict=True):
+        rows = sorted(plot.get(key, []), key=lambda r: r["rate"] + r["comp"])
+        ys = list(range(len(rows)))
+        ax.barh(ys, [r["rate"] for r in rows], color=BLUE_RAMP[2], label="within-group change")
+        ax.barh(
+            ys,
+            [r["comp"] for r in rows],
+            left=[r["rate"] for r in rows],
+            color=ORANGE,
+            label="composition change",
+        )
+        ax.set_yticks(ys)
+        ax.set_yticklabels([r["iso3"] for r in rows], fontsize=5)
+        ax.axvline(0, color=MUTED, lw=0.6)
+        tot = sum(r["rate"] + r["comp"] for r in rows) or 1.0
+        sh = sum(r["comp"] for r in rows) / tot
+        ax.set_title(f"{title}\ncomposition share = {sh:.2f} (n = {len(rows)})", fontsize=9)
+        ax.set_xlabel("Change in wanted TFR, first → last survey")
+        _style(ax)
+    axes[0].legend(fontsize=7, frameon=False, loc="upper left")
+    fig.suptitle("E10 (exploratory): Kitagawa decomposition of the wanted TFR fall", fontsize=10)
+    _foot(fig, f"Countries with falling TFR, surveys >= 8 y apart. {DHS_SOURCE}")
+    _save(fig, path)
 
 
 def exploratory(
