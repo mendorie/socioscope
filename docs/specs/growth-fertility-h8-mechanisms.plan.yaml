@@ -68,7 +68,7 @@ items:
     agent: analyst
     acceptance: "記事で使う図 6 枚以内。新しい推定なし（h8 の関数を import して再計算）。captions.md 付き"
     status: pr_open
-    pr: PENDING
+    pr: https://github.com/mendorie/socioscope/pull/52
   - id: h8-article
     title: "docs(articles): note 記事 part3「子どもが死ななくなり、女の子が学校に行くと、なぜ出生率が下がるのか」"
     scope:
