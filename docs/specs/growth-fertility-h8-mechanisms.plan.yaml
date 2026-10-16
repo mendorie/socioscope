@@ -67,7 +67,7 @@ items:
     depends_on: [h8-analysis]
     agent: analyst
     acceptance: "記事で使う図 6 枚以内。新しい推定なし（h8 の関数を import して再計算）。captions.md 付き"
-    status: pr_open
+    status: merged
     pr: https://github.com/mendorie/socioscope/pull/52
   - id: h8-article
     title: "docs(articles): note 記事 part3「子どもが死ななくなり、女の子が学校に行くと、なぜ出生率が下がるのか」"
@@ -76,5 +76,5 @@ items:
     depends_on: [h8-summary-figs]
     agent: analyst
     acceptance: "要約第 1 文が最終仮説の文型の断定形。言えないことは 3 項目以内。事前登録を強調しない。/yomiyasu で推敲済み。ヘッダー画像あり"
-    status: todo
-    pr:
+    status: pr_open
+    pr: https://github.com/mendorie/socioscope/pull/53
