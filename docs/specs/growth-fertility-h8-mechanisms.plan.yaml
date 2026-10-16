@@ -76,5 +76,5 @@ items:
     depends_on: [h8-summary-figs]
     agent: analyst
     acceptance: "要約第 1 文が最終仮説の文型の断定形。言えないことは 3 項目以内。事前登録を強調しない。/yomiyasu で推敲済み。ヘッダー画像あり"
-    status: pr_open
+    status: merged
     pr: https://github.com/mendorie/socioscope/pull/53
