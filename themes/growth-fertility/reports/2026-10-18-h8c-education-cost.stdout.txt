@@ -166,7 +166,7 @@ oecd_education_finance: rows=28329 countries=38 years=1995–2025
 OECD (Y2/Y3): holds=False vars=() conflicts=()
 reverse (positive, CI∌0, among judged variables): none
 VERDICT Q: no = 不支持
-FINAL STANCE: 2 人未満への低下は、学歴社会の圧力でも説明できない（教育の長さ・家計の教育費負担・学歴による賃金差のどれも事前に決めた条件を満たさない）。要因は本シリーズの変数の外にある。
+FINAL STANCE: 2 人未満への低下は、学歴社会の圧力でも説明できない（教育の長さ・家計の教育費負担・学歴による賃金差のどれも事前に決めた条件を満たさない）。要因は本シリーズの変数では特定できない。
 
 == Robustness (pre-registered list; verdict re-evaluated holding the other side) ==
 -- Y1 --

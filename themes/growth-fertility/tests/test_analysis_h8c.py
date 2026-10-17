@@ -142,7 +142,7 @@ def test_final_stance_uses_preregistered_sentence_forms() -> None:
     assert "その費用を家計が負う社会ほど進んでいる（学歴社会の副作用）" in s
     n = h8c.final_stance("no", global_var=None, oecd_vars=(), reverse=[])
     assert "学歴社会の圧力でも説明できない" in n
-    assert "本シリーズの変数の外" in n
+    assert "本シリーズの変数では特定できない" in n
     p = h8c.final_stance("partial_oecd", global_var=None, oecd_vars=("priv",), reverse=[])
     assert "私的負担" in p and "全世界" in p
     g = h8c.final_stance("partial_global", global_var="d_tert", oecd_vars=(), reverse=[])
