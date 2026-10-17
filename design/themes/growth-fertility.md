@@ -169,3 +169,25 @@ H3 レポートが最大の交絡として挙げた**年齢**を調整する。�
 **頑健性（事前リスト、全部報告）**: DHS 調査のみ（MIS/AIS 除外）、隣接組 vs first→last、間隔 ≥ 8 年、U5MR 10 年版、中南米・南部アフリカ除外（Cm）、国ごと等加重、1990 年以降、学歴 2 群版。WDI: 5 年・20 年差分、SMAM 整形なし、`married_by18`、`contraceptive_any` 追加、2020–24 除外、産油国除外、人口 100 万未満除外、段階の境界 2.5 / 3.5。
 
 **言えないこと（事前固定）**: 調査内の学歴差は自己選択を含む。理想・希望子ども数は事後の合理化を含む。Cm は「結婚または同棲」。DHS は低・中所得国のみ。識別戦略は固定効果・分解・調査内比較のみで、家族計画プログラムや規範の変化が同時に動きうる。
+
+### H8b（事後追加 2026-10-18: 学歴群の中で望む数が下がった真因は何か）— H8 の結果を見た後に立てた追加検証
+**動機**: H8 の E10 で、望む出生の低下の約 3 分の 2 は学歴構成の変化ではなく各学歴群の中（特に教育なし・初等）で起きた。ユーザーの仮説「学歴に関係なく、自分で働き収入を得る女性が増えたことが真因ではないか」を、対抗候補と並べて検証する。**事後追加**であり、以下の検定・判定基準は追加データ（DHS の就業・収入形態・子どもの就学指標）を見る前に固定した。結果は H8 の判定（M1〜M5）を変えず、「学歴群内の低下の説明候補」として別に報告する。
+
+**候補**
+- W（女性の就業・現金収入）: 学歴を問わず、働いて現金収入を得る女性が増えたことで子育ての機会費用が上がり、望む数が下がった。
+- S（子どもの就学費用）: 子どもを学校に通わせるのが当たり前になり、親の学歴に関係なく子ども 1 人の費用が上がって「数より質」が進んだ。
+- C（避妊・小家族規範の普及）: 家族計画プログラムと規範の普及で、学歴を問わず望む数が下がった（H8 の E10b で教育なし群の望む数が避妊実行率と並走していた）。
+- U（死亡率）: H8 の T2/E4 の再掲。教育なし群では E10b で関連なし。
+
+**追加データ**（DHS API、`H8_REQUESTS` に追加、mart `dhs_mechanisms` に metric 追加）: `women_employed`（`EM_EMPL_W_EMC`、過去 12 か月に働き現在も働いている女性の割合、Total / Education / Wealth quintile、262 調査・76 か国・1994–2024）、`married_employed`（`EM_EMPM_W_EMP`、既婚女性の過去 12 か月就業率、Total、254 調査）、`married_cash_only` / `married_cash_inkind`（`EM_ERNM_W_CSH` / `EM_ERNM_W_CAK`、就業した既婚女性のうち現金のみ／現金＋現物で報酬を得た割合、Total、204 調査）、`child_primary_attendance` / `child_secondary_attendance`（`ED_NARP_B_BTH` / `ED_NARS_B_BTH`、子どもの初等・中等純就学率（世帯調査）、Total、182 調査・68 か国・1999–）。派生: `married_cash_employed = married_employed × (married_cash_only + married_cash_inkind) / 100`（現金収入のある既婚女性の割合）。
+
+**検定（H8 と同じ枠: 国 FE ＋ 調査年トレンド、国クラスタ SE、標準化係数）**
+- **X1 教育なし群の望む数の horse race（主）**: 教育なしセルの `wanted_tfr` を被説明変数に、同じセルの `women_employed`（教育なし）、`modern_contraception_married`（教育なし）、調査 Total の `child_primary_attendance`、`child_secondary_attendance`、ln U5MR を同時に入れる（すべてそろう調査）。各変数を 1 本ずつ入れた版も併記。
+- **X2 調査全体の horse race**: Total の `wanted_tfr` を、`married_cash_employed`、`women_employed`、`child_*_attendance`、`modern_contraception_married`、ln U5MR、`women_secondary_plus` で同様に。
+- **X3 first→last の変化の対応**: 教育なし群の Δwanted と、Δ`women_employed`（教育なし）・Δ`child_primary_attendance`・Δ`modern_contraception_married`（教育なし）の国レベルの相関（Spearman）。
+- **X4 調査内の媒介**: 調査 × 学歴セルで、`wanted_tfr` の学歴勾配 g_w（H8 T4）に `women_employed` のセル値を加えたとき g_w がどれだけ縮むか。就業の学歴勾配も報告。
+- **X5 就業率そのものの推移**: 教育なし群の `women_employed` は first→last でどう変化したか（上がっていなければ W は成り立たない）。
+
+**判定（事前固定、X1 を主）**: X1 で標準化係数の絶対値が最大で CI が 0 を含まない変数を「教育なし群の望む数と最も強く並走する候補」とする（就業 → W、子どもの就学率 → S、避妊 → C、ln U5MR → U）。CI が 0 を含まない変数が無ければ「どの候補も確かめられない」と断定する。W が選ばれるには、X5 で教育なし群の就業率が中央値で上昇していることも必要（上昇していなければ「W は成り立たない」）。X2〜X4 は整合性の確認として報告し、X1 と食い違えば「候補は絞れない」と書く。
+**頑健性**: `married_cash_employed` を `women_employed` の代わりに（X2）、初等／中等就学率の片方ずつ、1999 年以降、DHS 調査のみ、国ごと等加重。
+**言えないこと**: 就業・就学・避妊はいずれも家族計画プログラムや経済発展と同時に動くので、並走は因果ではない。就業は「働く必要（貧困）」も含む。DHS の就業指標は 1994 年以降で、1990 年代前半以前の変化は見えない。
