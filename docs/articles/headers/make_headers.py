@@ -472,6 +472,98 @@ def growth_fertility_h8() -> Path:
     return out
 
 
+def growth_fertility_h8_part4() -> Path:
+    """Part4: 2 人未満の段階の標準化係数（全部 0 をまたぐ）と、韓国の私教育費 × TFR。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "themes" / "growth-fertility" / "src"))
+    from theme_growth_fertility.analysis import a20261018_h8c_education_cost as h8c
+    from theme_growth_fertility.analysis import a20261018_h8d_gender_equity as h8d
+
+    panel = pl.read_parquet(ROOT / "data" / "marts" / "growth_fertility_panel.parquet")
+    y1 = h8c.run_y1(h8c.y1_base(panel), "S")
+    assert y1.s2 is not None
+    kr = pl.read_parquet(ROOT / "data" / "marts" / "kr_private_tutoring.parquet")
+    kf = h8d.korea_frame(kr, panel)
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "なぜ出生率は 2 人を切るのか",
+        "所得・教育・教育費・男女分業のどれでも説明できない。残るのは「子どもは 2 人」という規範の崩れ",
+        size=40,
+    )
+
+    # left: stage-2 standardised coefficients, all CIs crossing zero
+    ax1 = fig.add_axes([0.16, 0.13, 0.33, 0.52])
+    labels = {
+        "d_sle": "教育の長さ",
+        "d_tert": "大学進学率",
+        "d_sec": "女子の就学率",
+        "d_eexp": "政府の教育支出",
+        "d_ln_gdp": "所得",
+        "d_ln_u5": "子どもの死亡率",
+    }
+    keys = list(labels)
+    for i, k in enumerate(keys):
+        b, _, lo, hi = y1.s2.coefs[k]
+        y = len(keys) - 1 - i
+        ax1.plot([lo, hi], [y, y], color=MUTED, lw=4, solid_capstyle="round")
+        ax1.plot([b], [y], "o", color=BLUE, ms=11)
+    ax1.axvline(0, color=INK, lw=1.2)
+    ax1.set_yticks(range(len(keys)))
+    ax1.set_yticklabels([labels[k] for k in reversed(keys)], fontsize=13, color=INK)
+    ax1.set_xticks([-0.3, 0, 0.3])
+    ax1.set_xticklabels(["−0.3", "0", "+0.3"], fontsize=11, color=MUTED)
+    ax1.tick_params(length=0)
+    for sp in ax1.spines.values():
+        sp.set_visible(False)
+    ax1.set_facecolor(PAPER)
+    tag(bg, 92, 470, f"出生率 3 未満からの 10 年間、{y1.s2.countries} か国。全部 0 をまたぐ", BLUE)
+
+    # right: Korea private tutoring (nominal) vs TFR
+    ax2 = fig.add_axes([0.58, 0.13, 0.36, 0.52])
+    yrs = kf["year"].to_list()
+    sp_ = kf["spend_per_student_10k_krw"].to_list()
+    ax2.plot(yrs, sp_, color=ORANGE, lw=4, marker="o", ms=6)
+    ax2.set_ylim(15, 55)
+    ax2.set_yticks([20, 30, 40, 50])
+    ax2.tick_params(colors=ORANGE, labelsize=11, length=0)
+    ax2.set_xticks([2007, 2013, 2019, 2025])
+    ax2.tick_params(axis="x", colors=MUTED)
+    for sp in ax2.spines.values():
+        sp.set_visible(False)
+    ax2.set_facecolor(PAPER)
+    ax3 = ax2.twinx()
+    t = kf.drop_nulls(["tfr"])
+    ax3.plot(t["year"].to_list(), t["tfr"].to_list(), color=BLUE, lw=4, marker="s", ms=6)
+    ax3.set_ylim(0.6, 1.4)
+    ax3.set_yticks([0.7, 1.0, 1.3])
+    ax3.tick_params(colors=BLUE, labelsize=11, length=0)
+    for sp in ax3.spines.values():
+        sp.set_visible(False)
+    tag(bg, 770, 470, "韓国: 私教育費（橙、名目）2 倍、出生率（青）0.75 へ", ORANGE)
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: World Bank WDI / 韓国 教育部 私教育費調査（KOGL 第1類型）/ socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-18-note-why-fertility-falls-below-two.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
-    for p in (growth_fertility(), wealth(), growth_fertility_h7(), growth_fertility_h8()):
+    for p in (
+        growth_fertility(),
+        wealth(),
+        growth_fertility_h7(),
+        growth_fertility_h8(),
+        growth_fertility_h8_part4(),
+    ):
         print(p)
