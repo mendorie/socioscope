@@ -14,6 +14,7 @@ from socioscope_core.ports.fetcher import FetchError
 from theme_growth_fertility import dhs, estat, kostat, oecd, surveys
 from theme_growth_fertility import eurobarometer as ebm
 from theme_growth_fertility import eurostat as es
+from theme_growth_fertility import oecd_eag as eag
 from theme_growth_fertility import worldbank as wb
 
 THEME = "growth-fertility"
@@ -134,6 +135,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_kostat(ctx, written, skipped)
     written, skipped = _fetch_h6(ctx, written, skipped)
     written, skipped = _fetch_h8(ctx, written, skipped)
+    written, skipped = _fetch_h8c(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -214,6 +216,7 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_kostat(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h6(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h8c(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -473,6 +476,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_kostat(ctx, written, skipped)
     written, skipped = _mart_h6(ctx, written, skipped)
     written, skipped = _mart_h8(ctx, written, skipped)
+    written, skipped = _mart_h8c(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -888,4 +892,59 @@ def _mart_h8(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list
     else:
         ctx.tables.write_table(DHS_H8_MART, dhs.build_mechanisms_mart(rows))
         written.append(DHS_H8_MART)
+    return written, skipped
+
+
+# ---- H8c: OECD Education at a Glance (three SDMX CSVs, one long mart) -----------------------
+# Each dataflow is its own raw and staged table; a missing raw is skipped and the others are
+# staged. The mart concatenates whichever staged tables exist (key uniqueness is enforced there).
+
+EAG_TABLES: dict[str, str] = {d.key: f"staged/oecd_eag/{d.key}" for d in eag.DATASETS}
+EAG_MART = "marts/oecd_education_finance"
+
+
+def _fetch_h8c(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    for ds in eag.DATASETS:
+        try:
+            payload = ctx.fetcher.fetch(ds.url)
+        except FetchError as e:
+            skipped.append(f"{ds.raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=eag.SOURCE,
+            name=ds.raw_name,
+            url=ds.url,
+            license=eag.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h8c(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    for ds in eag.DATASETS:
+        payload = ctx.raw.get(theme=THEME, source=eag.SOURCE, name=ds.raw_name)
+        if payload is None:
+            skipped.append(f"{ds.raw_name}: raw missing (run fetch)")
+            continue
+        parsed = eag.parse(payload, ds)
+        ctx.tables.write_table(EAG_TABLES[ds.key], parsed.rows)
+        written.append(EAG_TABLES[ds.key])
+        if parsed.dropped_ref_areas:
+            dropped = ", ".join(parsed.dropped_ref_areas)
+            skipped.append(f"{ds.raw_name}: non-member REF_AREA dropped: {dropped}")
+    return written, skipped
+
+
+def _mart_h8c(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    staged: dict[str, list[dict[str, object]]] = {}
+    for key, table in EAG_TABLES.items():
+        try:
+            staged[key] = ctx.tables.read_table(table)
+        except FileNotFoundError:
+            skipped.append(f"{table}: staged table missing (run stage)")
+    if staged:
+        ctx.tables.write_table(EAG_MART, eag.build_mart(staged))
+        written.append(EAG_MART)
     return written, skipped

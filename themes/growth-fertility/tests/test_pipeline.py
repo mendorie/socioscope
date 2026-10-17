@@ -5,7 +5,7 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_growth_fertility import dhs, estat, kostat, oecd, pipeline, surveys
+from theme_growth_fertility import dhs, estat, kostat, oecd, oecd_eag, pipeline, surveys
 from theme_growth_fertility import eurobarometer as ebm
 from theme_growth_fertility import eurostat as es
 from theme_growth_fertility import worldbank as wb
@@ -31,6 +31,8 @@ H5_REQUESTS = 1 + len(es.requests())
 H6_ITEMS = 2 + len(ebm.WAVES)
 # H8 items: one DHS request per indicator group x breakdown
 H8_ITEMS = len(dhs.H8_REQUESTS)
+# H8c items: three OECD Education at a Glance CSVs
+H8C_ITEMS = len(oecd_eag.DATASETS)
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -75,6 +77,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + len(kostat.RELEASES)
         + H6_ITEMS
         + H8_ITEMS
+        + H8C_ITEMS
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -102,7 +105,7 @@ def test_fetch_also_stores_country_metadata() -> None:
     estat_keys = tuple(t.key for t in estat.TABLES)
     h6 = (surveys.TESTA_RAW, surveys.BIB_RAW, "eb_STD")
     assert all(
-        s.startswith((*estat_keys, "eurostat_", "newlywed_", *h6, "dhs_h8_"))
+        s.startswith((*estat_keys, "eurostat_", "newlywed_", *h6, "dhs_h8_", "eag_"))
         for s in result.skipped
     )
 
@@ -182,6 +185,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + len(kostat.RELEASES)
         + H6_ITEMS
         + 1  # H8: the countries raw is missing -> one fail-closed message
+        + H8C_ITEMS  # H8c: three raw missing
     )
 
 
@@ -212,7 +216,14 @@ def test_fetch_stores_estat_files_with_license() -> None:
     # no World Bank / DHS / OECD / Eurostat responses
     assert (
         len(result.skipped)
-        == len(wb.INDICATORS) + 1 + 2 + H5_REQUESTS + len(kostat.RELEASES) + H6_ITEMS + H8_ITEMS
+        == len(wb.INDICATORS)
+        + 1
+        + 2
+        + H5_REQUESTS
+        + len(kostat.RELEASES)
+        + H6_ITEMS
+        + H8_ITEMS
+        + H8C_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -570,6 +581,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + len(kostat.RELEASES)
         + H6_ITEMS
         + (H8_ITEMS - 1)  # the wealth-quintile request shares the H4 URL
+        + H8C_ITEMS
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -662,6 +674,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + len(kostat.RELEASES)
         + H6_ITEMS
         + H8_ITEMS
+        + H8C_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -1277,5 +1290,86 @@ def test_mart_h8_duplicate_key_in_staged_fails_closed() -> None:
     row = {k: "x" for k in H8_COLUMNS}
     row.update(survey_year=2015, value=1.0)
     ctx.tables.write_table(pipeline.DHS_H8_TABLE, [row, dict(row)])
+    with pytest.raises(ValueError, match="duplicate"):
+        PIPELINE.run(Stage.MART, ctx)
+
+
+# ---------------------------------------------------------------- H8c: OECD Education at a Glance
+
+EAG_BY_KEY = {
+    "fin_source": (FIXTURES / "oecd_eag_fin_source.csv").read_bytes(),
+    "earn_rel": (FIXTURES / "oecd_eag_earn_rel.csv").read_bytes(),
+    "fin_perstud": (FIXTURES / "oecd_eag_fin_perstud.csv").read_bytes(),
+}
+
+
+def h8c_responses() -> dict[str, bytes]:
+    return {d.url: EAG_BY_KEY[d.key] for d in oecd_eag.DATASETS}
+
+
+def test_fetch_stores_three_eag_raws_with_oecd_license() -> None:
+    ctx = make_ctx(h8c_responses())
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert result.written == (
+        "growth-fertility/oecd_eag/eag_fin_source.csv",
+        "growth-fertility/oecd_eag/eag_earn_rel.csv",
+        "growth-fertility/oecd_eag/eag_fin_perstud.csv",
+    )
+    recs = ctx.raw.records()
+    assert {r.source for r in recs} == {oecd_eag.SOURCE}
+    assert [r.url for r in recs] == [d.url for d in oecd_eag.DATASETS]
+    assert all("OECD Terms" in r.license for r in recs)
+
+
+def test_stage_and_mart_eag_long_table_independent_of_other_sources() -> None:
+    ctx = make_ctx(h8c_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == tuple(pipeline.EAG_TABLES.values())
+    assert pipeline.EAG_TABLES == {
+        "fin_source": "staged/oecd_eag/fin_source",
+        "earn_rel": "staged/oecd_eag/earn_rel",
+        "fin_perstud": "staged/oecd_eag/fin_perstud",
+    }
+    assert "eag_fin_source.csv: non-member REF_AREA dropped: BRA, EU25, OECD" in result.skipped
+    assert "eag_earn_rel.csv: non-member REF_AREA dropped: ARG, BRA, OECD" in result.skipped
+    fin = ctx.tables.read_table(pipeline.EAG_TABLES["fin_source"])
+    assert len(fin) == 6 and {r["dataset"] for r in fin} == {"fin_source"}
+    assert {r["source"] for r in fin} == {"oecd_eag"}
+    mart = PIPELINE.run(Stage.MART, ctx)
+    assert mart.written == (pipeline.EAG_MART,)
+    assert pipeline.EAG_MART == "marts/oecd_education_finance"
+    rows = ctx.tables.read_table(pipeline.EAG_MART)
+    assert len(rows) == 18
+    assert {r["dataset"] for r in rows} == {"fin_source", "earn_rel", "fin_perstud"}
+    assert {r["iso3"] for r in rows} == {"ITA", "JPN", "KOR", "SWE", "USA"}
+    assert set(rows[0]) == {
+        "iso3", "year", "dataset", "measure", "education_level", "exp_source", "sex",
+        "work_time", "price_base", "unit", "base_per", "value", "obs_status", "source",
+    }  # fmt: skip
+    keys = [oecd_eag.mart_key(r) for r in rows]
+    assert keys == sorted(keys)
+
+
+def test_stage_eag_with_one_raw_writes_that_table_and_mart_uses_it() -> None:
+    ds = oecd_eag.DATASETS[1]
+    ctx = make_ctx({ds.url: EAG_BY_KEY[ds.key]})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.EAG_TABLES["earn_rel"],)
+    assert "eag_fin_source.csv: raw missing (run fetch)" in result.skipped
+    assert "eag_fin_perstud.csv: raw missing (run fetch)" in result.skipped
+    mart = PIPELINE.run(Stage.MART, ctx)
+    assert mart.written == (pipeline.EAG_MART,)
+    assert len(ctx.tables.read_table(pipeline.EAG_MART)) == 6
+
+
+def test_mart_eag_skips_without_staged_and_fails_on_duplicate_keys() -> None:
+    ctx = make_ctx({})
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert pipeline.EAG_MART not in result.written
+    assert any(s.startswith("staged/oecd_eag/") for s in result.skipped)
+    rows = oecd_eag.parse(EAG_BY_KEY["fin_source"], oecd_eag.DATASETS[0]).rows
+    ctx.tables.write_table(pipeline.EAG_TABLES["fin_source"], rows + [dict(rows[0])])
     with pytest.raises(ValueError, match="duplicate"):
         PIPELINE.run(Stage.MART, ctx)
