@@ -2,7 +2,8 @@
 
 H8 レポート（reports/2026-10-17-h8-mechanisms.md）の数値を、同じ mart から
 a20261017_h8_mechanisms の関数で**再計算**して 7 枚の図にする
-（h8s07 は H8b レポートの X1・X5 を a20261018_h8b_within_group の関数で再計算）
+（h8s07 は H8b レポートの X1・X5 を a20261018_h8b_within_group の関数で、h8s08・h8s09 は
+H8c レポートの Y1・Y2 を a20261018_h8c_education_cost の関数で再計算）
 （新しい推定は行わない。
 T2 の仕様依存の 2 本は H8 の探索的 E4・E7 と同じ式を H1 の `fit` で再実行する。
 乱数・現在時刻は使わない）。H8 の関数は途中経過を stdout に出す。
@@ -12,7 +13,7 @@ T2 の仕様依存の 2 本は H8 の探索的 E4・E7 と同じ式を H1 の `f
 
 フォント検出・保存規約は s20261005_summary と同じ（関数を import。PNG メタデータの Software を
 落としてバイト再現。sha256 はフォント環境に依存する）。純粋ヘルパ（split_share, median_by_index,
-scorecard_rows, spec_rows, rise_summary）は tests/test_summary_h8.py で検証する。
+scorecard_rows, spec_rows, rise_summary, country_ja）は tests/test_summary_h8.py で検証する。
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ import polars as pl
 
 from theme_growth_fertility.analysis import a20261017_h8_mechanisms as h8
 from theme_growth_fertility.analysis import a20261018_h8b_within_group as h8b
+from theme_growth_fertility.analysis import a20261018_h8c_education_cost as h8c
 from theme_growth_fertility.analysis import s20261005_summary as base
 from theme_growth_fertility.analysis.a20261004_h1_income_tfr import fit
 
@@ -50,6 +52,19 @@ T6_JA = {
     "d_smam": "女性の平均初婚年齢",
     "d_ln_gdp": "一人当たり GDP（対数）",
 }
+SRC_OECD = (
+    "出典: OECD Education at a Glance（UOE finance / LSO earnings）/ World Bank WDI"
+    "　分析: socioscope"
+)
+COUNTRY_JA = {
+    "JPN": "日本",
+    "KOR": "韓国",
+    "DNK": "デンマーク",
+    "FIN": "フィンランド",
+    "NOR": "ノルウェー",
+    "SWE": "スウェーデン",
+}
+NORDIC_MARKER = {"DNK": "o", "FIN": "s", "NOR": "^", "SWE": "D"}
 Coef = tuple[float, float, float, float]
 
 
@@ -78,6 +93,11 @@ def scorecard_rows(verdicts: Mapping[str, str]) -> list[tuple[str, str, str]]:
 def spec_rows(specs: Sequence[tuple[str, Coef]]) -> list[tuple[str, float, float, float, bool]]:
     """(label, b, lo, hi, CI excludes 0) from (label, (b, se, lo, hi))."""
     return [(lab, c[0], c[2], c[3], c[2] > 0 or c[3] < 0) for lab, c in specs]
+
+
+def country_ja(iso3: str) -> str | None:
+    """Japanese name for the countries labelled in h8s09 (Japan, Korea, Nordic 4); else None."""
+    return COUNTRY_JA.get(iso3)
 
 
 def rise_summary(deltas: Sequence[float]) -> tuple[float, int, int]:
@@ -386,6 +406,99 @@ def fig7_within_group(x1: h8b.Horse, x5: h8b.X5Result, path: Path) -> None:
     base._save(fig, path, SRC_DHS)
 
 
+Y1_JA = {
+    "d_tert": "高等教育の進学率",
+    "d_sle": "期待就学年数（教育の長さ）",
+    "d_eexp": "政府の教育支出（GDP 比）",
+    "d_sec": "女子の中等就学率",
+    "d_ln_gdp": "一人当たり GDP（対数）",
+    "d_ln_u5": "子どもの死亡率（対数）",
+}
+
+
+def fig8_education_length(y1: h8c.Y1Result, path: Path) -> None:
+    s2 = y1.s2
+    assert s2 is not None
+    plt = _plt()
+    fig, ax = plt.subplots(figsize=(8.6, 5.0))
+    rows = spec_rows([(Y1_JA[k], s2.coefs[k]) for k in h8c.Y1_VARS])
+    for i, (_lab, b, lo, hi, sig) in enumerate(rows):
+        col = ORANGE if sig else BLUE_RAMP[2]
+        ax.plot([lo, hi], [i, i], color=col, lw=2.2)
+        ax.plot([b], [i], "o", color=col)
+        ax.text(b, i - 0.22, f"{b:+.2f}", ha="center", fontsize=9)
+    ax.axvline(0, color=MUTED, lw=0.8)
+    ax.set_yticks(range(len(rows)))
+    ax.set_yticklabels([r[0] for r in rows], fontsize=9)
+    ax.set_ylim(len(rows) - 0.5, -0.7)
+    ax.set_xlabel(
+        "10 年間の変化が 1 標準偏差大きいときの TFR の変化（人）\n"
+        "（点: 推定値、線: 95% 信頼区間。左ほど出生率の低下と並ぶ）"
+    )
+    ax.set_title(
+        f"TFR 3 未満から始まる 10 年間（{s2.n} 区間・{s2.countries} か国）", fontsize=10, loc="left"
+    )
+    base._style(ax)
+    fig.suptitle(
+        "2 人未満へ下がる段階で、教育の長さ・教育費の伸びは出生率の低下と並んでいない",
+        fontsize=11,
+        x=0.01,
+        ha="left",
+    )
+    _note(
+        fig,
+        "国と期間の固定効果つきの 10 年差分に 6 つを同時に入れた（青 = 95% CI が 0 を含む）。"
+        "区切り・差分の幅・標本を変えても、\n教育の長さが負で CI が 0 を含まない仕様はない。"
+        "事後に追加した検証（H8c）。",
+    )
+    fig.tight_layout(rect=(0, 0.10, 1, 0.94))
+    base._save(fig, path, SRC_WDI)
+
+
+def _oecd_panel(ax: Any, res: h8c.Y2Result, x: str, xlabel: str) -> None:
+    for iso, xv, yv in res.frame.select("iso3", x, "tfr").rows():
+        name = country_ja(iso)
+        if name is None:
+            ax.scatter([xv], [yv], s=14, color="#bbbbbb", zorder=2)
+            continue
+        if iso in h8c.EAST:
+            ax.scatter([xv], [yv], s=36, color=ORANGE, zorder=3)
+            ax.annotate(
+                name, (xv, yv), fontsize=9, color=ORANGE, xytext=(4, 3), textcoords="offset points"
+            )
+        else:  # Nordic points sit close together: distinct markers + legend instead of labels
+            ax.scatter([xv], [yv], s=40, color=BLUE_RAMP[3], marker=NORDIC_MARKER[iso],
+                       zorder=3, label=name)  # fmt: skip
+    ax.legend(fontsize=8, frameon=False, loc="upper right", title="北欧", title_fontsize=8)
+    r, p = res.rho[x]
+    ax.set_xlabel(xlabel, fontsize=9)
+    ax.set_ylabel("合計特殊出生率（TFR）")
+    ax.set_title(f"{res.est.n} か国、順位相関 {r:+.2f}（p = {p:.2f}）", fontsize=10, loc="left")
+    base._style(ax)
+
+
+def fig9_oecd(main: h8c.Y2Result, norel: h8c.Y2Result, path: Path) -> None:
+    plt = _plt()
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(11.0, 4.9))
+    _oecd_panel(ax, norel, "priv", "教育費のうち家計など民間が負担する割合（%、初等〜高等）")
+    _oecd_panel(ax2, main, "rel", "大卒の賃金（高卒 = 100、25〜64 歳）")
+    fig.suptitle(
+        "OECD の中で、教育費の家計負担や学歴の賃金差が大きい国ほど"
+        "出生率が低い、という関係は見えない",
+        fontsize=11,
+        x=0.01,
+        ha="left",
+    )
+    _note(
+        fig,
+        "各国の最新年（値と TFR がそろう 2012 年以降の最新年。日本の賃金差は 2012 年）。"
+        "日本・韓国は家計負担が大きく出生率が低いが、\n英語圏・チリも家計負担が大きく、"
+        "北欧は負担が小さいのに 2010 年代に出生率が大きく下がった。事後に追加した検証（H8c）。",
+    )
+    fig.tight_layout(rect=(0, 0.10, 1, 0.94))
+    base._save(fig, path, SRC_OECD)
+
+
 # ---------------------------------------------------------------- driver
 def t2_specs(st: pl.DataFrame, t2: h8.T2Result) -> list[tuple[str, Coef]]:
     """Main T2(c) and the two specification checks of H8's exploratory E7 (no trend) and
@@ -512,7 +625,35 @@ def run(data_dir: Path, fig_dir: Path) -> list[tuple[str, str]]:
         f" {med5:+.1f} ポイント変化し、上がった国は {n5} か国中 {up}（事後に追加した検証 H8b）。",
     ))  # fmt: skip
 
-    lines = ["# H8 記事用図のキャプション", "", SRC_DHS, "", SRC_WDI, ""]
+    y1 = h8c.run_y1(h8c.y1_base(panel), "S")
+    fig8_education_length(y1, fig_dir / "h8s08_education_length.png")
+    assert y1.s2 is not None
+    c8 = y1.s2.coefs
+    captions.append((
+        "h8s08_education_length.png",
+        f"TFR 3 未満からの 10 年間で、期待就学年数 {c8['d_sle'][0]:+.2f}"
+        f" [{c8['d_sle'][2]:+.2f}, {c8['d_sle'][3]:+.2f}]、高等教育進学率 {c8['d_tert'][0]:+.2f}"
+        f" [{c8['d_tert'][2]:+.2f}, {c8['d_tert'][3]:+.2f}]、政府の教育支出 "
+        f"{c8['d_eexp'][0]:+.2f} [{c8['d_eexp'][2]:+.2f}, {c8['d_eexp'][3]:+.2f}] のどれも CI が"
+        f" 0 を含む（{y1.s2.n} 区間・{y1.s2.countries} か国、事後に追加した検証 H8c）。",
+    ))  # fmt: skip
+    o = pl.read_parquet(data_dir / h8c.OECD_MART)
+    op = h8c.oecd_panel(o, panel)
+    y2 = h8c.run_y2(op, "S")
+    y2n = h8c.run_y2(op, "S no-rel", xs=h8c.Y2_NOREL)
+    fig9_oecd(y2, y2n, fig_dir / "h8s09_oecd_education_cost.png")
+    rp, rr = y2n.rho["priv"], y2.rho["rel"]
+    bp, br = y2.est.coefs["priv"], y2.est.coefs["rel"]
+    captions.append((
+        "h8s09_oecd_education_cost.png",
+        f"OECD の最新年で、教育費の私的負担割合と TFR の順位相関は {rp[0]:+.2f}"
+        f"（{y2n.est.n} か国）、"
+        f"大卒の相対賃金とは {rr[0]:+.2f}（{y2.est.n} か国）。所得と一人当たり支出をそろえた"
+        f"標準化係数も {bp[0]:+.2f} [{bp[2]:+.2f}, {bp[3]:+.2f}]・{br[0]:+.2f}"
+        f" [{br[2]:+.2f}, {br[3]:+.2f}] で、負の関連は確かめられない（事後に追加した検証 H8c）。",
+    ))  # fmt: skip
+
+    lines = ["# H8 記事用図のキャプション", "", SRC_DHS, "", SRC_WDI, "", SRC_OECD, ""]
     lines += [f"- `{f}`: {cap}" for f, cap in captions]
     (fig_dir / "captions.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     for f, cap in captions:

@@ -40,3 +40,9 @@ def test_rise_summary_counts_strict_rises() -> None:
 def test_rise_summary_rejects_empty() -> None:
     with pytest.raises(ValueError):
         s.rise_summary([])
+
+
+def test_country_ja_labels_only_focus_countries() -> None:
+    assert s.country_ja("JPN") == "日本"
+    assert s.country_ja("SWE") == "スウェーデン"
+    assert s.country_ja("USA") is None
