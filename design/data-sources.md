@@ -130,7 +130,7 @@
   - 対象国は低・中所得国に偏る（高所得国の国内勾配は観測できない）。同一国の複数調査は調査種別（DHS/MIS/AIS）が混在する。
 
 #### H8: 複数指標 × 内訳（`marts/dhs_mechanisms`、取得日 2026-10-17）
-- 同じ API を**22 リクエスト**（1 リクエスト = 1 指標群 × 1 内訳）で呼ぶ。`theme_growth_fertility.dhs.H8_REQUESTS`（raw 名 → URL、決定的順序）。内訳なし（Total のみ）は `breakdown` を付けず `…/data?indicatorIds=<ID[,ID…]>&perpage=5000&f=json`、内訳ありは `&breakdown=all&characteristicCategory=<Category>`（空白は `%20`）。`perpage` の上限は 5,000 で、超えると `TotalPages > 1` になり fail-closed（下表はすべて 1 ページで確認済み）。国コード → ISO3 は H4 の `dhs_countries.json` を再利用（countries raw が無ければ H8 全体を stage しない）。
+- 同じ API を**30 リクエスト**（1 リクエスト = 1 指標群 × 1 内訳。H8b の 8 本を含む）で呼ぶ。`theme_growth_fertility.dhs.H8_REQUESTS`（raw 名 → URL、決定的順序）。内訳なし（Total のみ）は `breakdown` を付けず `…/data?indicatorIds=<ID[,ID…]>&perpage=5000&f=json`、内訳ありは `&breakdown=all&characteristicCategory=<Category>`（空白は `%20`）。`perpage` の上限は 5,000 で、超えると `TotalPages > 1` になり fail-closed（下表はすべて 1 ページで確認済み）。国コード → ISO3 は H4 の `dhs_countries.json` を再利用（countries raw が無ければ H8 全体を stage しない）。
   | raw（`data/raw/growth-fertility/dhs_api/`） | indicatorIds | characteristicCategory | 行 / 調査（2026-10-17） |
   |---|---|---|---|
   | `dhs_h8_FE_FRTR_W_TFR_total.json` | `FE_FRTR_W_TFR` | （Total） | 368 / 368 |
@@ -146,9 +146,13 @@
   | `dhs_h8_MA_MSTA_W_UNI_{total,age_5_year_groups}.json` | `MA_MSTA_W_UNI` | Total 15-49 / `Age (5-year groups)` | 332 / 332、2,322 / 332 |
   | `dhs_h8_ED_EDUC_W_SEH_total.json` | `ED_EDUC_W_SEH` | （Total 15-49） | 345 / 345 |
   | `dhs_h8_FP_CUSM_W_MOD_{total,education}.json` | `FP_CUSM_W_MOD` | Total / Education | 324 / 324、1,242 / 324 |
+  | `dhs_h8_EM_EMPL_W_EMC_{total,education,wealth_quintile}.json`（H8b、2026-10-17 取得） | `EM_EMPL_W_EMC`（過去 12 か月に働き現在も働いている女性 % → `women_employed`） | Total 15-49 / Education / Wealth quintile | 262 / 262、1,022 / 262、1,310 / 262（76 か国、1994–2024）。**内訳指定なし（`breakdown=all` のみ）は 12,906 行で 2 ページ以上になるため呼ばない** |
+  | `dhs_h8_EM_EMPM_W_EMP_total.json`（H8b） | `EM_EMPM_W_EMP`（既婚女性の過去 12 か月就業率 → `married_employed`） | （Total 15-49） | 254 / 254（77 か国） |
+  | `dhs_h8_EM_ERNM_W_CSH_total.json` / `dhs_h8_EM_ERNM_W_CAK_total.json`（H8b） | `EM_ERNM_W_CSH` / `EM_ERNM_W_CAK`（就業した既婚女性のうち現金のみ／現金＋現物の報酬 → `married_cash_only` / `married_cash_inkind`） | （Total 15-49） | 204 / 204（71 か国）、202 / 202（70 か国）、1999– |
+  | `dhs_h8_ED_NARP_B_BTH_total.json` / `dhs_h8_ED_NARS_B_BTH_total.json`（H8b） | `ED_NARP_B_BTH` / `ED_NARS_B_BTH`（世帯の子どもの初等／中等純就学率 → `child_primary_attendance` / `child_secondary_attendance`） | （Total） | 182 / 182（68 か国、1999–2025）ずつ |
 - レコード構造（H4 の主フィールドに加えて使うもの）: `ByVariableLabel`（文字列。U5MR の Total は "Five years preceding the survey" と "Ten years preceding the survey" の 2 行/調査、他は空）、`IsPreferred`（int。U5MR では 5 年版が 1、10 年版が 0）、`IsTotal`。Total 行の `CharacteristicCategory`/`CharacteristicLabel` は指標により "Total" / "Total 15-49" / "Total 25-49" と異なり、mart の `characteristic_category` にそのまま入れる。`CILow`/`CIHigh`/`DenominatorWeighted` は指標により数値文字列が入る（U5MR の CI、婚姻指標の分母など）。
 - 変換: `dhs.mechanism_rows`（`METRICS` にある IndicatorId の行だけ、内訳はリクエストしたカテゴリ＋Total 系のみ通す。ISO3 の無い国コードの行は落とし skipped に残す）→ `staged/dhs/mechanisms`（全 raw を 1 表に結合。raw が欠けた分は skipped）→ `marts/dhs_mechanisms`（`survey_year, iso3, survey_id, metric, characteristic_category, characteristic_label, by_variable` でソート。キー重複は `ValueError`）。列は `iso3, country, dhs_country_code, survey_id, survey_year, survey_type, indicator_id, metric, characteristic_category, characteristic_label, by_variable, is_preferred, value, ci_low, ci_high, denominator_weighted, source`。
-- 引用義務は H4 と同じ（`dhs.LICENSE`、[Accessed 10-17-2026] 相当。manifest に残す）。raw はコミットしない。2026-10-17 時点で ISO3 の付かない国コードは H8 の 22 レスポンス中に無い（87 国コードすべてに ISO3 あり）。
+- 引用義務は H4 と同じ（`dhs.LICENSE`、[Accessed 10-17-2026] 相当。manifest に残す）。raw はコミットしない。2026-10-17 時点で ISO3 の付かない国コードは H8 の 30 レスポンス中に無い（87 国コードすべてに ISO3 あり）。H8b 追加後の `marts/dhs_mechanisms` は 26,270 行・374 調査・87 か国（調査数は増えない。H8b の指標は 1994 年以降の調査のみ）。
 - 既知の注意: `FE_FRTR_W_TFR × Wealth quintile` は H4 と同一リクエストで、raw を 2 つの名前で保存する（H4 側の raw・staged・mart は無変更）。学歴ラベルは `No education / Primary / Secondary / Higher` の 4 群（`Higher` が無い調査あり）。U5MR の Education / Wealth 内訳は 10 年版しか返らないため、Total と内訳を比べるときは `by_variable` をそろえる。
 
 ### Eurostat dissemination API（JSON-stat 2.0）— 欧州の学歴別 有配偶率・出生順位別／学歴別 TFR（growth-fertility H5）

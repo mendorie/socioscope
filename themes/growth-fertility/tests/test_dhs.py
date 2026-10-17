@@ -141,7 +141,7 @@ def test_data_url_generalises_to_indicator_groups_and_total_only() -> None:
 
 def test_h8_requests_cover_spec_table_with_distinct_names_and_urls() -> None:
     reqs = dhs.H8_REQUESTS
-    assert len(reqs) == 22
+    assert len(reqs) == 30
     assert len({r.raw_name for r in reqs}) == len(reqs) == len({r.url for r in reqs})
     assert all(r.raw_name.startswith("dhs_h8_") and r.raw_name.endswith(".json") for r in reqs)
     by_name = {r.raw_name: r for r in reqs}
@@ -156,7 +156,31 @@ def test_h8_requests_cover_spec_table_with_distinct_names_and_urls() -> None:
     assert {i for r in reqs for i in r.indicator_ids} == set(dhs.METRICS)
     assert dhs.METRICS["CM_ECMR_C_U5M"] == "u5mr"
     assert dhs.METRICS["FE_FRTR_W_A45"] == "asfr_45"
-    assert len(dhs.METRICS) == 17
+    assert len(dhs.METRICS) == 23
+    # H8b (design: growth-fertility.md "H8b"): employment, cash earnings, children's attendance
+    assert dhs.METRICS["EM_EMPL_W_EMC"] == "women_employed"
+    assert dhs.METRICS["EM_EMPM_W_EMP"] == "married_employed"
+    assert dhs.METRICS["EM_ERNM_W_CSH"] == "married_cash_only"
+    assert dhs.METRICS["EM_ERNM_W_CAK"] == "married_cash_inkind"
+    assert dhs.METRICS["ED_NARP_B_BTH"] == "child_primary_attendance"
+    assert dhs.METRICS["ED_NARS_B_BTH"] == "child_secondary_attendance"
+    # EM_EMPL_W_EMC without a breakdown pages (> 5,000 rows): every request names one
+    assert [r.raw_name for r in reqs if "EM_EMPL_W_EMC" in r.indicator_ids] == [
+        "dhs_h8_EM_EMPL_W_EMC_total.json",
+        "dhs_h8_EM_EMPL_W_EMC_education.json",
+        "dhs_h8_EM_EMPL_W_EMC_wealth_quintile.json",
+    ]
+    assert by_name["dhs_h8_EM_EMPL_W_EMC_total.json"].category is None
+    assert by_name["dhs_h8_EM_EMPL_W_EMC_wealth_quintile.json"].category == "Wealth quintile"
+    for stem in (
+        "EM_EMPM_W_EMP",
+        "EM_ERNM_W_CSH",
+        "EM_ERNM_W_CAK",
+        "ED_NARP_B_BTH",
+        "ED_NARS_B_BTH",
+    ):
+        assert by_name[f"dhs_h8_{stem}_total.json"].indicator_ids == (stem,)
+        assert by_name[f"dhs_h8_{stem}_total.json"].category is None
     # order is deterministic: TFR first, Total before breakdowns
     assert [r.raw_name for r in reqs[:3]] == [
         "dhs_h8_FE_FRTR_W_TFR_total.json",
@@ -294,3 +318,25 @@ def test_build_mechanisms_mart_sorts_by_key_and_rejects_duplicates() -> None:
     assert dhs.build_mechanisms_mart([a, b, c, d]) == [c, d, b, a]
     with pytest.raises(ValueError, match="duplicate"):
         dhs.build_mechanisms_mart([a, dict(a)])
+
+
+def test_mechanism_rows_h8b_employment_and_attendance_totals() -> None:
+    rows = dhs.mechanism_rows(
+        _h8("EM_EMPL_W_EMC_total"), iso3_by_dhs_code=ISO3, allowed_categories=frozenset()
+    )
+    assert [(r["iso3"], r["metric"], r["characteristic_category"]) for r in rows] == [
+        ("AFG", "women_employed", "Total 15-49"),
+        ("KEN", "women_employed", "Total 15-49"),
+    ]
+    rows = dhs.mechanism_rows(
+        _h8("EM_EMPL_W_EMC_education"),
+        iso3_by_dhs_code=ISO3,
+        allowed_categories=frozenset({"Education"}),
+    )
+    assert {r["characteristic_category"] for r in rows} == {"Education"}
+    assert {r["metric"] for r in rows} == {"women_employed"}
+    rows = dhs.mechanism_rows(
+        _h8("ED_NARP_B_BTH_total"), iso3_by_dhs_code=ISO3, allowed_categories=frozenset()
+    )
+    assert {r["metric"] for r in rows} == {"child_primary_attendance"}
+    assert all(0 <= float(r["value"]) <= 100 for r in rows)

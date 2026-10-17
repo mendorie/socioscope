@@ -190,6 +190,13 @@ METRICS: dict[str, str] = {
     "MA_MSTA_W_UNI": "in_union",
     "ED_EDUC_W_SEH": "women_secondary_plus",
     "FP_CUSM_W_MOD": "modern_contraception_married",
+    # H8b (2026-10-18): women's employment / cash earnings / children's school attendance
+    "EM_EMPL_W_EMC": "women_employed",
+    "EM_EMPM_W_EMP": "married_employed",
+    "EM_ERNM_W_CSH": "married_cash_only",
+    "EM_ERNM_W_CAK": "married_cash_inkind",
+    "ED_NARP_B_BTH": "child_primary_attendance",
+    "ED_NARS_B_BTH": "child_secondary_attendance",
 }
 EDUCATION = "Education"
 AGE_5 = "Age (5-year groups)"
@@ -223,7 +230,7 @@ def _req(ids: str | tuple[str, ...], category: str | None, *, stem: str | None =
 
 
 # Deterministic order; every request was checked to return a single page (< 5,000 rows) on
-# 2026-10-17. Region and other breakdowns are not requested.
+# 2026-10-17 (H8b additions: 2026-10-18). Region and other breakdowns are not requested.
 H8_REQUESTS: tuple[Request, ...] = (
     _req("FE_FRTR_W_TFR", None),
     _req("FE_FRTR_W_TFR", EDUCATION),
@@ -247,6 +254,15 @@ H8_REQUESTS: tuple[Request, ...] = (
     _req("ED_EDUC_W_SEH", None),
     _req("FP_CUSM_W_MOD", None),
     _req("FP_CUSM_W_MOD", EDUCATION),
+    # H8b. EM_EMPL_W_EMC with breakdown=all pages (12,906 rows): always name one breakdown.
+    _req("EM_EMPL_W_EMC", None),
+    _req("EM_EMPL_W_EMC", EDUCATION),
+    _req("EM_EMPL_W_EMC", CHARACTERISTIC),
+    _req("EM_EMPM_W_EMP", None),
+    _req("EM_ERNM_W_CSH", None),
+    _req("EM_ERNM_W_CAK", None),
+    _req("ED_NARP_B_BTH", None),
+    _req("ED_NARS_B_BTH", None),
 )
 MECHANISM_KEY = (
     "survey_year",
