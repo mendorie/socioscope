@@ -1,9 +1,10 @@
 """H8 の note 記事（日本語・一般読者）用の図を生成する決定的スクリプト。
 
 H8 レポート（reports/2026-10-17-h8-mechanisms.md）の数値を、同じ mart から
-a20261017_h8_mechanisms の関数で**再計算**して 7 枚の図にする
+a20261017_h8_mechanisms の関数で**再計算**して 11 枚の図にする
 （h8s07 は H8b レポートの X1・X5 を a20261018_h8b_within_group の関数で、h8s08・h8s09 は
-H8c レポートの Y1・Y2 を a20261018_h8c_education_cost の関数で再計算）
+H8c レポートの Y1・Y2 を a20261018_h8c_education_cost の関数で、h8s10・h8s11 は H8d レポートの
+Z1/Z2/Z6・Z5 を a20261018_h8d_gender_equity の関数で再計算）
 （新しい推定は行わない。
 T2 の仕様依存の 2 本は H8 の探索的 E4・E7 と同じ式を H1 の `fit` で再実行する。
 乱数・現在時刻は使わない）。H8 の関数は途中経過を stdout に出す。
@@ -13,7 +14,8 @@ T2 の仕様依存の 2 本は H8 の探索的 E4・E7 と同じ式を H1 の `f
 
 フォント検出・保存規約は s20261005_summary と同じ（関数を import。PNG メタデータの Software を
 落としてバイト再現。sha256 はフォント環境に依存する）。純粋ヘルパ（split_share, median_by_index,
-scorecard_rows, spec_rows, rise_summary, country_ja）は tests/test_summary_h8.py で検証する。
+scorecard_rows, spec_rows, rise_summary, country_ja, ge_label）は tests/test_summary_h8.py で
+検証する。
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ import polars as pl
 from theme_growth_fertility.analysis import a20261017_h8_mechanisms as h8
 from theme_growth_fertility.analysis import a20261018_h8b_within_group as h8b
 from theme_growth_fertility.analysis import a20261018_h8c_education_cost as h8c
+from theme_growth_fertility.analysis import a20261018_h8d_gender_equity as h8d
 from theme_growth_fertility.analysis import s20261005_summary as base
 from theme_growth_fertility.analysis.a20261004_h1_income_tfr import fit
 
@@ -64,6 +67,18 @@ COUNTRY_JA = {
     "NOR": "ノルウェー",
     "SWE": "スウェーデン",
 }
+GE_LABEL_JA = {
+    **COUNTRY_JA,
+    "ITA": "イタリア",
+    "ESP": "スペイン",
+    "USA": "米国",
+    "GBR": "英国",
+}
+SRC_SDG = "出典: 国連統計部 SDG Global Database（SL_DOM_TSPD）/ World Bank WDI　分析: socioscope"
+SRC_KR = (
+    "出典: 韓国 教育部「2025年 初中高 私教育費調査 結果」報道資料（KOGL 第1類型）/ World Bank WDI"
+    "　分析: socioscope"
+)
 NORDIC_MARKER = {"DNK": "o", "FIN": "s", "NOR": "^", "SWE": "D"}
 Coef = tuple[float, float, float, float]
 
@@ -98,6 +113,12 @@ def spec_rows(specs: Sequence[tuple[str, Coef]]) -> list[tuple[str, float, float
 def country_ja(iso3: str) -> str | None:
     """Japanese name for the countries labelled in h8s09 (Japan, Korea, Nordic 4); else None."""
     return COUNTRY_JA.get(iso3)
+
+
+def ge_label(iso3: str) -> str | None:
+    """Japanese name for the countries labelled in h8s10 (Japan, Korea, Nordic 4, Italy, Spain,
+    US, UK); else None."""
+    return GE_LABEL_JA.get(iso3)
 
 
 def rise_summary(deltas: Sequence[float]) -> tuple[float, int, int]:
@@ -499,6 +520,116 @@ def fig9_oecd(main: h8c.Y2Result, norel: h8c.Y2Result, path: Path) -> None:
     base._save(fig, path, SRC_OECD)
 
 
+def fig10_gender_equity(res: h8d.GResult, path: Path) -> None:
+    plt = _plt()
+    fig, ax = plt.subplots(figsize=(9.6, 5.8))
+    hi_col, lo_col = ORANGE, BLUE_RAMP[1]
+    for iso, sh, tfr, fl in res.frame.select("iso3", "share", "tfr", "flfp").rows():
+        col = hi_col if fl >= res.median_flfp else lo_col
+        name = ge_label(iso)
+        ax.scatter([sh], [tfr], s=44 if name else 18, color=col, zorder=3,
+                   edgecolor=INK if name else "none", linewidth=0.6)  # fmt: skip
+        if name:
+            ax.annotate(name, (sh, tfr), fontsize=9, color=INK, xytext=(4, 3),
+                        textcoords="offset points")  # fmt: skip
+    ax.scatter(
+        [],
+        [],
+        s=30,
+        color=hi_col,
+        label=f"女性の労働参加率が高い半分（{res.median_flfp:.0f}% 以上）",
+    )
+    ax.scatter([], [], s=30, color=lo_col, label="女性の労働参加率が低い半分")
+    ax.legend(fontsize=8.5, frameon=False, loc="lower left")
+    b, u = res.z1c, res.z2u
+    r, p = res.rho
+    ax.set_xlabel("家事・育児など無償労働のうち女性が担う割合（女性 ÷（女性＋男性））")
+    ax.set_ylabel("合計特殊出生率（TFR、同じ年）")
+    upper = "" if u is None else f"、参加率が高い半分では {u[0]:+.2f} [{u[2]:+.2f}, {u[3]:+.2f}]"
+    ax.set_title(
+        f"{res.z1.n} か国、順位相関 {r:+.2f}（p = {p:.2f}）。所得・就業・進学率をそろえた"
+        f"標準化係数 {b[0]:+.2f} [{b[2]:+.2f}, {b[3]:+.2f}]{upper}",
+        fontsize=9,
+        loc="left",
+    )
+    base._style(ax)
+    fig.suptitle(
+        "家事・育児が女性に偏った国ほど出生率が低い、という関係は全体では確かめられない",
+        fontsize=11.5,
+        x=0.01,
+        ha="left",
+    )
+    _note(
+        fig,
+        "各国の最新の観測年（2000 年以降）で TFR が 2.5 未満の国。スペインは年齢区分が合わず除外。"
+        "日本・韓国の男性値は調査の定義差で低めに出る。\n"
+        "OECD 加盟国だけ・TFR 2.1 未満だけに絞ると負の関連が出るが、"
+        "OECD の結果は韓国を外すと消える。"
+        "事後に追加した検証（H8d）。",
+    )
+    fig.tight_layout(rect=(0, 0.09, 1, 0.95))
+    base._save(fig, path, SRC_SDG)
+
+
+def fig11_korea(kf: pl.DataFrame, k: pl.DataFrame, path: Path) -> None:
+    plt = _plt()
+    fig, (ax, ax3) = plt.subplots(1, 2, figsize=(11.0, 4.9), gridspec_kw={"width_ratios": [1.5, 1]})
+    yrs = kf["year"].to_list()
+    ax.plot(yrs, kf["spend_per_student_10k_krw"].to_list(), color=ORANGE, marker="o", ms=3.5)
+    ax.set_ylabel("生徒 1 人当たり月平均の私教育費（万ウォン、名目）", color=ORANGE, fontsize=9)
+    ax.set_xticks(list(range(2007, 2026, 3)))
+    base._style(ax)
+    ax2 = ax.twinx()
+    t = kf.drop_nulls(["tfr"])
+    ax2.plot(t["year"].to_list(), t["tfr"].to_list(), color=BLUE_RAMP[3], marker="s", ms=3.5)
+    ax2.set_ylabel("合計特殊出生率（TFR）", color=BLUE_RAMP[3], fontsize=9)
+    ax2.spines["top"].set_visible(False)
+    ax2.tick_params(labelsize=9)
+    ax.set_title("韓国 2007〜2025 年: 私教育費（橙）と出生率（青）", fontsize=10, loc="left")
+    bc = k.filter(pl.col("table") == "by_children").pivot(
+        on="metric", index=["year", "group"], values="value", aggregate_function=None
+    )
+    groups = ["자녀 1명", "자녀 2명", "자녀 3명 이상"]
+    for j, (y, col) in enumerate(((2024, BLUE_RAMP[1]), (2025, ORANGE))):
+        sub = [
+            bc.filter((pl.col("year") == y) & (pl.col("group") == g)).row(0, named=True)
+            for g in groups
+        ]
+        xs = [i + (j - 0.5) * 0.38 for i in range(len(groups))]
+        vals = [float(r["spend_per_student_10k_krw"]) for r in sub]
+        ax3.bar(xs, vals, width=0.36, color=col, label=f"{y} 年")
+        for x, r in zip(xs, sub, strict=True):
+            ax3.annotate(
+                f"{r['spend_per_student_10k_krw']:.1f}\n({r['participation_rate_pct']:.0f}%)",
+                (x, r["spend_per_student_10k_krw"]),
+                ha="center",
+                fontsize=7.5,
+                xytext=(0, 2),
+                textcoords="offset points",
+            )
+    ax3.set_xticks(range(len(groups)))
+    ax3.set_xticklabels(["子 1 人", "子 2 人", "子 3 人以上"])
+    ax3.set_ylabel("生徒 1 人当たり月平均（万ウォン）", fontsize=9)
+    ax3.set_ylim(0, 64)
+    ax3.legend(fontsize=8, frameon=False, loc="upper right")
+    ax3.set_title("世帯の子ども数別（かっこ内は参加率）", fontsize=10, loc="left")
+    base._style(ax3)
+    fig.suptitle(
+        "韓国では 2016 年以降に私教育費が急に上がり、同じ時期に出生率が下がった（記述のみ）",
+        fontsize=11.5,
+        x=0.01,
+        ha="left",
+    )
+    _note(
+        fig,
+        "金額は名目（物価調整なし）。2020 年は新型コロナで落ち込み。就学前・浪人生は調査対象外。"
+        "1 国の時系列で、私教育費が出生率を下げたとは言えない。\n"
+        "子どもが少ない世帯ほど 1 人当たりの費用が高い。事後に追加した記述（H8d）。",
+    )
+    fig.tight_layout(rect=(0, 0.10, 1, 0.94))
+    base._save(fig, path, SRC_KR)
+
+
 # ---------------------------------------------------------------- driver
 def t2_specs(st: pl.DataFrame, t2: h8.T2Result) -> list[tuple[str, Coef]]:
     """Main T2(c) and the two specification checks of H8's exploratory E7 (no trend) and
@@ -653,7 +784,48 @@ def run(data_dir: Path, fig_dir: Path) -> list[tuple[str, str]]:
         f" [{br[2]:+.2f}, {br[3]:+.2f}] で、負の関連は確かめられない（事後に追加した検証 H8c）。",
     ))  # fmt: skip
 
+    g = pl.read_parquet(data_dir / h8d.GENDER_MART)
+    hw = h8d.hdr_wide(pl.read_parquet(data_dir / h8d.HDR_MART))
+    sel = h8d.select_band(h8d.unpaid_wide(g))
+    gres = h8d.run_g(h8d.cross_section(sel, panel, g, hw), "S", verbose=False)
+    fig10_gender_equity(gres, fig_dir / "h8s10_gender_equity.png")
+    b10, u10 = gres.z1c, gres.z2u
+    assert u10 is not None
+    captions.append((
+        "h8s10_gender_equity.png",
+        f"TFR 2.5 未満の {gres.z1.n} か国で、家事・育児時間の女性偏りと TFR の順位相関は "
+        f"{gres.rho[0]:+.2f}、所得・女性の就業・進学率をそろえた標準化係数は {b10[0]:+.2f}"
+        f" [{b10[2]:+.2f}, {b10[3]:+.2f}]。女性の労働参加率が高い半分では {u10[0]:+.2f}"
+        f" [{u10[2]:+.2f}, {u10[3]:+.2f}] だが、交互作用は {gres.z2i[0]:+.2f}"
+        f" [{gres.z2i[2]:+.2f}, {gres.z2i[3]:+.2f}] で確かめられず、事前に決めた判定は"
+        f"「{h8d.VERDICT_JA[gres.verdict]}」（事後に追加した検証 H8d）。",
+    ))  # fmt: skip
+    kr = pl.read_parquet(data_dir / h8d.KR_MART)
+    kf = h8d.korea_frame(kr, panel)
+    fig11_korea(kf, kr, fig_dir / "h8s11_korea_tutoring.png")
+    sp = dict(kf.select("year", "spend_per_student_10k_krw").rows())
+    tf = dict(kf.drop_nulls(["tfr"]).select("year", "tfr").rows())
+    bc = dict(
+        kr.filter(
+            (pl.col("table") == "by_children")
+            & (pl.col("year") == 2025)
+            & (pl.col("metric") == "spend_per_student_10k_krw")
+        )
+        .select("group", "value")
+        .rows()
+    )
+    ty = max(tf)
+    captions.append((
+        "h8s11_korea_tutoring.png",
+        f"韓国の生徒 1 人当たり月平均の私教育費（名目）は 2007 年 {sp[2007]:.1f} 万ウォン、"
+        f"2015 年 {sp[2015]:.1f}、2025 年 {sp[2025]:.1f}。同じ期間に TFR は {tf[2007]:.2f}"
+        f"（2007）→ {tf[2015]:.2f}（2015）→ {tf[ty]:.2f}（{ty}）。2025 年の 1 人当たり"
+        f"費用は子 1 人の世帯 {bc['자녀 1명']:.1f}、子 3 人以上の世帯 {bc['자녀 3명 이상']:.1f}"
+        " 万ウォン（記述のみ、事後に追加した H8d）。",
+    ))  # fmt: skip
+
     lines = ["# H8 記事用図のキャプション", "", SRC_DHS, "", SRC_WDI, "", SRC_OECD, ""]
+    lines += [SRC_SDG, "", SRC_KR, ""]
     lines += [f"- `{f}`: {cap}" for f, cap in captions]
     (fig_dir / "captions.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     for f, cap in captions:

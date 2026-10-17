@@ -46,3 +46,10 @@ def test_country_ja_labels_only_focus_countries() -> None:
     assert s.country_ja("JPN") == "日本"
     assert s.country_ja("SWE") == "スウェーデン"
     assert s.country_ja("USA") is None
+
+
+def test_ge_label_adds_southern_europe_and_english_speaking() -> None:
+    assert s.ge_label("KOR") == "韓国"
+    assert s.ge_label("ITA") == "イタリア"
+    assert s.ge_label("USA") == "米国"
+    assert s.ge_label("BRA") is None

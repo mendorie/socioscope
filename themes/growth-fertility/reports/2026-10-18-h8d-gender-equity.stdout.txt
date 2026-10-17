@@ -1,0 +1,395 @@
+== Data ==
+gender_equity: rows=6404 series=[('IC_GEN_MGTL', 2458), ('SL_DOM_TSPD', 3946)]
+  SL_DOM_TSPD ALLAREA with F and M: 953 country-year-bands, 228 country-years, 93 countries
+  selected band (priority ('15+', '10+', '20+', '16+', 'ALLAGE')): 178 country-years, 83 countries; bands [('10+', 29), ('15+', 145), ('16+', 2), ('20+', 1), ('ALLAGE', 1)]
+  countries with 2 obs >= 5 years apart (any band): 38
+  country-years without a priority band (excluded from main): 50, countries only so: ['DZA', 'ESP', 'IRL', 'KGZ', 'KHM', 'LVA', 'MYS', 'NLD', 'NZL', 'SVN']
+  nature counts in selected rows' series: [('C', 3544), ('CA', 402)]
+  IC_GEN_MGTL: rows=2458 countries=195 years=2000–2025
+hdr_gender gii: obs=4600 countries=172 years=1990–2023
+hdr_gender pr_f: obs=6135 countries=193 years=1990–2023
+hdr_gender lfp_ratio: obs=5260 countries=185 years=1990–2023
+growth_fertility_panel: rows=14322 cols=27
+  housework-only (SL_DOM_TSPDDC) and care-only (SL_DOM_TSPDCW) series are NOT in marts/gender_equity -> those two robustness checks cannot be run.
+
+== Z1 / Z2 / Z3 (main): TFR < 2.5 ==
+[M] Z1 sample: n=53 (TFR < 2.5; of 83 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2017; age bands [('10+', 11), ('15+', 41), ('16+', 1)]
+  [M] Z1 OLS HC1 (standardised)  n=53 r2=0.257
+      share      -0.039 [-0.178, +0.100]   SD=0.0859  (unpaid-work female share F/(F+M))
+      flfp       -0.064 [-0.166, +0.039]   SD=8.9589  (female LFP (%))
+      ln_gdp     -0.080 [-0.195, +0.035]   SD=0.6858  (ln GDP pc PPP)
+      tert       -0.109 [-0.221, +0.004]   SD=26.7558  (tertiary enrolment (%))
+      Spearman tfr × share rho=+0.298 p=0.030
+  [M] Z2 + share x female LFP  n=53 r2=0.270
+      share      -0.033 [-0.172, +0.106]   SD=0.0859  (unpaid-work female share F/(F+M))
+      flfp       -0.039 [-0.150, +0.071]   SD=8.9589  (female LFP (%))
+      ln_gdp     -0.077 [-0.193, +0.039]   SD=0.6858  (ln GDP pc PPP)
+      tert       -0.113 [-0.223, -0.003]*  SD=26.7558  (tertiary enrolment (%))
+      inter      -0.033 [-0.091, +0.024]   (share x female LFP)
+  [M] Z2 upper half (female LFP >= 53.3)  n=27 r2=0.451
+      share      -0.122 [-0.237, -0.008]*  (unpaid-work female share F/(F+M))
+      flfp       +0.039 [-0.143, +0.221]   (female LFP (%))
+      ln_gdp     +0.012 [-0.099, +0.122]   (ln GDP pc PPP)
+      tert       -0.233 [-0.366, -0.101]*  (tertiary enrolment (%))
+  [M] Z2 lower half (female LFP < 53.3)  n=26 r2=0.152
+      share      -0.017 [-0.234, +0.200]   (unpaid-work female share F/(F+M))
+      flfp       +0.004 [-0.176, +0.183]   (female LFP (%))
+      ln_gdp     -0.139 [-0.303, +0.025]   (ln GDP pc PPP)
+      tert       -0.044 [-0.187, +0.099]   (tertiary enrolment (%))
+  [M] Z3 mgr       n=51 +0.052 [-0.054, +0.158]  SD=9.288 (predicted sign +); Spearman rho=-0.068 p=0.634  (women in managerial positions (%))
+  [M] Z3 parl      n=52 +0.080 [-0.024, +0.184]  SD=12.767 (predicted sign +); Spearman rho=-0.101 p=0.475  (women's share of parliamentary seats (%))
+  [M] Z3 lfp_ratio n=53 -0.045 [-0.228, +0.137]  SD=0.145 (predicted sign +); Spearman rho=-0.332 p=0.015  (female / male labour-force participation)
+  [M] Z3 gii       n=52 +0.209 [+0.094, +0.324]* SD=0.152 (predicted sign -); Spearman rho=+0.636 p=0.000  (Gender Inequality Index (0-1))
+[M] verdict=no (不支持); Z3 hits=none; reverse=none
+
+== Z4a: within, first vs last unpaid-work observation (same band, >= 5 years) ==
+[M] Z4a pairs: n=36; gap years median 12; median Δshare -0.0235; median ΔTFR -0.083; bands [('10+', 5), ('15+', 31)]
+      Δshare -0.053 [-0.149, +0.044]  (per SD of Δshare)
+      Spearman Δtfr × Δshare rho=-0.006 p=0.973
+-- Z4a restricted to TFR at start < 2.5 --
+[M tfr0<2.5] Z4a pairs: n=32; gap years median 12; median Δshare -0.0261; median ΔTFR -0.080; bands [('10+', 4), ('15+', 28)]
+      Δshare +0.014 [-0.051, +0.079]  (per SD of Δshare)
+      Spearman Δtfr × Δshare rho=+0.141 p=0.440
+
+== Z4b: HDR components, 10-year long differences ==
+[M] Z4b 10-year LD 1990–2020, TFR0 < 3.0, country + period FE: n=173 G=100
+      d_lfr     -0.066 [-0.193, +0.060]   (Δ female/male LFP ratio)
+      d_prf     +0.004 [-0.072, +0.080]   (Δ women's parliament share)
+      d_sec     -0.067 [-0.117, -0.017]*  (Δ female sec. enrolment)
+      d_ln_gdp  +0.010 [-0.135, +0.154]   (Δ ln GDP pc (const.))
+
+== Z5: Korea private tutoring (nominal, descriptive; no identification) ==
+  year  spend/student(10k KRW/month)  idx  participation%  spend/participant  hours/wk  TFR    GDPpc const idx  spend idx / GDP idx
+  2007    22.2                        100.0    77.0            n/a              7.8    1.259   100.0            100.0
+  2008    23.3                        105.0    75.1            n/a              7.6    1.192   102.2            102.7
+  2009    24.2                        109.0    75.0            n/a              7.4    1.149   102.5            106.3
+  2010    24.0                        108.1    73.6            n/a              7.0    1.226   109.1             99.0
+  2011    24.0                        108.1    71.7            n/a              6.6    1.244   112.3             96.3
+  2012    23.6                        106.3    69.4            n/a              6.0    1.297   114.6             92.8
+  2013    23.9                        107.7    68.8            n/a              5.9    1.187   117.8             91.4
+  2014    24.2                        109.0    68.6            n/a              5.8    1.205   120.8             90.2
+  2015    24.4                        109.9    68.8            n/a              5.7    1.239   123.7             88.9
+  2016    25.6                        115.3    67.8            n/a              6.0    1.172   127.1             90.7
+  2017    27.2                        122.5    71.2           38.2              6.1    1.052   131.1             93.5
+  2018    29.1                        131.1    72.8           39.9              6.2    0.977   134.7             97.3
+  2019    32.1                        144.6    74.8           42.9              6.5    0.918   137.3            105.3
+  2020    30.2                        136.0    67.1           45.0              5.3    0.837   136.2             99.9
+  2021    36.7                        165.3    75.5           48.5              6.7    0.808   142.6            115.9
+  2022    41.0                        184.7    78.3           52.4              7.2    0.778   146.8            125.8
+  2023    43.4                        195.5    78.5           55.3              7.3    0.721   149.0            131.2
+  2024    47.4                        213.5    80.0           59.2              7.6    0.748   151.9            140.6
+  2025    45.8                        206.3    75.7           60.4              7.1    n/a    153.6            134.3
+  note: spending is nominal; GDP pc is constant 2015 US$ (real). The index ratio therefore includes Korean inflation and overstates the real rise; no CPI / nominal KRW GDP in marts.
+  자녀수별 (by number of children in household):
+    2024 자녀 1명      spend/student  53.6  participation  83.6%
+    2024 자녀 2명      spend/student  49.5  participation  82.0%
+    2024 자녀 3명 이상   spend/student  36.5  participation  71.6%
+    2024 총계         spend/student  47.4  participation  80.0%
+    2025 자녀 1명      spend/student  51.8  participation  79.6%
+    2025 자녀 2명      spend/student  47.4  participation  77.4%
+    2025 자녀 3명 이상   spend/student  35.8  participation  67.7%
+    2025 총계         spend/student  45.8  participation  75.7%
+  학교급별 spend/student (10k KRW/month): 2024 초등학교 44.2; 2024 중학교 49.0; 2024 고등학교 52.0; 2025 초등학교 43.3; 2025 중학교 46.1; 2025 고등학교 49.9
+
+== Z6: focus countries (latest observation; descriptive) ==
+  East Asia         JPN 2021 [15+] F=14.71 M=3.75 share=0.797 flfp=53.5 TFR=1.30  history 2001:0.872 2006:0.852 2011:0.840 2016:0.829 2021:0.797
+  East Asia         KOR 2024 [15+] F=13.06 M=4.72 share=0.734 flfp=56.8 TFR=0.75  history 2004:0.840 2009:0.821 2014:0.802 2019:0.763 2024:0.734
+  Southern Europe   ITA 2023 [15+] F=19.46 M=8.46 share=0.697 flfp=41.3 TFR=1.21  history 2003:0.765 2009:0.752 2014:0.727 2023:0.697
+  Southern Europe   ESP: no priority band
+  Nordic            DNK 2001 [16+] F=14.58 M=10.14 share=0.590 flfp=59.9 TFR=1.74  history 2001:0.590
+  Nordic            FIN 2021 [15+] F=14.06 M=10.75 share=0.567 flfp=55.9 TFR=1.46  history 2000:0.612 2010:0.592 2021:0.567
+  Nordic            NOR 2023 [15+] F=14.50 M=11.50 share=0.558 flfp=62.4 TFR=1.40  history 2001:0.594 2011:0.554 2023:0.558
+  Nordic            SWE 2011 [15+] F=16.04 M=12.83 share=0.556 flfp=59.5 TFR=1.90  history 2001:0.582 2011:0.556
+  English-speaking  USA 2023 [15+] F=15.42 M=10.08 share=0.605 flfp=56.6 TFR=1.62  history 2003:0.626 2004:0.629 2005:0.631 2006:0.629 2007:0.618 2008:0.624 2009:0.620 2010:0.608 2011:0.611 2012:0.621 2013:0.616 2014:0.616 2015:0.620 2016:0.619 2017:0.610 2018:0.617 2019:0.613 2021:0.606 2022:0.599 2023:0.605
+  English-speaking  GBR 2026 [15+] F=15.83 M=12.29 share=0.563 flfp=57.3 TFR=1.55  history 2001:0.646 2015:0.645 2022:0.566 2026:0.563
+  English-speaking  CAN 2023 [15+] F=16.46 M=11.62 share=0.586 flfp=61.1 TFR=1.27  history 2005:0.613 2010:0.609 2016:0.586 2023:0.586
+  English-speaking  AUS 2024 [15+] F=17.92 M=12.64 share=0.586 flfp=62.6 TFR=1.48  history 2006:0.647 2021:0.605 2024:0.586
+
+== Verdict (pre-registered) ==
+Z1 share: -0.039 [-0.178, +0.100]   (n=53)
+Z2 interaction: -0.033 [-0.091, +0.024] ; upper-half slope: -0.122 [-0.237, -0.008]*
+Z3 hits (predicted direction, CI∌0): none
+reverse: none
+VERDICT G: no = 不支持
+FINAL STANCE: 家庭内の男女分業でも深さは説明できない。2 人未満への低下について本シリーズで残る説明は、規範の拡散仮説だけである。
+Z4 consistency note: none (Z4a Δshare -0.053 [-0.149, +0.044] )
+
+== Robustness (pre-registered list) ==
+-- excl JPN --
+[R excl JPN] Z1 sample: n=52 (TFR < 2.5; of 82 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2016; age bands [('10+', 11), ('15+', 40), ('16+', 1)]
+  [R excl JPN] Z1 OLS HC1 (standardised)  n=52 r2=0.252
+      share      -0.023 [-0.172, +0.126]   SD=0.0856  (unpaid-work female share F/(F+M))
+      flfp       -0.058 [-0.162, +0.047]   SD=9.0407  (female LFP (%))
+      ln_gdp     -0.070 [-0.186, +0.046]   SD=0.6902  (ln GDP pc PPP)
+      tert       -0.109 [-0.222, +0.004]   SD=27.0163  (tertiary enrolment (%))
+      Spearman tfr × share rho=+0.341 p=0.013
+  [R excl JPN] Z2 + share x female LFP  n=52 r2=0.264
+      share      -0.018 [-0.167, +0.131]   SD=0.0856  (unpaid-work female share F/(F+M))
+      flfp       -0.034 [-0.147, +0.079]   SD=9.0407  (female LFP (%))
+      ln_gdp     -0.068 [-0.186, +0.050]   SD=0.6902  (ln GDP pc PPP)
+      tert       -0.113 [-0.224, -0.002]*  SD=27.0163  (tertiary enrolment (%))
+      inter      -0.032 [-0.090, +0.026]   (share x female LFP)
+  [R excl JPN] Z2 upper half (female LFP >= 53.2)  n=26 r2=0.438
+      share      -0.114 [-0.254, +0.026]   (unpaid-work female share F/(F+M))
+      flfp       +0.036 [-0.152, +0.223]   (female LFP (%))
+      ln_gdp     +0.013 [-0.096, +0.122]   (ln GDP pc PPP)
+      tert       -0.233 [-0.372, -0.094]*  (tertiary enrolment (%))
+  [R excl JPN] Z2 lower half (female LFP < 53.2)  n=26 r2=0.152
+      share      -0.017 [-0.234, +0.200]   (unpaid-work female share F/(F+M))
+      flfp       +0.004 [-0.178, +0.185]   (female LFP (%))
+      ln_gdp     -0.140 [-0.305, +0.025]   (ln GDP pc PPP)
+      tert       -0.044 [-0.189, +0.100]   (tertiary enrolment (%))
+  [R excl JPN] Z3 mgr       n=50 +0.039 [-0.075, +0.153]  SD=9.017 (predicted sign +); Spearman rho=-0.111 p=0.444  (women in managerial positions (%))
+  [R excl JPN] Z3 parl      n=51 +0.074 [-0.033, +0.181]  SD=12.797 (predicted sign +); Spearman rho=-0.131 p=0.359  (women's share of parliamentary seats (%))
+  [R excl JPN] Z3 lfp_ratio n=52 -0.050 [-0.233, +0.134]  SD=0.147 (predicted sign +); Spearman rho=-0.347 p=0.012  (female / male labour-force participation)
+  [R excl JPN] Z3 gii       n=51 +0.204 [+0.088, +0.321]* SD=0.152 (predicted sign -); Spearman rho=+0.632 p=0.000  (Gender Inequality Index (0-1))
+[R excl JPN] verdict=no (不支持); Z3 hits=none; reverse=none
+-- excl KOR --
+[R excl KOR] Z1 sample: n=52 (TFR < 2.5; of 82 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2016; age bands [('10+', 11), ('15+', 40), ('16+', 1)]
+  [R excl KOR] Z1 OLS HC1 (standardised)  n=52 r2=0.212
+      share      -0.004 [-0.142, +0.134]   SD=0.0866  (unpaid-work female share F/(F+M))
+      flfp       -0.050 [-0.148, +0.047]   SD=9.0113  (female LFP (%))
+      ln_gdp     -0.066 [-0.179, +0.046]   SD=0.6877  (ln GDP pc PPP)
+      tert       -0.077 [-0.178, +0.024]   SD=26.0324  (tertiary enrolment (%))
+      Spearman tfr × share rho=+0.333 p=0.016
+  [R excl KOR] Z2 + share x female LFP  n=52 r2=0.223
+      share      +0.000 [-0.138, +0.139]   SD=0.0866  (unpaid-work female share F/(F+M))
+      flfp       -0.029 [-0.137, +0.079]   SD=9.0113  (female LFP (%))
+      ln_gdp     -0.064 [-0.178, +0.049]   SD=0.6877  (ln GDP pc PPP)
+      tert       -0.081 [-0.180, +0.018]   SD=26.0324  (tertiary enrolment (%))
+      inter      -0.029 [-0.085, +0.027]   (share x female LFP)
+  [R excl KOR] Z2 upper half (female LFP >= 53.2)  n=26 r2=0.296
+      share      -0.074 [-0.205, +0.057]   (unpaid-work female share F/(F+M))
+      flfp       +0.045 [-0.127, +0.217]   (female LFP (%))
+      ln_gdp     +0.012 [-0.100, +0.124]   (ln GDP pc PPP)
+      tert       -0.176 [-0.308, -0.044]*  (tertiary enrolment (%))
+  [R excl KOR] Z2 lower half (female LFP < 53.2)  n=26 r2=0.152
+      share      -0.017 [-0.236, +0.202]   (unpaid-work female share F/(F+M))
+      flfp       +0.004 [-0.177, +0.184]   (female LFP (%))
+      ln_gdp     -0.139 [-0.304, +0.025]   (ln GDP pc PPP)
+      tert       -0.043 [-0.182, +0.096]   (tertiary enrolment (%))
+  [R excl KOR] Z3 mgr       n=50 +0.014 [-0.086, +0.113]  SD=9.176 (predicted sign +); Spearman rho=-0.120 p=0.405  (women in managerial positions (%))
+  [R excl KOR] Z3 parl      n=51 +0.059 [-0.047, +0.166]  SD=12.863 (predicted sign +); Spearman rho=-0.123 p=0.390  (women's share of parliamentary seats (%))
+  [R excl KOR] Z3 lfp_ratio n=52 -0.090 [-0.268, +0.088]  SD=0.147 (predicted sign +); Spearman rho=-0.347 p=0.012  (female / male labour-force participation)
+  [R excl KOR] Z3 gii       n=51 +0.211 [+0.103, +0.320]* SD=0.151 (predicted sign -); Spearman rho=+0.618 p=0.000  (Gender Inequality Index (0-1))
+[R excl KOR] verdict=no (不支持); Z3 hits=none; reverse=none
+-- TFR < 2.1 --
+[R TFR < 2.1] Z1 sample: n=49 (TFR < 2.1; of 83 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2017; age bands [('10+', 10), ('15+', 38), ('16+', 1)]
+  [R TFR < 2.1] Z1 OLS HC1 (standardised)  n=49 r2=0.324
+      share      -0.048 [-0.181, +0.084]   SD=0.0873  (unpaid-work female share F/(F+M))
+      flfp       -0.017 [-0.096, +0.062]   SD=8.7919  (female LFP (%))
+      ln_gdp     -0.063 [-0.168, +0.043]   SD=0.7016  (ln GDP pc PPP)
+      tert       -0.143 [-0.238, -0.048]*  SD=26.6116  (tertiary enrolment (%))
+      Spearman tfr × share rho=+0.259 p=0.073
+  [R TFR < 2.1] Z2 + share x female LFP  n=49 r2=0.356
+      share      -0.040 [-0.171, +0.091]   SD=0.0873  (unpaid-work female share F/(F+M))
+      flfp       +0.015 [-0.071, +0.100]   SD=8.7919  (female LFP (%))
+      ln_gdp     -0.057 [-0.163, +0.050]   SD=0.7016  (ln GDP pc PPP)
+      tert       -0.145 [-0.240, -0.049]*  SD=26.6116  (tertiary enrolment (%))
+      inter      -0.044 [-0.082, -0.007]*  (share x female LFP)
+  [R TFR < 2.1] Z2 upper half (female LFP >= 53.7)  n=25 r2=0.432
+      share      -0.169 [-0.304, -0.034]*  (unpaid-work female share F/(F+M))
+      flfp       +0.027 [-0.159, +0.213]   (female LFP (%))
+      ln_gdp     -0.082 [-0.233, +0.070]   (ln GDP pc PPP)
+      tert       -0.162 [-0.313, -0.011]*  (tertiary enrolment (%))
+  [R TFR < 2.1] Z2 lower half (female LFP < 53.7)  n=24 r2=0.278
+      share      +0.016 [-0.155, +0.186]   (unpaid-work female share F/(F+M))
+      flfp       +0.029 [-0.115, +0.174]   (female LFP (%))
+      ln_gdp     -0.056 [-0.196, +0.084]   (ln GDP pc PPP)
+      tert       -0.128 [-0.225, -0.031]*  (tertiary enrolment (%))
+  [R TFR < 2.1] Z3 mgr       n=47 +0.062 [-0.028, +0.152]  SD=9.149 (predicted sign +); Spearman rho=-0.050 p=0.737  (women in managerial positions (%))
+  [R TFR < 2.1] Z3 parl      n=48 +0.054 [-0.037, +0.146]  SD=12.832 (predicted sign +); Spearman rho=-0.194 p=0.186  (women's share of parliamentary seats (%))
+  [R TFR < 2.1] Z3 lfp_ratio n=49 +0.013 [-0.145, +0.171]  SD=0.143 (predicted sign +); Spearman rho=-0.225 p=0.120  (female / male labour-force participation)
+  [R TFR < 2.1] Z3 gii       n=48 +0.114 [+0.041, +0.188]* SD=0.148 (predicted sign -); Spearman rho=+0.568 p=0.000  (Gender Inequality Index (0-1))
+[R TFR < 2.1] verdict=support (支持); Z3 hits=none; reverse=none
+-- TFR < 3.0 --
+[R TFR < 3.0] Z1 sample: n=62 (TFR < 3.0; of 83 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2016; age bands [('10+', 11), ('15+', 50), ('16+', 1)]
+  [R TFR < 3.0] Z1 OLS HC1 (standardised)  n=62 r2=0.309
+      share      -0.062 [-0.216, +0.092]   SD=0.0883  (unpaid-work female share F/(F+M))
+      flfp       -0.091 [-0.261, +0.080]   SD=9.9606  (female LFP (%))
+      ln_gdp     -0.148 [-0.281, -0.014]*  SD=0.7166  (ln GDP pc PPP)
+      tert       -0.152 [-0.271, -0.034]*  SD=27.0908  (tertiary enrolment (%))
+      Spearman tfr × share rho=+0.316 p=0.012
+  [R TFR < 3.0] Z2 + share x female LFP  n=62 r2=0.312
+      share      -0.058 [-0.217, +0.101]   SD=0.0883  (unpaid-work female share F/(F+M))
+      flfp       -0.075 [-0.272, +0.123]   SD=9.9606  (female LFP (%))
+      ln_gdp     -0.144 [-0.280, -0.008]*  SD=0.7166  (ln GDP pc PPP)
+      tert       -0.155 [-0.274, -0.036]*  SD=27.0908  (tertiary enrolment (%))
+      inter      -0.026 [-0.113, +0.061]   (share x female LFP)
+  [R TFR < 3.0] Z2 upper half (female LFP >= 52.8)  n=31 r2=0.354
+      share      -0.071 [-0.274, +0.131]   (unpaid-work female share F/(F+M))
+      flfp       +0.229 [-0.362, +0.820]   (female LFP (%))
+      ln_gdp     -0.031 [-0.183, +0.121]   (ln GDP pc PPP)
+      tert       -0.249 [-0.412, -0.085]*  (tertiary enrolment (%))
+  [R TFR < 3.0] Z2 lower half (female LFP < 52.8)  n=31 r2=0.250
+      share      -0.061 [-0.381, +0.258]   (unpaid-work female share F/(F+M))
+      flfp       -0.042 [-0.326, +0.242]   (female LFP (%))
+      ln_gdp     -0.239 [-0.482, +0.003]   (ln GDP pc PPP)
+      tert       -0.101 [-0.266, +0.063]   (tertiary enrolment (%))
+  [R TFR < 3.0] Z3 mgr       n=59 +0.163 [+0.063, +0.263]* SD=10.756 (predicted sign +); Spearman rho=+0.030 p=0.820  (women in managerial positions (%))
+  [R TFR < 3.0] Z3 parl      n=61 +0.032 [-0.081, +0.145]  SD=12.503 (predicted sign +); Spearman rho=-0.232 p=0.072  (women's share of parliamentary seats (%))
+  [R TFR < 3.0] Z3 lfp_ratio n=62 -0.194 [-0.430, +0.042]  SD=0.164 (predicted sign +); Spearman rho=-0.377 p=0.002  (female / male labour-force participation)
+  [R TFR < 3.0] Z3 gii       n=61 +0.290 [+0.133, +0.447]* SD=0.160 (predicted sign -); Spearman rho=+0.685 p=0.000  (Gender Inequality Index (0-1))
+[R TFR < 3.0] verdict=no (不支持); Z3 hits=['mgr']; reverse=none
+-- 10+ band only --
+[R 10+ band only] Z1 sample: n=23 (TFR < 2.5; of 34 countries with an unpaid-work observation >= 2000); years 2002–2024, median 2014; age bands [('10+', 23)]
+  [R 10+ band only] Z1 OLS HC1 (standardised)  n=23 r2=0.452
+      share      -0.107 [-0.222, +0.009]   SD=0.0754  (unpaid-work female share F/(F+M))
+      flfp       -0.021 [-0.125, +0.082]   SD=8.6190  (female LFP (%))
+      ln_gdp     -0.125 [-0.236, -0.015]*  SD=0.6498  (ln GDP pc PPP)
+      tert       -0.172 [-0.285, -0.058]*  SD=30.8361  (tertiary enrolment (%))
+      Spearman tfr × share rho=+0.098 p=0.655
+  [R 10+ band only] Z2 + share x female LFP  n=23 r2=0.455
+      share      -0.096 [-0.258, +0.066]   SD=0.0754  (unpaid-work female share F/(F+M))
+      flfp       -0.013 [-0.150, +0.124]   SD=8.6190  (female LFP (%))
+      ln_gdp     -0.121 [-0.245, +0.004]   SD=0.6498  (ln GDP pc PPP)
+      tert       -0.169 [-0.293, -0.044]*  SD=30.8361  (tertiary enrolment (%))
+      inter      -0.023 [-0.166, +0.120]   (share x female LFP)
+  [R 10+ band only] Z2 upper half (female LFP >= 52.2)  n=12 r2=0.446
+      share      -0.105 [-0.273, +0.062]   (unpaid-work female share F/(F+M))
+      flfp       -0.075 [-0.504, +0.354]   (female LFP (%))
+      ln_gdp     -0.115 [-0.323, +0.094]   (ln GDP pc PPP)
+      tert       -0.152 [-0.351, +0.046]   (tertiary enrolment (%))
+  [R 10+ band only] Z2 lower half (female LFP < 52.2)  n=11 r2=0.476
+      share      -0.005 [-0.610, +0.599]   (unpaid-work female share F/(F+M))
+      flfp       +0.215 [-0.138, +0.568]   (female LFP (%))
+      ln_gdp     -0.122 [-0.933, +0.689]   (ln GDP pc PPP)
+      tert       -0.229 [-0.492, +0.035]   (tertiary enrolment (%))
+  [R 10+ band only] Z3 mgr       n=23 +0.124 [+0.019, +0.230]* SD=9.219 (predicted sign +); Spearman rho=+0.155 p=0.481  (women in managerial positions (%))
+  [R 10+ band only] Z3 parl      n=23 +0.202 [+0.092, +0.312]* SD=12.512 (predicted sign +); Spearman rho=+0.128 p=0.559  (women's share of parliamentary seats (%))
+  [R 10+ band only] Z3 lfp_ratio n=23 +0.240 [+0.051, +0.429]* SD=0.146 (predicted sign +); Spearman rho=-0.025 p=0.911  (female / male labour-force participation)
+  [R 10+ band only] Z3 gii       n=23 +0.114 [-0.101, +0.330]  SD=0.130 (predicted sign -); Spearman rho=+0.413 p=0.050  (Gender Inequality Index (0-1))
+[R 10+ band only] verdict=partial (部分的支持); Z3 hits=['mgr', 'parl', 'lfp_ratio']; reverse=none
+-- OECD members --
+[R OECD members] Z1 sample: n=25 (TFR < 2.5; of 27 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2021; age bands [('10+', 3), ('15+', 21), ('16+', 1)]
+  [R OECD members] Z1 OLS HC1 (standardised)  n=25 r2=0.341
+      share      -0.175 [-0.315, -0.035]*  SD=0.0726  (unpaid-work female share F/(F+M))
+      flfp       -0.203 [-0.420, +0.014]   SD=7.3762  (female LFP (%))
+      ln_gdp     -0.038 [-0.157, +0.082]   SD=0.4523  (ln GDP pc PPP)
+      tert       -0.097 [-0.192, -0.003]*  SD=22.0624  (tertiary enrolment (%))
+      Spearman tfr × share rho=-0.151 p=0.472
+  [R OECD members] Z2 + share x female LFP  n=25 r2=0.591
+      share      -0.176 [-0.292, -0.060]*  SD=0.0726  (unpaid-work female share F/(F+M))
+      flfp       -0.085 [-0.272, +0.102]   SD=7.3762  (female LFP (%))
+      ln_gdp     -0.049 [-0.154, +0.055]   SD=0.4523  (ln GDP pc PPP)
+      tert       -0.148 [-0.213, -0.083]*  SD=22.0624  (tertiary enrolment (%))
+      inter      -0.131 [-0.192, -0.071]*  (share x female LFP)
+  [R OECD members] Z2 upper half (female LFP >= 54.8)  n=13 r2=0.753
+      share      -0.304 [-0.425, -0.183]*  (unpaid-work female share F/(F+M))
+      flfp       -0.138 [-0.441, +0.165]   (female LFP (%))
+      ln_gdp     +0.014 [-0.106, +0.133]   (ln GDP pc PPP)
+      tert       -0.132 [-0.268, +0.004]   (tertiary enrolment (%))
+  [R OECD members] Z2 lower half (female LFP < 54.8)  n=12 r2=0.492
+      share      -0.081 [-0.262, +0.101]   (unpaid-work female share F/(F+M))
+      flfp       -0.304 [-0.574, -0.034]*  (female LFP (%))
+      ln_gdp     -0.111 [-0.238, +0.016]   (ln GDP pc PPP)
+      tert       -0.198 [-0.281, -0.115]*  (tertiary enrolment (%))
+  [R OECD members] Z3 mgr       n=25 +0.061 [-0.097, +0.219]  SD=8.856 (predicted sign +); Spearman rho=+0.085 p=0.685  (women in managerial positions (%))
+  [R OECD members] Z3 parl      n=25 +0.110 [+0.010, +0.210]* SD=11.626 (predicted sign +); Spearman rho=+0.304 p=0.139  (women's share of parliamentary seats (%))
+  [R OECD members] Z3 lfp_ratio n=25 -0.025 [-0.344, +0.293]  SD=0.107 (predicted sign +); Spearman rho=+0.040 p=0.848  (female / male labour-force participation)
+  [R OECD members] Z3 gii       n=25 +0.207 [+0.056, +0.359]* SD=0.098 (predicted sign -); Spearman rho=+0.321 p=0.118  (Gender Inequality Index (0-1))
+[R OECD members] verdict=support (支持); Z3 hits=['parl']; reverse=none
+-- excl pop < 1m --
+[R excl pop < 1m] Z1 sample: n=50 (TFR < 2.5; of 79 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2017; age bands [('10+', 9), ('15+', 40), ('16+', 1)]
+  [R excl pop < 1m] Z1 OLS HC1 (standardised)  n=50 r2=0.305
+      share      -0.056 [-0.192, +0.080]   SD=0.0883  (unpaid-work female share F/(F+M))
+      flfp       -0.094 [-0.190, +0.001]   SD=8.7223  (female LFP (%))
+      ln_gdp     -0.050 [-0.160, +0.060]   SD=0.6632  (ln GDP pc PPP)
+      tert       -0.140 [-0.255, -0.025]*  SD=25.3136  (tertiary enrolment (%))
+      Spearman tfr × share rho=+0.308 p=0.029
+  [R excl pop < 1m] Z2 + share x female LFP  n=50 r2=0.311
+      share      -0.052 [-0.189, +0.086]   SD=0.0883  (unpaid-work female share F/(F+M))
+      flfp       -0.077 [-0.184, +0.029]   SD=8.7223  (female LFP (%))
+      ln_gdp     -0.049 [-0.161, +0.063]   SD=0.6632  (ln GDP pc PPP)
+      tert       -0.141 [-0.256, -0.026]*  SD=25.3136  (tertiary enrolment (%))
+      inter      -0.022 [-0.082, +0.039]   (share x female LFP)
+  [R excl pop < 1m] Z2 upper half (female LFP >= 53.4)  n=25 r2=0.410
+      share      -0.165 [-0.280, -0.049]*  (unpaid-work female share F/(F+M))
+      flfp       +0.021 [-0.172, +0.214]   (female LFP (%))
+      ln_gdp     -0.074 [-0.214, +0.067]   (ln GDP pc PPP)
+      tert       -0.160 [-0.321, +0.001]   (tertiary enrolment (%))
+  [R excl pop < 1m] Z2 lower half (female LFP < 53.4)  n=25 r2=0.164
+      share      +0.045 [-0.132, +0.222]   (unpaid-work female share F/(F+M))
+      flfp       -0.014 [-0.196, +0.168]   (female LFP (%))
+      ln_gdp     +0.006 [-0.122, +0.134]   (ln GDP pc PPP)
+      tert       -0.112 [-0.246, +0.023]   (tertiary enrolment (%))
+  [R excl pop < 1m] Z3 mgr       n=48 +0.051 [-0.049, +0.151]  SD=9.069 (predicted sign +); Spearman rho=-0.079 p=0.595  (women in managerial positions (%))
+  [R excl pop < 1m] Z3 parl      n=49 +0.074 [-0.022, +0.169]  SD=12.696 (predicted sign +); Spearman rho=-0.100 p=0.495  (women's share of parliamentary seats (%))
+  [R excl pop < 1m] Z3 lfp_ratio n=50 -0.029 [-0.214, +0.156]  SD=0.143 (predicted sign +); Spearman rho=-0.372 p=0.008  (female / male labour-force participation)
+  [R excl pop < 1m] Z3 gii       n=49 +0.196 [+0.068, +0.324]* SD=0.153 (predicted sign -); Spearman rho=+0.642 p=0.000  (Gender Inequality Index (0-1))
+[R excl pop < 1m] verdict=no (不支持); Z3 hits=none; reverse=none
+-- no income/enrolment --
+[R no income/enrolment] Z1 sample: n=57 (TFR < 2.5; of 83 countries with an unpaid-work observation >= 2000); years 2001–2026, median 2017; age bands [('10+', 11), ('15+', 45), ('16+', 1)]
+  [R no income/enrolment] Z1 OLS HC1 (standardised)  n=57 r2=0.102
+      share      +0.064 [-0.020, +0.149]   SD=0.0856  (unpaid-work female share F/(F+M))
+      flfp       -0.055 [-0.147, +0.036]   SD=8.9064  (female LFP (%))
+      Spearman tfr × share rho=+0.307 p=0.020
+  [R no income/enrolment] Z2 + share x female LFP  n=57 r2=0.111
+      share      +0.068 [-0.016, +0.152]   SD=0.0856  (unpaid-work female share F/(F+M))
+      flfp       -0.036 [-0.139, +0.067]   SD=8.9064  (female LFP (%))
+      inter      -0.028 [-0.078, +0.023]   (share x female LFP)
+  [R no income/enrolment] Z2 upper half (female LFP >= 53.3)  n=29 r2=0.029
+      share      +0.027 [-0.101, +0.155]   (unpaid-work female share F/(F+M))
+      flfp       +0.111 [-0.082, +0.304]   (female LFP (%))
+  [R no income/enrolment] Z2 lower half (female LFP < 53.3)  n=28 r2=0.074
+      share      +0.096 [-0.031, +0.223]   (unpaid-work female share F/(F+M))
+      flfp       -0.005 [-0.147, +0.137]   (female LFP (%))
+  [R no income/enrolment] Z3 mgr       n=54 +0.024 [-0.082, +0.131]  SD=9.305 (predicted sign +); Spearman rho=-0.046 p=0.740  (women in managerial positions (%))
+  [R no income/enrolment] Z3 parl      n=55 +0.006 [-0.082, +0.094]  SD=12.933 (predicted sign +); Spearman rho=-0.076 p=0.582  (women's share of parliamentary seats (%))
+  [R no income/enrolment] Z3 lfp_ratio n=56 -0.128 [-0.270, +0.014]  SD=0.142 (predicted sign +); Spearman rho=-0.320 p=0.016  (female / male labour-force participation)
+  [R no income/enrolment] Z3 gii       n=55 +0.204 [+0.129, +0.279]* SD=0.151 (predicted sign -); Spearman rho=+0.633 p=0.000  (Gender Inequality Index (0-1))
+[R no income/enrolment] verdict=no (不支持); Z3 hits=none; reverse=none
+-- + nearest band (ESP etc.) --
+[R + nearest band (ESP etc.)] Z1 sample: n=58 (TFR < 2.5; of 93 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2015; age bands [('10+', 9), ('12+', 2), ('15+', 40), ('15-64', 1), ('20-74', 5), ('6+', 1)]
+  [R + nearest band (ESP etc.)] Z1 OLS HC1 (standardised)  n=58 r2=0.206
+      share      -0.017 [-0.150, +0.116]   SD=0.0818  (unpaid-work female share F/(F+M))
+      flfp       -0.040 [-0.142, +0.062]   SD=8.4793  (female LFP (%))
+      ln_gdp     -0.062 [-0.163, +0.039]   SD=0.6689  (ln GDP pc PPP)
+      tert       -0.107 [-0.214, -0.000]*  SD=25.2089  (tertiary enrolment (%))
+      Spearman tfr × share rho=+0.268 p=0.042
+  [R + nearest band (ESP etc.)] Z2 + share x female LFP  n=58 r2=0.231
+      share      -0.013 [-0.144, +0.118]   SD=0.0818  (unpaid-work female share F/(F+M))
+      flfp       -0.005 [-0.109, +0.099]   SD=8.4793  (female LFP (%))
+      ln_gdp     -0.059 [-0.162, +0.043]   SD=0.6689  (ln GDP pc PPP)
+      tert       -0.114 [-0.218, -0.011]*  SD=25.2089  (tertiary enrolment (%))
+      inter      -0.045 [-0.099, +0.009]   (share x female LFP)
+  [R + nearest band (ESP etc.)] Z2 upper half (female LFP >= 53.4)  n=29 r2=0.362
+      share      -0.149 [-0.275, -0.023]*  (unpaid-work female share F/(F+M))
+      flfp       -0.006 [-0.228, +0.215]   (female LFP (%))
+      ln_gdp     -0.058 [-0.222, +0.105]   (ln GDP pc PPP)
+      tert       -0.177 [-0.333, -0.020]*  (tertiary enrolment (%))
+  [R + nearest band (ESP etc.)] Z2 lower half (female LFP < 53.4)  n=29 r2=0.165
+      share      +0.098 [-0.074, +0.270]   (unpaid-work female share F/(F+M))
+      flfp       +0.004 [-0.158, +0.166]   (female LFP (%))
+      ln_gdp     -0.024 [-0.168, +0.119]   (ln GDP pc PPP)
+      tert       -0.075 [-0.216, +0.066]   (tertiary enrolment (%))
+  [R + nearest band (ESP etc.)] Z3 mgr       n=56 +0.029 [-0.082, +0.140]  SD=8.748 (predicted sign +); Spearman rho=-0.078 p=0.565  (women in managerial positions (%))
+  [R + nearest band (ESP etc.)] Z3 parl      n=57 +0.097 [+0.003, +0.192]* SD=12.552 (predicted sign +); Spearman rho=+0.006 p=0.967  (women's share of parliamentary seats (%))
+  [R + nearest band (ESP etc.)] Z3 lfp_ratio n=58 -0.087 [-0.262, +0.089]  SD=0.136 (predicted sign +); Spearman rho=-0.292 p=0.026  (female / male labour-force participation)
+  [R + nearest band (ESP etc.)] Z3 gii       n=57 +0.194 [+0.080, +0.308]* SD=0.148 (predicted sign -); Spearman rho=+0.543 p=0.000  (Gender Inequality Index (0-1))
+[R + nearest band (ESP etc.)] verdict=no (不支持); Z3 hits=['parl']; reverse=none
+-- housework only (SL_DOM_TSPDDC) / care only (SL_DOM_TSPDCW): not run (series not in mart) --
+
+-- Robustness summary --
+spec                           n Z1 share                     Z2 inter                     Z2 upper                     hits / verdict
+excl JPN                      52 -0.023 [-0.172, +0.126]      -0.032 [-0.090, +0.026]      -0.114 [-0.254, +0.026]      - / no rev=-
+excl KOR                      52 -0.004 [-0.142, +0.134]      -0.029 [-0.085, +0.027]      -0.074 [-0.205, +0.057]      - / no rev=-
+TFR < 2.1                     49 -0.048 [-0.181, +0.084]      -0.044 [-0.082, -0.007]*     -0.169 [-0.304, -0.034]*     - / support rev=-
+TFR < 3.0                     62 -0.062 [-0.216, +0.092]      -0.026 [-0.113, +0.061]      -0.071 [-0.274, +0.131]      ['mgr'] / no rev=-
+10+ band only                 23 -0.107 [-0.222, +0.009]      -0.023 [-0.166, +0.120]      -0.105 [-0.273, +0.062]      ['mgr', 'parl', 'lfp_ratio'] / partial rev=-
+OECD members                  25 -0.175 [-0.315, -0.035]*     -0.131 [-0.192, -0.071]*     -0.304 [-0.425, -0.183]*     ['parl'] / support rev=-
+excl pop < 1m                 50 -0.056 [-0.192, +0.080]      -0.022 [-0.082, +0.039]      -0.165 [-0.280, -0.049]*     - / no rev=-
+no income/enrolment           57 +0.064 [-0.020, +0.149]      -0.028 [-0.078, +0.023]      +0.027 [-0.101, +0.155]      - / no rev=-
++ nearest band (ESP etc.)     58 -0.017 [-0.150, +0.116]      -0.045 [-0.099, +0.009]      -0.149 [-0.275, -0.023]*     ['parl'] / no rev=-
+
+== Exploratory (post hoc, not part of the verdict) ==
+E1 tfr ~ share on the Z1 sample: n=53 share +0.094 [+0.027, +0.161]*
+E1 tfr ~ share + flfp on the Z1 sample: n=53 share +0.052 [-0.041, +0.145] 
+E2 Z1 with M (unpaid %, level) instead of share: n=53 M +0.024 [-0.091, +0.139] 
+E2 Z1 with F (unpaid %, level) instead of share: n=53 F -0.007 [-0.106, +0.091] 
+E3 high-income only: n=31 share -0.095 [-0.215, +0.024] ; Spearman rho=-0.185 p=0.320
+E4 OECD sample (TFR < 2.5): AUS:0.59/1.48 AUT:0.65/1.41 BEL:0.61/1.74 CAN:0.59/1.27 CHE:0.60/1.46 CRI:0.73/1.71 DEU:0.60/1.46 DNK:0.59/1.74 EST:0.60/1.61 FIN:0.57/1.46 FRA:0.62/2.03 GRC:0.72/1.30 HUN:0.63/1.41 ITA:0.70/1.21 JPN:0.80/1.30 KOR:0.73/0.75 LTU:0.67/1.26 LUX:0.67/1.50 MEX:0.72/1.89 NOR:0.56/1.40 POL:0.62/1.20 PRT:0.63/1.31 SWE:0.56/1.90 TUR:0.83/2.16 USA:0.60/1.62  (iso3:share/TFR)
+E4 OECD excl JPN                   n=24 Z1 -0.193 [-0.377, -0.010]*  Z2 inter -0.128 [-0.182, -0.074]*  upper -0.274 [-0.390, -0.158]*  -> support
+E4 OECD excl KOR                   n=24 Z1 -0.103 [-0.238, +0.032]   Z2 inter -0.125 [-0.188, -0.062]*  upper -0.258 [-0.551, +0.036]   -> no
+E4 OECD excl JPN KOR               n=23 Z1 -0.062 [-0.326, +0.203]   Z2 inter -0.130 [-0.191, -0.069]*  upper -0.234 [-0.501, +0.033]   -> no
+E4 OECD excl JPN KOR ITA           n=22 Z1 -0.109 [-0.353, +0.134]   Z2 inter -0.111 [-0.165, -0.056]*  upper -0.170 [-0.442, +0.102]   -> no
