@@ -1,0 +1,1334 @@
+{
+ "size": 5000,
+ "totalElements": 34,
+ "totalPages": 1,
+ "pageNumber": 1,
+ "data": [
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2011.0,
+   "value": "15.625",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2011.0,
+   "value": "2.91667",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2011.0,
+   "value": "2.98611",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2011.0,
+   "value": "14.93056",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2016.0,
+   "value": "14.44444",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2016.0,
+   "value": "3.125",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2016.0,
+   "value": "3.05556",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2016.0,
+   "value": "15.13889",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2021.0,
+   "value": "3.54167",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2021.0,
+   "value": "14.16667",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2021.0,
+   "value": "3.75",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2021.0,
+   "value": "14.70833",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2014.0,
+   "value": "14.57917",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Statistics Korea based on Time Use Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Unpaid domestic work might include small amount of time spen"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2014.0,
+   "value": "3.60833",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Statistics Korea based on Time Use Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Unpaid domestic work might include small amount of time spen"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2014.0,
+   "value": "13.95833",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Statistics Korea based on Time Use Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Unpaid domestic work might include small amount of time spen"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2014.0,
+   "value": "3.33333",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Statistics Korea based on Time Use Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Unpaid domestic work might include small amount of time spen"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2019.0,
+   "value": "13.54167",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "2019 Time use survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2019.0,
+   "value": "4.16667",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "2019 Time use survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2019.0,
+   "value": "14.09722",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "2019 Time use survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2019.0,
+   "value": "4.375",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "2019 Time use survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2024.0,
+   "value": "4.58333",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "2024 Time use survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2024.0,
+   "value": "12.43056",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "2024 Time use survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "10+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2024.0,
+   "value": "13.05556",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "2024 Time use survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2024.0,
+   "value": "4.72222",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "2024 Time use survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "752",
+   "geoAreaName": "Sweden",
+   "timePeriodStart": 2011.0,
+   "value": "16.04201",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Statistics Sweden based on The Swedish Time Use Survey 2010/",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "752",
+   "geoAreaName": "Sweden",
+   "timePeriodStart": 2011.0,
+   "value": "12.82797",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Statistics Sweden based on The Swedish Time Use Survey 2010/",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "840",
+   "geoAreaName": "United States of America",
+   "timePeriodStart": 2010.0,
+   "value": "15.29167",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "American Time Use Survey (ATUS)",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "840",
+   "geoAreaName": "United States of America",
+   "timePeriodStart": 2010.0,
+   "value": "9.875",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "American Time Use Survey (ATUS)",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "840",
+   "geoAreaName": "United States of America",
+   "timePeriodStart": 2015.0,
+   "value": "9.75",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "American Time Use Survey (ATUS)",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "840",
+   "geoAreaName": "United States of America",
+   "timePeriodStart": 2015.0,
+   "value": "15.875",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "American Time Use Survey (ATUS)",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "840",
+   "geoAreaName": "United States of America",
+   "timePeriodStart": 2021.0,
+   "value": "15.54167",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "American Time Use Survey (ATUS)",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "840",
+   "geoAreaName": "United States of America",
+   "timePeriodStart": 2021.0,
+   "value": "10.125",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "American Time Use Survey (ATUS)",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "MALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "9",
+   "geoAreaName": "Oceania",
+   "timePeriodStart": 2026.0,
+   "value": "17.04456",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Calculated by UNSD based on the most recent data available f",
+   "geoInfoUrl": null,
+   "footnotes": [
+    ""
+   ],
+   "attributes": {
+    "Nature": "N",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.4"
+   ],
+   "indicator": [
+    "5.4.1"
+   ],
+   "series": "SL_DOM_TSPD",
+   "seriesDescription": "Proportion of time spent on unpaid domestic chores and care work, by sex, age and location (%)",
+   "seriesCount": "3960",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 1999.0,
+   "value": "N/A",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "Survey on Time Use and Leisure Activities by Statistics Bure",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Includes production activities of goods for own final use."
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Location": "ALLAREA",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  }
+ ]
+}
