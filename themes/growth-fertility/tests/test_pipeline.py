@@ -10,6 +10,7 @@ from theme_growth_fertility import (
     estat,
     hdr,
     kostat,
+    moekr,
     oecd,
     oecd_eag,
     pipeline,
@@ -45,6 +46,8 @@ H8_ITEMS = len(dhs.H8_REQUESTS)
 H8C_ITEMS = len(oecd_eag.DATASETS)
 # H8d items: two UN SDG series + one UNDP HDR CSV
 H8D_ITEMS = len(unsdg.SERIES) + 1
+# H8d-K items: one 교육부 사교육비조사 press-release PDF
+H8D_K_ITEMS = 1
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -91,6 +94,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H8_ITEMS
         + H8C_ITEMS
         + H8D_ITEMS
+        + H8D_K_ITEMS
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -129,6 +133,7 @@ def test_fetch_also_stores_country_metadata() -> None:
                 "sl_dom_",
                 "ic_gen_",
                 "hdr25_",
+                moekr.RAW_NAME,
             )
         )
         for s in result.skipped
@@ -212,6 +217,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + 1  # H8: the countries raw is missing -> one fail-closed message
         + H8C_ITEMS  # H8c: three raw missing
         + H8D_ITEMS  # H8d: two UN SDG + one HDR raw missing
+        + H8D_K_ITEMS  # H8d-K: raw missing
     )
 
 
@@ -251,6 +257,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H8_ITEMS
         + H8C_ITEMS
         + H8D_ITEMS
+        + H8D_K_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -610,6 +617,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + (H8_ITEMS - 1)  # the wealth-quintile request shares the H4 URL
         + H8C_ITEMS
         + H8D_ITEMS
+        + H8D_K_ITEMS
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -704,6 +712,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H8_ITEMS
         + H8C_ITEMS
         + H8D_ITEMS
+        + H8D_K_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -1506,3 +1515,82 @@ def test_mart_h8d_skips_without_staged_and_fails_on_duplicate_keys() -> None:
     ctx.tables.write_table(pipeline.HDR_TABLE, hrows + [dict(hrows[0])])
     with pytest.raises(ValueError, match="duplicate"):
         PIPELINE.run(Stage.MART, ctx)
+
+
+# ---- H8d-K: 교육부 사교육비조사 (PDF) -----------------------------------------------------
+
+
+def moekr_pages() -> list[str]:
+    return (FIXTURES / "moe_kr_private_tutoring_2025.txt").read_text(encoding="utf-8").split("\f")
+
+
+def test_fetch_h8d_k_stores_the_pdf_with_kogl_license(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    pdf = pdf_from_pages(moekr_pages())
+    ctx = make_ctx({moekr.URL: pdf})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert result.written == ("growth-fertility/moe_kr/private_tutoring_2025.pdf",)
+    assert ctx.raw.get(theme="growth-fertility", source="moe_kr", name=moekr.RAW_NAME) == pdf
+    recs = ctx.raw.records()
+    assert len(recs) == 1
+    assert recs[0].url == moekr.URL and "KOGL" in recs[0].license and "교육부" in recs[0].license
+    assert not any(s.startswith("private_tutoring_2025.pdf") for s in result.skipped)
+
+
+def test_fetch_h8d_k_reports_fetch_failure_without_writing() -> None:
+    ctx = make_ctx({})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert any(s.startswith("private_tutoring_2025.pdf:") for s in result.skipped)
+    assert ctx.raw.get(theme="growth-fertility", source="moe_kr", name=moekr.RAW_NAME) is None
+
+
+def test_stage_h8d_k_writes_long_table_independently(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx({moekr.URL: pdf_from_pages(moekr_pages())})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.MOEKR_TABLE,)
+    rows = ctx.tables.read_table(pipeline.MOEKR_TABLE)
+    assert set(rows[0]) == {"year", "table", "group", "metric", "value", "release_year", "source"}
+    assert len(rows) == 85 + 16 + 30
+    assert {str(r["table"]) for r in rows} == {"annual", "by_children", "by_level"}
+    assert all(r["source"] == "moe_kr" and r["release_year"] == 2026 for r in rows)
+
+
+def test_stage_h8d_k_skips_unrecognised_layout_and_missing_raw(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx({moekr.URL: pdf_from_pages(["- 1 -\n사교육비 총액\n2025 275,351"])})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert pipeline.MOEKR_TABLE not in result.written
+    assert pipeline.MOEKR_TABLE not in ctx.tables.list_tables()
+    assert any(
+        s.startswith("private_tutoring_2025.pdf: layout not recognised (") and "annual" in s
+        for s in result.skipped
+    )
+    result = PIPELINE.run(Stage.STAGE, make_ctx({}))
+    assert any(s.startswith("private_tutoring_2025.pdf: raw missing") for s in result.skipped)
+
+
+def test_mart_h8d_k_writes_sorted_long_mart(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx({moekr.URL: pdf_from_pages(moekr_pages())})
+    PIPELINE.run(Stage.FETCH, ctx)
+    PIPELINE.run(Stage.STAGE, ctx)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.MOEKR_MART,)
+    rows = ctx.tables.read_table(pipeline.MOEKR_MART)
+    assert len(rows) == 131
+    assert (rows[0]["year"], rows[0]["table"], rows[0]["group"], rows[0]["metric"]) == (
+        2007,
+        "annual",
+        "총계",
+        "total_100m_krw",
+    )
+    keyed = {(r["year"], r["table"], r["group"], r["metric"]): r["value"] for r in rows}
+    assert len(keyed) == len(rows)
+    assert keyed[(2025, "annual", "총계", "spend_per_student_10k_krw")] == 45.8
+    assert keyed[(2025, "by_children", "자녀 3명 이상", "participation_rate_pct")] == 67.7
+    assert keyed[(2024, "by_level", "고등학교", "spend_per_participant_10k_krw")] == 77.2
+    # independent of the other sources: nothing else written, mart missing when staged is missing
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert pipeline.MOEKR_MART not in result.written
+    assert any(
+        s.startswith(f"{pipeline.MOEKR_TABLE}: staged table missing") for s in result.skipped
+    )

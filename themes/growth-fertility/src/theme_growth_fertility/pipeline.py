@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_growth_fertility import dhs, estat, hdr, kostat, oecd, surveys, unsdg
+from theme_growth_fertility import dhs, estat, hdr, kostat, moekr, oecd, surveys, unsdg
 from theme_growth_fertility import eurobarometer as ebm
 from theme_growth_fertility import eurostat as es
 from theme_growth_fertility import oecd_eag as eag
@@ -137,6 +137,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h8(ctx, written, skipped)
     written, skipped = _fetch_h8c(ctx, written, skipped)
     written, skipped = _fetch_h8d(ctx, written, skipped)
+    written, skipped = _fetch_h8d_k(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -219,6 +220,7 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h8(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8c(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8d(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h8d_k(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -480,6 +482,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h8(ctx, written, skipped)
     written, skipped = _mart_h8c(ctx, written, skipped)
     written, skipped = _mart_h8d(ctx, written, skipped)
+    written, skipped = _mart_h8d_k(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -1043,4 +1046,63 @@ def _mart_h8d(ctx: Context, written: list[str], skipped: list[str]) -> tuple[lis
     else:
         ctx.tables.write_table(HDR_MART, hdr.build_mart(hdr_rows))
         written.append(HDR_MART)
+    return written, skipped
+
+
+# ---- H8d-K: 교육부 초중고 사교육비조사 press release (one PDF, one long mart) -------------------
+# Single raw (KOGL type 1). Stage parses three tables (annual 2007-2025, by number of children,
+# by school level) fail-closed; an unrecognised layout is reported in skipped and nothing is
+# written. Independent of every other source.
+
+MOEKR_TABLE = "staged/moe_kr/private_tutoring"
+MOEKR_MART = "marts/kr_private_tutoring"
+
+
+def _fetch_h8d_k(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        payload = ctx.fetcher.fetch(moekr.URL)
+    except FetchError as e:
+        skipped.append(f"{moekr.RAW_NAME}: {e}")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=moekr.SOURCE,
+        name=moekr.RAW_NAME,
+        url=moekr.URL,
+        license=moekr.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h8d_k(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    payload = ctx.raw.get(theme=THEME, source=moekr.SOURCE, name=moekr.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{moekr.RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows = moekr.private_tutoring_rows(payload)
+    except ValueError as e:
+        skipped.append(f"{moekr.RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(MOEKR_TABLE, rows)
+    written.append(MOEKR_TABLE)
+    return written, skipped
+
+
+def _mart_h8d_k(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged_rows = ctx.tables.read_table(MOEKR_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{MOEKR_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(MOEKR_MART, moekr.build_mart(staged_rows))
+    written.append(MOEKR_MART)
     return written, skipped
