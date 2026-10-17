@@ -490,7 +490,8 @@ def growth_fertility_h8_part4() -> Path:
     title_block(
         bg,
         "なぜ出生率は 2 人を切るのか",
-        "所得・教育・教育費・男女分業のどれでも説明できない。残るのは「子どもは 2 人」という規範の崩れ",
+        "所得・教育・教育費・男女分業のどれでも説明できない。"
+        "残るのは「子どもは 2 人」という規範の崩れ",
         size=40,
     )
 
@@ -542,7 +543,7 @@ def growth_fertility_h8_part4() -> Path:
     ax3.tick_params(colors=BLUE, labelsize=11, length=0)
     for sp in ax3.spines.values():
         sp.set_visible(False)
-    tag(bg, 770, 470, "韓国: 私教育費（橙、名目）2 倍、出生率（青）0.75 へ", ORANGE)
+    tag(bg, 770, 470, "韓国: 私教育費（橙、名目）が 2 倍、出生率（青）は 0.75", ORANGE)
 
     bg.text(
         W - 40,
