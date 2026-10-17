@@ -1,0 +1,428 @@
+== Data ==
+growth_fertility_panel: rows=14322 cols=27
+  tert_enrol               obs= 5353 countries=203 years=1970–2025
+  school_life_exp          obs= 4861 countries=200 years=1970–2019
+  educ_exp_gdp             obs= 5125 countries=203 years=1970–2025
+  spend_per_student_sec    obs= 1442 countries=167 years=1995–2018
+  spend_per_student_tert   obs= 1457 countries=168 years=1970–2018
+  private_sec_share        obs= 3060 countries=196 years=1998–2025
+oecd_education_finance: rows=28329 countries=38 years=1995–2025
+  priv   {'dataset': 'fin_source', 'unit': 'PT_EXP', 'exp_source': 'S1D_NON_EDU', 'education_level': 'ISCED11_1T8'}: obs=479 countries=36 years=1995–2024
+  rel    {'dataset': 'earn_rel', 'education_level': 'ISCED11A_5T8', 'sex': '_T', 'work_time': '_T'}: obs=454 countries=37 years=2000–2025
+  spend  {'dataset': 'fin_perstud', 'price_base': 'Q', 'exp_source': '_T', 'education_level': 'ISCED11_1T8'}: obs=521 countries=38 years=1995–2024
+  priv obs_status counts: A=416, L=1, R=3, W=59
+  priv obs_status W countries: ['AUS', 'CAN', 'CHL', 'DEU', 'FIN', 'GRC', 'IRL', 'ISL', 'JPN', 'KOR', 'LVA', 'MEX', 'POL', 'PRT']
+  JPN: priv 15 obs (2005–2023); rel 2 obs (2005–2012); spend 15 obs (2005–2023)
+  KOR: priv 9 obs (2015–2023); rel 16 obs (2005–2024); spend 9 obs (2015–2023)
+  DNK: priv 13 obs (1995–2023); rel 15 obs (2005–2024); spend 16 obs (1995–2023)
+  FIN: priv 18 obs (1995–2023); rel 15 obs (2005–2023); spend 19 obs (1995–2023)
+  NOR: priv 8 obs (2012–2023); rel 14 obs (2005–2024); spend 8 obs (2012–2023)
+  SWE: priv 18 obs (2000–2024); rel 14 obs (2005–2024); spend 20 obs (1995–2024)
+  countries without relative earnings: ['ISL']
+
+== Y1 (main): WDI 10-year long differences, stage 2 (TFR at start < 3) ==
+[M] stage1 TFR0>=3.0  n=109 G=66
+    d_tert    -0.033 [-0.296, +0.230]   (tertiary enrolment (gross %))
+    d_sle     +0.112 [-0.073, +0.297]   (school life expectancy (years))
+    d_eexp    -0.040 [-0.130, +0.050]   (gov. education spending (% GDP))
+    d_sec     -0.106 [-0.386, +0.173]   (female sec. enrolment)
+    d_ln_gdp  +0.209 [-0.035, +0.454]   (ln GDP pc (const.))
+    d_ln_u5   +0.150 [-0.145, +0.445]   (ln U5MR)
+[M] stage2 TFR0<3.0  n=121 G=75
+    d_tert    +0.074 [-0.042, +0.191]   (tertiary enrolment (gross %))
+    d_sle     -0.121 [-0.300, +0.058]   (school life expectancy (years))
+    d_eexp    -0.002 [-0.090, +0.087]   (gov. education spending (% GDP))
+    d_sec     -0.005 [-0.131, +0.120]   (female sec. enrolment)
+    d_ln_gdp  +0.029 [-0.154, +0.212]   (ln GDP pc (const.))
+    d_ln_u5   +0.042 [-0.096, +0.180]   (ln U5MR)
+[M] 全世界 condition: lead=None holds=False  reverse=none
+-- Y1 short sample: 1995→2005→2015 with spending per student and private enrolment --
+[M short 1995+] stage2 TFR0<3.0  n=45 G=45
+    d_tert    -0.075 [+nan, +nan]   (tertiary enrolment (gross %))
+    d_sle     -0.004 [+nan, +nan]   (school life expectancy (years))
+    d_eexp    +0.012 [+nan, +nan]   (gov. education spending (% GDP))
+    d_sec     -0.043 [+nan, +nan]   (female sec. enrolment)
+    d_ln_gdp  -0.038 [+nan, +nan]   (ln GDP pc (const.))
+    d_ln_u5   -0.099 [+nan, +nan]   (ln U5MR)
+    d_sps     +0.058 [+nan, +nan]   (gov. spend per sec. student (% GDP pc))
+    d_pss     +0.025 [+nan, +nan]   (private sec. enrolment share (%))
+[M short 1995+] 全世界 condition: lead=None holds=False  reverse=none
+  periods per country in this sample: 1:45
+  -> with country FE, countries with a single period carry no within variation; NaN SEs mean the 10-year short version is not identified.
+-- Y1 short sample, operational fallback: 5-year differences 1995–2020 --
+[M short 1995+ 5-year] stage2 TFR0<3.0  n=136 G=61
+    d_tert    +0.029 [-0.026, +0.085]   (tertiary enrolment (gross %))
+    d_sle     -0.009 [-0.104, +0.085]   (school life expectancy (years))
+    d_eexp    -0.040 [-0.100, +0.020]   (gov. education spending (% GDP))
+    d_sec     -0.004 [-0.079, +0.072]   (female sec. enrolment)
+    d_ln_gdp  -0.008 [-0.082, +0.067]   (ln GDP pc (const.))
+    d_ln_u5   -0.035 [-0.112, +0.043]   (ln U5MR)
+    d_sps     +0.058 [+0.015, +0.100]*  (gov. spend per sec. student (% GDP pc))
+    d_pss     +0.012 [-0.043, +0.066]   (private sec. enrolment share (%))
+[M short 1995+ 5-year] 全世界 condition: lead=None holds=False  reverse=none
+  periods per country in this sample: 1:18 2:12 3:30 4:1
+-- Y1 same 1995+ 10-year periods without the two short-sample variables (reference) --
+[M 1995+ no extra] stage2 TFR0<3.0  n=76 G=64
+    d_tert    +0.157 [-0.484, +0.799]   (tertiary enrolment (gross %))
+    d_sle     -0.003 [-0.725, +0.718]   (school life expectancy (years))
+    d_eexp    -0.037 [-0.349, +0.275]   (gov. education spending (% GDP))
+    d_sec     -0.373 [-1.100, +0.355]   (female sec. enrolment)
+    d_ln_gdp  -0.078 [-0.652, +0.496]   (ln GDP pc (const.))
+    d_ln_u5   -0.086 [-0.626, +0.455]   (ln U5MR)
+[M 1995+ no extra] 全世界 condition: lead=None holds=False  reverse=none
+  periods per country in this sample: 1:52 2:12
+
+== Y2 (OECD cross-section) and Y3 (OECD within) ==
+[M] Y2 latest common year per country (>= 2012): n=35, years 2012–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2023 CHL:2023 CRI:2024 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2022 GBR:2023 GRC:2018 HUN:2023 IRL:2022 ISR:2023 ITA:2023 JPN:2012 KOR:2023 LTU:2022 LUX:2023 LVA:2023 MEX:2018 NLD:2023 NOR:2023 NZL:2024 POL:2022 PRT:2023 SVK:2023 SVN:2023 SWE:2024 TUR:2023 USA:2022
+[M] Y2 OLS HC1 (standardised)  n=35 G=35 r2=0.083
+    priv       +0.055 [-0.021, +0.131]   SD=9.251  (private share of education spending (%))
+    rel        +0.017 [-0.094, +0.129]   SD=20.698  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   -0.125 [-0.272, +0.022]   SD=0.402  (ln spending per student (USD PPP 2020))
+    ln_gdp     +0.088 [-0.027, +0.204]   SD=0.373  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.295 p=0.085
+    Spearman tfr × rel       rho=+0.160 p=0.359
+    Spearman tfr × ln_spend  rho=+0.004 p=0.980
+    Spearman tfr × ln_gdp    rho=+0.031 p=0.858
+[M] Y3 within 2005–2023: years 2005–2023, country-years=319, countries=35
+[M] Y3 FE  n=319 G=35 r2=0.954
+    priv       +0.069 [-0.034, +0.172]   SD=9.201  (private share of education spending (%))
+    rel        -0.022 [-0.092, +0.049]   SD=21.987  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   +0.155 [+0.018, +0.292]*  SD=0.371  (ln spending per student (USD PPP 2020))
+[M] OECD condition: holds=False vars=none sign-conflicts=none reverse=none
+-- Y2 without relative earnings (JPN has only 2005, 2012) --
+[M no-rel] Y2 latest common year per country (>= 2012): n=36, years 2022–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2023 CHL:2023 CRI:2024 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2023 GBR:2023 GRC:2023 HUN:2023 IRL:2023 ISL:2023 ISR:2023 ITA:2023 JPN:2023 KOR:2023 LTU:2023 LUX:2023 LVA:2023 MEX:2022 NLD:2023 NOR:2023 NZL:2024 POL:2023 PRT:2023 SVK:2023 SVN:2023 SWE:2024 TUR:2023 USA:2022
+[M no-rel] Y2 OLS HC1 (standardised)  n=36 G=36 r2=0.053
+    priv       +0.042 [-0.035, +0.120]   SD=9.358  (private share of education spending (%))
+    ln_spend   -0.115 [-0.264, +0.035]   SD=0.398  (ln spending per student (USD PPP 2020))
+    ln_gdp     +0.084 [-0.027, +0.196]   SD=0.365  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.192 p=0.263
+    Spearman tfr × ln_spend  rho=+0.082 p=0.634
+    Spearman tfr × ln_gdp    rho=+0.129 p=0.454
+-- Y3 auxiliary: 2012→latest long differences --
+[M] Y3-LD start years [2011, 2012, 2013, 2014], end years 2018–2024; median ΔTFR -0.250
+[M] Y3-LD 2012→latest (HC1, standardised)  n=28 G=28 r2=0.123
+    d_priv     +0.051 [-0.026, +0.127]   SD=6.388  (Δ private share)
+    d_rel      +0.011 [-0.082, +0.104]   SD=16.884  (Δ relative earnings)
+    d_ln_spend +0.084 [-0.024, +0.193]   SD=0.121  (Δ ln spending per student)
+    Spearman Δtfr × d_priv      rho=+0.010 p=0.961
+    Spearman Δtfr × d_rel       rho=-0.091 p=0.646
+    Spearman Δtfr × d_ln_spend  rho=+0.165 p=0.403
+
+== Y4: DHS Total wanted TFR horse race (H8b X2) + spend per sec. student + tertiary ==
+[M] H8b X2 on the Y4 sample (without the two)  n=76 G=43
+    cash_emp   +0.199 [-0.170, +0.568] 
+    emp_tot    -0.113 [-0.437, +0.210] 
+    att_pri    -0.144 [-0.674, +0.387] 
+    att_sec    -0.144 [-0.646, +0.357] 
+    mcpr       -0.704 [-1.496, +0.088] 
+    ln_u5      +0.265 [-0.689, +1.218] 
+    sec        -0.709 [-1.912, +0.494] 
+[M] Y4 X2 + sps + tert  n=76 G=43 r2=0.991
+    cash_emp   +0.197 [-0.189, +0.582]   SD=17.841  (married women earning cash (%))
+    emp_tot    -0.113 [-0.445, +0.219]   SD=18.009  (women employed (Total, %))
+    att_pri    -0.148 [-0.748, +0.452]   SD=16.064  (child primary attendance (Total, %))
+    att_sec    -0.140 [-0.695, +0.415]   SD=19.684  (child secondary attendance (Total, %))
+    mcpr       -0.693 [-1.513, +0.128]   SD=20.185  (modern contraception, married (%))
+    ln_u5      +0.268 [-0.741, +1.278]   SD=0.658  (ln U5MR (Total, 5 y))
+    sec        -0.695 [-2.047, +0.658]   SD=23.097  (women secondary+ (%))
+    sps        -0.024 [-0.389, +0.342]   SD=11.625  (gov. spend per sec. student (% GDP pc))
+    tert       +0.021 [-0.530, +0.571]   SD=12.512  (tertiary enrolment (%))
+    leader among all (CI∌0, max |b|): None
+
+== Y5: Japan, Korea and the Nordic 4 (descriptive) ==
+-- priv --
+    JPN  2005:29.9  2012:27.8  2015:28.3  2019:28.3  2022:26.7  2023:27.4
+    KOR  2015:30.3  2019:24.6  2022:17.4  2023:20.5
+    DNK  2005:2.4  2019:7.0  2022:9.5  2023:9.1
+    FIN  2005:1.8  2012:1.7  2019:1.7  2022:1.7  2023:1.8
+    NOR  2012:1.0  2015:1.5  2019:2.2  2022:4.3  2023:4.2
+    SWE  2005:3.2  2015:3.5  2019:3.5  2022:3.5  2023:3.9
+-- rel --
+    JPN  2005:148.3  2012:151.7
+    KOR  2005:148.6  2012:147.2  2015:141.0  2019:138.2  2022:133.9  2023:135.0
+    DNK  2005:125.4  2012:127.8  2019:127.5  2022:126.2  2023:126.4
+    FIN  2005:149.0  2012:147.5  2015:140.9  2019:148.3  2022:149.2  2023:149.3
+    NOR  2005:131.1  2015:127.7  2019:125.5  2022:133.0  2023:132.1
+    SWE  2005:126.4  2012:113.8  2015:116.5  2019:122.6  2022:124.0  2023:124.1
+-- spend --
+    JPN  2005:11376.9  2012:12626.3  2015:12681.1  2019:13073.9  2022:13178.2  2023:12584.4
+    KOR  2015:11892.0  2019:14635.3  2022:18563.9  2023:16655.7
+    DNK  2005:17103.0  2019:17074.6  2022:16401.8  2023:17521.3
+    FIN  2005:12254.3  2012:14191.5  2015:13856.4  2019:13926.7  2022:13418.4  2023:13707.5
+    NOR  2012:14710.2  2015:16897.5  2019:18008.2  2022:13000.5  2023:15493.0
+    SWE  2005:13414.6  2012:15774.4  2015:16153.3  2019:16652.8  2022:16330.7  2023:16354.1
+-- tfr --
+    JPN  2005:1.26  2012:1.41  2015:1.45  2019:1.36  2022:1.26  2023:1.20
+    KOR  2005:1.08  2012:1.30  2015:1.24  2019:0.92  2022:0.78  2023:0.72
+    DNK  2005:1.80  2012:1.73  2019:1.70  2022:1.55  2023:1.50
+    FIN  2005:1.80  2012:1.80  2015:1.65  2019:1.35  2022:1.32  2023:1.26
+    NOR  2005:1.84  2012:1.85  2015:1.72  2019:1.53  2022:1.41  2023:1.40
+    SWE  2005:1.77  2012:1.91  2015:1.85  2019:1.71  2022:1.53  2023:1.45
+
+== Verdict (pre-registered) ==
+全世界 (Y1 stage 2): lead=None holds=False
+OECD (Y2/Y3): holds=False vars=() conflicts=()
+reverse (positive, CI∌0, among judged variables): none
+VERDICT Q: no = 不支持
+FINAL STANCE: 2 人未満への低下は、学歴社会の圧力でも説明できない（教育の長さ・家計の教育費負担・学歴による賃金差のどれも事前に決めた条件を満たさない）。要因は本シリーズの変数の外にある。
+
+== Robustness (pre-registered list; verdict re-evaluated holding the other side) ==
+-- Y1 --
+[R + SMAM] stage2 TFR0<3.0  n=55 G=43
+    d_tert    +0.185 [-0.416, +0.785]   (tertiary enrolment (gross %))
+    d_sle     -0.041 [-0.757, +0.675]   (school life expectancy (years))
+    d_eexp    -0.044 [-0.478, +0.390]   (gov. education spending (% GDP))
+    d_sec     -0.052 [-0.654, +0.550]   (female sec. enrolment)
+    d_ln_gdp  -0.244 [-1.525, +1.037]   (ln GDP pc (const.))
+    d_ln_u5   +0.229 [-0.502, +0.960]   (ln U5MR)
+    d_smam    -0.173 [-0.643, +0.297]   (female mean age at marriage)
+[R + SMAM] 全世界 condition: lead=None holds=False  reverse=none
+[R 5-year] stage2 TFR0<3.0  n=282 G=95
+    d_tert    +0.023 [-0.042, +0.088]   (tertiary enrolment (gross %))
+    d_sle     -0.021 [-0.094, +0.053]   (school life expectancy (years))
+    d_eexp    +0.011 [-0.016, +0.038]   (gov. education spending (% GDP))
+    d_sec     -0.016 [-0.064, +0.033]   (female sec. enrolment)
+    d_ln_gdp  +0.022 [-0.024, +0.069]   (ln GDP pc (const.))
+    d_ln_u5   -0.020 [-0.070, +0.029]   (ln U5MR)
+[R 5-year] 全世界 condition: lead=None holds=False  reverse=none
+R 20-year s2: too few rows (n=6)
+[R 20-year] stage2 TFR0<3.0: too few rows
+[R 20-year] 全世界 condition: lead=None holds=False  reverse=none
+[R cut 2.5] stage2 TFR0<2.5  n=103 G=64
+    d_tert    +0.071 [-0.078, +0.219]   (tertiary enrolment (gross %))
+    d_sle     -0.124 [-0.342, +0.095]   (school life expectancy (years))
+    d_eexp    -0.008 [-0.103, +0.088]   (gov. education spending (% GDP))
+    d_sec     -0.000 [-0.151, +0.151]   (female sec. enrolment)
+    d_ln_gdp  +0.039 [-0.165, +0.244]   (ln GDP pc (const.))
+    d_ln_u5   +0.018 [-0.127, +0.163]   (ln U5MR)
+[R cut 2.5] 全世界 condition: lead=None holds=False  reverse=none
+[R cut 3.5] stage2 TFR0<3.5  n=139 G=79
+    d_tert    +0.114 [+0.013, +0.215]*  (tertiary enrolment (gross %))
+    d_sle     -0.160 [-0.332, +0.012]   (school life expectancy (years))
+    d_eexp    -0.026 [-0.108, +0.055]   (gov. education spending (% GDP))
+    d_sec     +0.037 [-0.077, +0.150]   (female sec. enrolment)
+    d_ln_gdp  -0.031 [-0.220, +0.158]   (ln GDP pc (const.))
+    d_ln_u5   -0.027 [-0.169, +0.115]   (ln U5MR)
+[R cut 3.5] 全世界 condition: lead=None holds=False  reverse=['d_tert']
+[R excl 2020–24] stage2 TFR0<3.0  n=121 G=75
+    d_tert    +0.074 [-0.039, +0.188]   (tertiary enrolment (gross %))
+    d_sle     -0.120 [-0.277, +0.037]   (school life expectancy (years))
+    d_eexp    +0.001 [-0.080, +0.083]   (gov. education spending (% GDP))
+    d_sec     -0.003 [-0.107, +0.100]   (female sec. enrolment)
+    d_ln_gdp  +0.053 [-0.095, +0.200]   (ln GDP pc (const.))
+    d_ln_u5   +0.055 [-0.095, +0.205]   (ln U5MR)
+[R excl 2020–24] 全世界 condition: lead=None holds=False  reverse=none
+[R excl oil states] stage2 TFR0<3.0  n=114 G=69
+    d_tert    +0.077 [-0.042, +0.195]   (tertiary enrolment (gross %))
+    d_sle     -0.123 [-0.301, +0.056]   (school life expectancy (years))
+    d_eexp    -0.002 [-0.087, +0.084]   (gov. education spending (% GDP))
+    d_sec     -0.005 [-0.132, +0.121]   (female sec. enrolment)
+    d_ln_gdp  +0.026 [-0.161, +0.214]   (ln GDP pc (const.))
+    d_ln_u5   +0.040 [-0.093, +0.174]   (ln U5MR)
+[R excl oil states] 全世界 condition: lead=None holds=False  reverse=none
+[R excl pop<1m] stage2 TFR0<3.0  n=105 G=64
+    d_tert    +0.045 [-0.076, +0.166]   (tertiary enrolment (gross %))
+    d_sle     -0.093 [-0.273, +0.087]   (school life expectancy (years))
+    d_eexp    +0.024 [-0.066, +0.113]   (gov. education spending (% GDP))
+    d_sec     -0.025 [-0.152, +0.102]   (female sec. enrolment)
+    d_ln_gdp  +0.029 [-0.143, +0.200]   (ln GDP pc (const.))
+    d_ln_u5   +0.067 [-0.071, +0.205]   (ln U5MR)
+[R excl pop<1m] 全世界 condition: lead=None holds=False  reverse=none
+-- Y2 / Y3 --
+-- R ISCED 1T4 --
+[R ISCED 1T4] Y2 latest common year per country (>= 2012): n=35, years 2012–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2023 CHL:2023 CRI:2013 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2022 GBR:2023 GRC:2018 HUN:2023 IRL:2022 ISR:2023 ITA:2023 JPN:2012 KOR:2023 LTU:2022 LUX:2023 LVA:2023 MEX:2018 NLD:2023 NOR:2023 NZL:2024 POL:2022 PRT:2023 SVK:2023 SVN:2023 SWE:2024 TUR:2023 USA:2022
+[R ISCED 1T4] Y2 OLS HC1 (standardised)  n=35 G=35 r2=0.112
+    priv       +0.027 [-0.051, +0.104]   SD=4.942  (private share of education spending (%))
+    rel        +0.042 [-0.086, +0.170]   SD=20.240  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   -0.112 [-0.278, +0.053]   SD=0.415  (ln spending per student (USD PPP 2020))
+    ln_gdp     +0.060 [-0.068, +0.188]   SD=0.391  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.389 p=0.021
+    Spearman tfr × rel       rho=+0.266 p=0.123
+    Spearman tfr × ln_spend  rho=-0.155 p=0.373
+    Spearman tfr × ln_gdp    rho=-0.073 p=0.677
+[R ISCED 1T4] Y3 within 2005–2023: years 2005–2023, country-years=327, countries=35
+[R ISCED 1T4] Y3 FE  n=327 G=35 r2=0.951
+    priv       +0.072 [+0.003, +0.142]*  SD=5.423  (private share of education spending (%))
+    rel        -0.026 [-0.085, +0.033]   SD=21.668  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   +0.137 [+0.001, +0.273]*  SD=0.390  (ln spending per student (USD PPP 2020))
+[R ISCED 1T4] OECD condition: holds=False vars=none sign-conflicts=none reverse=['priv']
+-- R ISCED 5T8 --
+[R ISCED 5T8] Y2 latest common year per country (>= 2012): n=35, years 2012–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2019 CHL:2023 CRI:2024 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2022 GBR:2023 GRC:2018 HUN:2023 IRL:2022 ISR:2023 ITA:2023 JPN:2012 KOR:2023 LTU:2022 LUX:2023 LVA:2023 MEX:2018 NLD:2023 NOR:2023 NZL:2024 POL:2022 PRT:2023 SVK:2023 SVN:2023 SWE:2024 TUR:2023 USA:2022
+[R ISCED 5T8] Y2 OLS HC1 (standardised)  n=35 G=35 r2=0.075
+    priv       +0.077 [-0.065, +0.219]   SD=20.072  (private share of education spending (%))
+    rel        +0.025 [-0.097, +0.147]   SD=20.703  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   -0.020 [-0.171, +0.132]   SD=0.455  (ln spending per student (USD PPP 2020))
+    ln_gdp     -0.001 [-0.135, +0.133]   SD=0.373  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.320 p=0.061
+    Spearman tfr × rel       rho=+0.144 p=0.410
+    Spearman tfr × ln_spend  rho=+0.157 p=0.368
+    Spearman tfr × ln_gdp    rho=+0.059 p=0.735
+[R ISCED 5T8] Y3 within 2005–2023: years 2005–2023, country-years=327, countries=35
+[R ISCED 5T8] Y3 FE  n=327 G=35 r2=0.952
+    priv       -0.002 [-0.116, +0.111]   SD=19.082  (private share of education spending (%))
+    rel        -0.034 [-0.111, +0.043]   SD=22.976  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   +0.100 [+0.019, +0.180]*  SD=0.404  (ln spending per student (USD PPP 2020))
+[R ISCED 5T8] OECD condition: holds=False vars=none sign-conflicts=none reverse=none
+-- R rel earn full-time --
+[R rel earn full-time] Y2 latest common year per country (>= 2012): n=34, years 2018–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2023 CHL:2023 CRI:2024 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2022 GBR:2023 GRC:2018 HUN:2023 IRL:2022 ISR:2023 ITA:2023 KOR:2023 LTU:2022 LUX:2023 LVA:2023 MEX:2018 NLD:2023 NOR:2023 NZL:2024 POL:2022 PRT:2023 SVK:2023 SVN:2022 SWE:2024 TUR:2023 USA:2022
+[R rel earn full-time] Y2 OLS HC1 (standardised)  n=34 G=34 r2=0.080
+    priv       +0.057 [-0.023, +0.137]   SD=9.142  (private share of education spending (%))
+    rel        +0.010 [-0.106, +0.127]   SD=19.686  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   -0.124 [-0.273, +0.026]   SD=0.408  (ln spending per student (USD PPP 2020))
+    ln_gdp     +0.084 [-0.037, +0.205]   SD=0.377  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.302 p=0.083
+    Spearman tfr × rel       rho=+0.148 p=0.404
+    Spearman tfr × ln_spend  rho=+0.003 p=0.986
+    Spearman tfr × ln_gdp    rho=+0.021 p=0.907
+[R rel earn full-time] Y3 within 2005–2023: years 2005–2023, country-years=322, countries=34
+[R rel earn full-time] Y3 FE  n=322 G=34 r2=0.953
+    priv       +0.064 [-0.036, +0.165]   SD=8.993  (private share of education spending (%))
+    rel        -0.046 [-0.118, +0.026]   SD=22.200  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   +0.136 [-0.012, +0.283]   SD=0.365  (ln spending per student (USD PPP 2020))
+[R rel earn full-time] OECD condition: holds=False vars=none sign-conflicts=none reverse=none
+-- R rel earn women --
+[R rel earn women] Y2 latest common year per country (>= 2012): n=35, years 2012–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2023 CHL:2023 CRI:2024 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2022 GBR:2023 GRC:2018 HUN:2023 IRL:2022 ISR:2023 ITA:2023 JPN:2012 KOR:2023 LTU:2022 LUX:2023 LVA:2023 MEX:2018 NLD:2023 NOR:2023 NZL:2024 POL:2022 PRT:2023 SVK:2023 SVN:2023 SWE:2024 TUR:2023 USA:2022
+[R rel earn women] Y2 OLS HC1 (standardised)  n=35 G=35 r2=0.080
+    priv       +0.057 [-0.020, +0.135]   SD=9.251  (private share of education spending (%))
+    rel        +0.004 [-0.106, +0.115]   SD=22.183  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   -0.129 [-0.276, +0.018]   SD=0.402  (ln spending per student (USD PPP 2020))
+    ln_gdp     +0.088 [-0.032, +0.209]   SD=0.373  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.295 p=0.085
+    Spearman tfr × rel       rho=+0.152 p=0.382
+    Spearman tfr × ln_spend  rho=+0.004 p=0.980
+    Spearman tfr × ln_gdp    rho=+0.031 p=0.858
+[R rel earn women] Y3 within 2005–2023: years 2005–2023, country-years=319, countries=35
+[R rel earn women] Y3 FE  n=319 G=35 r2=0.954
+    priv       +0.068 [-0.035, +0.171]   SD=9.201  (private share of education spending (%))
+    rel        -0.004 [-0.051, +0.043]   SD=21.427  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   +0.164 [+0.021, +0.306]*  SD=0.371  (ln spending per student (USD PPP 2020))
+[R rel earn women] OECD condition: holds=False vars=none sign-conflicts=none reverse=none
+-- R excl KOR --
+[R excl KOR] Y2 latest common year per country (>= 2012): n=34, years 2012–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2023 CHL:2023 CRI:2024 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2022 GBR:2023 GRC:2018 HUN:2023 IRL:2022 ISR:2023 ITA:2023 JPN:2012 LTU:2022 LUX:2023 LVA:2023 MEX:2018 NLD:2023 NOR:2023 NZL:2024 POL:2022 PRT:2023 SVK:2023 SVN:2023 SWE:2024 TUR:2023 USA:2022
+[R excl KOR] Y2 OLS HC1 (standardised)  n=34 G=34 r2=0.077
+    priv       +0.069 [-0.001, +0.140]   SD=9.353  (private share of education spending (%))
+    rel        -0.006 [-0.104, +0.093]   SD=20.680  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   -0.086 [-0.205, +0.033]   SD=0.405  (ln spending per student (USD PPP 2020))
+    ln_gdp     +0.054 [-0.018, +0.126]   SD=0.378  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.360 p=0.036
+    Spearman tfr × rel       rho=+0.108 p=0.544
+    Spearman tfr × ln_spend  rho=+0.054 p=0.763
+    Spearman tfr × ln_gdp    rho=+0.059 p=0.739
+[R excl KOR] Y3 within 2005–2023: years 2005–2023, country-years=310, countries=34
+[R excl KOR] Y3 FE  n=310 G=34 r2=0.952
+    priv       +0.037 [-0.061, +0.136]   SD=9.175  (private share of education spending (%))
+    rel        -0.016 [-0.087, +0.054]   SD=22.154  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   +0.181 [+0.042, +0.319]*  SD=0.374  (ln spending per student (USD PPP 2020))
+[R excl KOR] OECD condition: holds=False vars=none sign-conflicts=none reverse=none
+-- R excl JPN --
+[R excl JPN] Y2 latest common year per country (>= 2012): n=34, years 2018–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2023 CHL:2023 CRI:2024 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2022 GBR:2023 GRC:2018 HUN:2023 IRL:2022 ISR:2023 ITA:2023 KOR:2023 LTU:2022 LUX:2023 LVA:2023 MEX:2018 NLD:2023 NOR:2023 NZL:2024 POL:2022 PRT:2023 SVK:2023 SVN:2023 SWE:2024 TUR:2023 USA:2022
+[R excl JPN] Y2 OLS HC1 (standardised)  n=34 G=34 r2=0.083
+    priv       +0.057 [-0.025, +0.138]   SD=9.144  (private share of education spending (%))
+    rel        +0.017 [-0.097, +0.130]   SD=20.996  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   -0.125 [-0.276, +0.027]   SD=0.408  (ln spending per student (USD PPP 2020))
+    ln_gdp     +0.087 [-0.034, +0.207]   SD=0.377  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.306 p=0.078
+    Spearman tfr × rel       rho=+0.162 p=0.359
+    Spearman tfr × ln_spend  rho=-0.001 p=0.997
+    Spearman tfr × ln_gdp    rho=+0.029 p=0.873
+[R excl JPN] Y3 within 2005–2023: years 2005–2023, country-years=317, countries=34
+[R excl JPN] Y3 FE  n=317 G=34 r2=0.955
+    priv       +0.070 [-0.032, +0.173]   SD=9.166  (private share of education spending (%))
+    rel        -0.022 [-0.093, +0.049]   SD=22.053  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   +0.156 [+0.019, +0.293]*  SD=0.372  (ln spending per student (USD PPP 2020))
+[R excl JPN] OECD condition: holds=False vars=none sign-conflicts=none reverse=none
+-- R private % GDP --
+[R private % GDP] Y2 latest common year per country (>= 2012): n=35, years 2012–2024, median 2023
+    AUS:2023 AUT:2023 BEL:2023 CAN:2023 CHL:2023 CRI:2024 CZE:2023 DEU:2023 DNK:2023 ESP:2023 EST:2023 FIN:2023 FRA:2022 GBR:2023 GRC:2018 HUN:2023 IRL:2022 ISR:2023 ITA:2023 JPN:2012 KOR:2023 LTU:2022 LUX:2023 LVA:2023 MEX:2018 NLD:2023 NOR:2023 NZL:2024 POL:2022 PRT:2023 SVK:2023 SVN:2023 SWE:2024 TUR:2023 USA:2022
+[R private % GDP] Y2 OLS HC1 (standardised)  n=35 G=35 r2=0.113
+    priv       +0.082 [-0.027, +0.191]   SD=0.546  (private share of education spending (%))
+    rel        +0.011 [-0.101, +0.123]   SD=20.698  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   -0.154 [-0.305, -0.002]*  SD=0.402  (ln spending per student (USD PPP 2020))
+    ln_gdp     +0.114 [-0.007, +0.235]   SD=0.373  (ln GDP pc (PPP))
+    Spearman tfr × priv      rho=+0.327 p=0.055
+    Spearman tfr × rel       rho=+0.160 p=0.359
+    Spearman tfr × ln_spend  rho=+0.004 p=0.980
+    Spearman tfr × ln_gdp    rho=+0.031 p=0.858
+[R private % GDP] Y3 within 2005–2023: years 2005–2023, country-years=335, countries=35
+[R private % GDP] Y3 FE  n=335 G=35 r2=0.952
+    priv       +0.068 [-0.050, +0.187]   SD=0.553  (private share of education spending (%))
+    rel        -0.030 [-0.088, +0.028]   SD=21.884  (tertiary relative earnings (upper sec. = 100))
+    ln_spend   +0.171 [+0.050, +0.293]*  SD=0.375  (ln spending per student (USD PPP 2020))
+[R private % GDP] OECD condition: holds=False vars=none sign-conflicts=none reverse=none
+
+-- Robustness summary --
+spec                     side   holds  detail                                   verdict
+R + SMAM                 Y1     False  lead=None rev=- n=55                     no
+R 5-year                 Y1     False  lead=None rev=- n=282                    no
+R 20-year                Y1     False  lead=None rev=- n=0                      no
+R cut 2.5                Y1     False  lead=None rev=- n=103                    no
+R cut 3.5                Y1     False  lead=None rev=['d_tert'] n=139           no
+R excl 2020–24           Y1     False  lead=None rev=- n=121                    no
+R excl oil states        Y1     False  lead=None rev=- n=114                    no
+R excl pop<1m            Y1     False  lead=None rev=- n=105                    no
+R ISCED 1T4              OECD   False  vars=- conf=- rev=['priv'] n2=35         no
+R ISCED 5T8              OECD   False  vars=- conf=- rev=- n2=35                no
+R rel earn full-time     OECD   False  vars=- conf=- rev=- n2=34                no
+R rel earn women         OECD   False  vars=- conf=- rev=- n2=35                no
+R excl KOR               OECD   False  vars=- conf=- rev=- n2=34                no
+R excl JPN               OECD   False  vars=- conf=- rev=- n2=34                no
+R private % GDP          OECD   False  vars=- conf=- rev=- n2=35                no
+
+== Exploratory (post hoc, not part of the verdict) ==
+[E1 d_tert only + H8 controls] stage2 TFR0<3.0  n=177 G=98
+    d_tert    +0.013 [-0.045, +0.070]   (tertiary enrolment (gross %))
+    d_sec     -0.057 [-0.119, +0.004]   (female sec. enrolment)
+    d_ln_gdp  +0.087 [-0.066, +0.240]   (ln GDP pc (const.))
+    d_ln_u5   -0.031 [-0.153, +0.091]   (ln U5MR)
+[E1 d_tert only + H8 controls] 全世界 condition: lead=None holds=False  reverse=none
+[E1 d_sle only + H8 controls] stage2 TFR0<3.0  n=155 G=86
+    d_sle     -0.009 [-0.105, +0.086]   (school life expectancy (years))
+    d_sec     -0.044 [-0.143, +0.056]   (female sec. enrolment)
+    d_ln_gdp  +0.102 [-0.024, +0.229]   (ln GDP pc (const.))
+    d_ln_u5   -0.038 [-0.152, +0.076]   (ln U5MR)
+[E1 d_sle only + H8 controls] 全世界 condition: lead=None holds=False  reverse=none
+[E1 d_eexp only + H8 controls] stage2 TFR0<3.0  n=176 G=98
+    d_eexp    +0.018 [-0.049, +0.086]   (gov. education spending (% GDP))
+    d_sec     -0.053 [-0.131, +0.024]   (female sec. enrolment)
+    d_ln_gdp  +0.024 [-0.106, +0.155]   (ln GDP pc (const.))
+    d_ln_u5   +0.047 [-0.075, +0.169]   (ln U5MR)
+[E1 d_eexp only + H8 controls] 全世界 condition: lead=None holds=False  reverse=none
+E2 Y2 bivariate priv: n=36 +0.042 [-0.037, +0.121] 
+E2 Y2 bivariate rel: n=37 +0.057 [-0.014, +0.127] 
+[E3 cut 2.1] stage2 TFR0<2.1  n=84 G=50
+    d_tert    +0.069 [-0.091, +0.229]   (tertiary enrolment (gross %))
+    d_sle     -0.137 [-0.331, +0.057]   (school life expectancy (years))
+    d_eexp    +0.005 [-0.078, +0.089]   (gov. education spending (% GDP))
+    d_sec     +0.016 [-0.117, +0.148]   (female sec. enrolment)
+    d_ln_gdp  +0.047 [-0.144, +0.237]   (ln GDP pc (const.))
+    d_ln_u5   +0.009 [-0.137, +0.154]   (ln U5MR)
+[E3 cut 2.1] 全世界 condition: lead=None holds=False  reverse=none
+[E4 H8 vars (no SMAM) on the Y1 sample] stage2 TFR0<3.0  n=121 G=75
+    d_ln_u5   +0.029 [-0.139, +0.198]   (ln U5MR)
+    d_sec     -0.073 [-0.128, -0.017]*  (female sec. enrolment)
+    d_ln_gdp  +0.037 [-0.159, +0.234]   (ln GDP pc (const.))
+[E4b H8 vars + d_sle on the Y1 sample] stage2 TFR0<3.0  n=121 G=75
+    d_ln_u5   +0.030 [-0.136, +0.197]   (ln U5MR)
+    d_sec     -0.054 [-0.131, +0.024]   (female sec. enrolment)
+    d_ln_gdp  +0.045 [-0.154, +0.244]   (ln GDP pc (const.))
+    d_sle     -0.034 [-0.113, +0.046]   (school life expectancy (years))
+[E4b H8 vars + d_tert on the Y1 sample] stage2 TFR0<3.0  n=121 G=75
+    d_ln_u5   +0.030 [-0.141, +0.201]   (ln U5MR)
+    d_sec     -0.073 [-0.129, -0.016]*  (female sec. enrolment)
+    d_ln_gdp  +0.035 [-0.171, +0.241]   (ln GDP pc (const.))
+    d_tert    +0.005 [-0.058, +0.069]   (tertiary enrolment (gross %))
+E5 JPN: TFR 2012→2023 1.41→1.20 (-0.21); private share 27.8→27.4 (-0.4 pp)
+E5 KOR: TFR 2012→2023 1.30→0.72 (-0.58); private share 30.3→20.5 (-9.8 pp)
+E5 DNK: TFR 2012→2023 1.73→1.50 (-0.23); private share 3.7→9.1 (+5.4 pp)
+E5 FIN: TFR 2012→2023 1.80→1.26 (-0.54); private share 1.7→1.8 (+0.1 pp)
+E5 NOR: TFR 2012→2023 1.85→1.40 (-0.45); private share 1.0→4.2 (+3.2 pp)
+E5 SWE: TFR 2012→2023 1.91→1.45 (-0.46); private share 3.1→3.9 (+0.8 pp)
+E5 OECD ΔTFR 2012→2023: median -0.26, fell in 31/35 countries
