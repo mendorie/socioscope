@@ -23,6 +23,7 @@
 | e-Stat — 就業構造基本調査（総務省） | 令和4年 全国編 第40表: 男女×配偶関係×年齢×所得（有業者） | 統計表ファイル直接ダウンロード（`…&fileKind=0`、**Excel のみ**、appId 不要。標準ライブラリで解析） | 同上（確認 2026-10-04） | **採用**（growth-fertility H3b 年齢調整） |
 | DHS Program Indicator Data API | 調査前 3 年の TFR（15–49 歳）× 富裕五分位（`FE_FRTR_W_TFR` × Wealth quintile）、約 90 か国 1990–2025 の DHS/MIS/AIS 調査；国コード表（ISO3） | REST JSON（`api.dhsprogram.com/rest/dhs/data`, `/countries`、API キー不要） | **引用義務**（Terms: 「The DHS Program Indicator Data API, The Demographic and Health Surveys (DHS) Program. ICF. Originally funded by USAID. Available from api.dhsprogram.com. [Accessed 10-05-2026]」。確認 2026-10-05） | **採用**（growth-fertility H4） |
 | 国家データ処（韓国）新婚夫婦統計 報道資料 PDF | 初婚新婚夫婦（婚姻 5 年以内）の所得区間（6 区間＋全体）× 子ども有無・人数・平均子ども数、2015–2024 年基準 | 報道資料掲示板の静的 PDF（`mods.go.kr/boardDownload.es?bid=11815&list_no=…&seq=…`、キー不要。pypdf でテキスト抽出し表をパース） | **公共ヌリ（KOGL）第 1 類型＝出典表示のみ・商用・改変可**（確認 2026-10-06） | **採用**（growth-fertility H5） |
+| 교육부（韓国教育部）初中高 사교육비조사 報道資料 PDF | 学校外教育費（私教育費）: 年次（2007–2025）の総額・参加率・週当たり参加時間・1 人当たり月平均（全学生／参加学生）、자녀수別（1/2/3+）と 학교급別（초/중/고）の 2024–2025 | 報道資料掲示板の静的 PDF（`moe.go.kr/boardCnts/fileDown.do?…&fileSeq=…`、キー不要。pypdf でテキスト抽出し 3 表をパース） | **公共ヌリ（KOGL）第 1 類型＝出典表示のみ**（確認 2026-10-17） | **採用**（growth-fertility H8d 仮説 K、記述のみ） |
 | Testa (2012) *Family sizes in Europe* 付表（VID/ÖAW EDRP 2、データ＝Eurobarometer 75.4, 2011）＋ BiB (2025) *Intended, ideal and actual fertility in 11 European countries* Table 1（GGS-II 2020–23） | 理想・意図・実際の子ども数の国別平均と分布（EB: EU-27 × 性 × 年齢 15–24/25–39/40–54/55+/計、2011。GGS: 11 か国 × 女性 18–29/30–39/40–49/計、2020–23） | 静的 PDF（`oeaw.ac.at/.../edrp_2012_02.pdf`、`bib.bund.de/Publikation/2025/pdf/...`、キー不要。pypdf でテキスト抽出し付表をパース） | Testa 2012: **ライセンス未明示 → 出典明記で事実の転記のみ、PDF は再配布しない**（EB 75.4 自体は欧州委員会 CC BY 4.0）。BiB 2025: **CC BY-SA 4.0**（本文表記、確認 2026-10-06） | **採用**（growth-fertility H6） |
 | Standard Eurobarometer（data.europa.eu）Volume A | 「今後 12 か月の期待（生活全般・家計・国の経済・国の雇用）」の国別 Better/Worse/Same/DK 割合、STD91（2019 春）〜STD105（2026 春）15 波 | hub API の JSON-LD（`data.europa.eu/api/hub/repo/datasets/<id>.jsonld`）から Volume A の静的 URL（`webgate.ec.europa.eu/ebsm/api/public/odp/download?key=…`、キー不要）を解決して xlsx/xls を取得 | **欧州委員会 再利用方針（Decision 2011/833/EU）＝CC BY 4.0 相当**（JSON-LD も `licence/CC_BY_4_0`。`commission.europa.eu/legal-notice_en`、確認 2026-10-06） | **採用**（growth-fertility H6） |
 | 国立社会保障・人口問題研究所 | 出生動向基本調査、将来推計人口 | CSV/Excel | 要確認 | 候補（日本） |
@@ -215,6 +216,24 @@
   - 2016–2020 年基準資料の 부부 수 は**千쌍単位**（2016–2018 は小数 1 桁、2019–2020 は整数）→ ×1000 で쌍に換算。2021 年以降と 2015 年は実数。最新資料優先のため、mart で千쌍由来なのは 2015（earned_business）・2016・2017・2018 年の行のみ。
   - 共稼ぎ（맞벌이）別・婚姻年次別の平均子ども数は資料にあるが未取込（任意項目）。所得は夫婦合算で、共稼ぎと所得が同時決定（`design/themes/growth-fertility.md` H5 の限界）。
   - 2018 年基準 PDF は本文フォントが抽出で文字化けするが、表部分は正常に抽出される。
+
+### 教育部（韓国）— 초중고 사교육비조사（初中高 私教育費調査）報道資料 PDF（growth-fertility H8d-K: 学校外教育費）
+- URL / API:
+  - 掲示板（보도자료、検索語「사교육비」）: `https://www.moe.go.kr/boardCnts/listRenew.do?boardID=294&m=020402&s=moe&searchType=S&searchStr=%EC%82%AC%EA%B5%90%EC%9C%A1%EB%B9%84`。掲示 boardSeq=105597「2025년 초중고 사교육비 조사 결과」（2026-03-12 公表、교육부・국가데이터처 共同）。
+  - PDF（固定 URL、`theme_growth_fertility.moekr.URL`）: `https://www.moe.go.kr/boardCnts/fileDown.do?m=020402&s=moe&fileSeq=7562a697bdba006065fa92054b1d634e`（2026-10-17 確認: 200、`application/octet-stream`、2.77 MB、`%PDF-1.6`、51 ページ、sha256 `0beaa654…`）。KOSIS OpenAPI はキー必須のため使わない。
+- 表の位置（pypdf 6 の `extract_text`、0 始まりのページ index）:
+  - 年次表: index 48（資料の p.44）「21. 연도별 초중고사교육비조사 주요 결과 및 증감률」。列 = 연도 / 총액(억원) / 참여율(%) / 참여시간(시간/주) / 학생 1인당 월평균 사교육비(만원) 전체학생 / 참여학생。2007–2025。下段の「< 증감(률) >」ブロックは取り込まない。
+  - 자녀수별: index 39–40（統計表 10「자녀수별 전체학생 1인당 월평균 사교육비」、11「자녀수별 사교육 참여율」）。列 = 전체 / 1명 / 2명 / 3명 이상、行 `< 2024 >`・`< 2025 >`（科目・参加類型別の内訳行は取り込まない）。本文 <표13>（index 16）と同じ値。
+  - 학교급별: index 7–9 の本文 <표1>（총액）、<표2>（참여율・주당 참여시간）、<표4>（1인당 월평균、전체학생・참여학생）、2024・2025 年のみ。학교급別の年次系列は資料に無い。
+- 対象指標・粒度: `marts/kr_private_tutoring`（long）: year × table(annual / by_children / by_level) × group(총계 / 자녀 1명 / 자녀 2명 / 자녀 3명 이상 / 초등학교 / 중학교 / 고등학교) × metric(total_100m_krw / participation_rate_pct / hours_per_week / spend_per_student_10k_krw / spend_per_participant_10k_krw)。値は**名目**（CPI 未取込。所得比は WDI 一人当たり GDP で代替、H8d Z5）。母集団: 全国初中高の在学生（表本 約 3,000 校・74,000 人、保護者回答）。사교육비 = 正規課程外に学校外で個人が支出する補習教育費（늘봄·방과후학교、EBS 教材、語学研修は別項目で含まない）。
+- ライセンス・利用規約（確認日 2026-10-17）: 교육부 報道資料は **공공누리（KOGL）제1유형（출처표시）**（`https://www.kogl.or.kr/info/license.do`）。出典表記: 「교육부, 2025년 초중고 사교육비 조사 결과 보도자료（2026-03-12）, moe.go.kr（KOGL 제1유형）」。`moekr.LICENSE` に記載し manifest に残す。raw（PDF）はコミットしない。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.moekr`（`annual_rows` / `by_children_rows` / `by_level_rows` / `private_tutoring_rows_from_pages` / `build_mart` の純粋変換、`kostat.pdf_text` を再利用）＋ `pipeline._fetch_h8d_k` / `_stage_h8d_k` / `_mart_h8d_k`（`HttpxFetcher`）。**1 リクエスト（2.8 MB）**。raw は `data/raw/growth-fertility/moe_kr/private_tutoring_2025.pdf`、staged は `staged/moe_kr/private_tutoring`、mart は `marts/kr_private_tutoring`。公開レート制限なし。再取得は年 1 回（3 月の公表後、`fileSeq` を掲示板で確認して `moekr.URL` を更新）。
+- 既知の欠損・断絶・定義変更:
+  - **2020 年**: COVID-19 で総額 −7.8%・参加率 −7.7%p と落ち込み、2021 年に反発（+21.0%）。時系列の図では明示する。
+  - **2017 年**から「참여학생 1인당 월평균 사교육비」を追加（2007–2016 は `-` → 行なし。補完しない）。
+  - **영유아**（就学前）と **재수생**（高卒後の受験生）は調査対象外。2018 年から成績区間は高校生のみ調査（本 mart では未取込）。
+  - 解析は fail-closed: 見出し不一致・年の連番外・列数不一致・数値変換不可・各表の 전체 列が年次表と不一致のときは `ValueError` → stage の skipped に「`private_tutoring_2025.pdf: layout not recognised (<reason>)`」として残す。
+  - 家計所得区間別（統計表 6–7）・親の就業状態別（8–9）は資料にあるが未取込（任意項目）。
 
 ### Testa (2012) / Eurobarometer 75.4 と BiB (2025) / GGS-II — 理想・意図・実際の子ども数（growth-fertility H6）
 - URL / API:
