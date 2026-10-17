@@ -1,7 +1,9 @@
 """H8 の note 記事（日本語・一般読者）用の図を生成する決定的スクリプト。
 
 H8 レポート（reports/2026-10-17-h8-mechanisms.md）の数値を、同じ mart から
-a20261017_h8_mechanisms の関数で**再計算**して 6 枚の図にする（新しい推定は行わない。
+a20261017_h8_mechanisms の関数で**再計算**して 7 枚の図にする
+（h8s07 は H8b レポートの X1・X5 を a20261018_h8b_within_group の関数で再計算）
+（新しい推定は行わない。
 T2 の仕様依存の 2 本は H8 の探索的 E4・E7 と同じ式を H1 の `fit` で再実行する。
 乱数・現在時刻は使わない）。H8 の関数は途中経過を stdout に出す。
 
@@ -10,7 +12,7 @@ T2 の仕様依存の 2 本は H8 の探索的 E4・E7 と同じ式を H1 の `f
 
 フォント検出・保存規約は s20261005_summary と同じ（関数を import。PNG メタデータの Software を
 落としてバイト再現。sha256 はフォント環境に依存する）。純粋ヘルパ（split_share, median_by_index,
-scorecard_rows, spec_rows）は tests/test_summary_h8.py で検証する。
+scorecard_rows, spec_rows, rise_summary）は tests/test_summary_h8.py で検証する。
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from typing import Any
 import polars as pl
 
 from theme_growth_fertility.analysis import a20261017_h8_mechanisms as h8
+from theme_growth_fertility.analysis import a20261018_h8b_within_group as h8b
 from theme_growth_fertility.analysis import s20261005_summary as base
 from theme_growth_fertility.analysis.a20261004_h1_income_tfr import fit
 
@@ -75,6 +78,13 @@ def scorecard_rows(verdicts: Mapping[str, str]) -> list[tuple[str, str, str]]:
 def spec_rows(specs: Sequence[tuple[str, Coef]]) -> list[tuple[str, float, float, float, bool]]:
     """(label, b, lo, hi, CI excludes 0) from (label, (b, se, lo, hi))."""
     return [(lab, c[0], c[2], c[3], c[2] > 0 or c[3] < 0) for lab, c in specs]
+
+
+def rise_summary(deltas: Sequence[float]) -> tuple[float, int, int]:
+    """(median change, number of countries with a rise (> 0), number of countries)."""
+    if not deltas:
+        raise ValueError("no changes")
+    return statistics.median(deltas), sum(v > 0 for v in deltas), len(deltas)
 
 
 # ---------------------------------------------------------------- figures
@@ -327,6 +337,55 @@ def fig6_stage2(s2: h8.T6Stage, verdicts: Mapping[str, str], path: Path) -> None
     base._save(fig, path, SRC_WDI)
 
 
+H8B_JA = {
+    "emp": "就業している割合\n（教育なしの女性）",
+    "mcpr": "近代的避妊の実行率\n（教育なしの既婚女性）",
+    "att_pri": "子どもの初等教育の就学率",
+    "att_sec": "子どもの中等教育の就学率",
+    "ln_u5": "子どもの死亡率\n（5 歳未満、対数）",
+}
+
+
+def fig7_within_group(x1: h8b.Horse, x5: h8b.X5Result, path: Path) -> None:
+    plt = _plt()
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(11.0, 5.0), gridspec_kw={"width_ratios": [1.1, 1]})
+    rows = spec_rows([(H8B_JA[k], x1.est.coefs[k]) for k in h8b.X1_VARS])
+    for i, (_lab, b, lo, hi, sig) in enumerate(rows):
+        col = ORANGE if sig else BLUE_RAMP[2]
+        ax.plot([lo, hi], [i, i], color=col, lw=2.2)
+        ax.plot([b], [i], "o", color=col)
+        ax.text(b, i - 0.22, f"{b:+.2f}", ha="center", fontsize=9)
+    ax.axvline(0, color=MUTED, lw=0.8)
+    ax.set_yticks(range(len(rows)))
+    ax.set_yticklabels([r[0] for r in rows], fontsize=9)
+    ax.set_ylim(len(rows) - 0.5, -0.7)
+    ax.set_xlabel("1 標準偏差高いときの、教育なしの女性の望む出生の差（人）\n"
+                  "（点: 推定値、線: 95% 信頼区間）")  # fmt: skip
+    ax.set_title(f"(a) 同じ国の中で並んで動いたもの（{x1.est.n} 調査・{x1.est.countries} か国）",
+                 fontsize=10, loc="left")  # fmt: skip
+    base._style(ax)
+    med, up, n = rise_summary(x5.pairs["d_women_employed"].to_list())
+    dv = sorted(x5.pairs["d_women_employed"].to_list())
+    ax2.barh(range(n), dv, color=[BLUE_RAMP[2] if v > 0 else ORANGE for v in dv], height=0.8)
+    ax2.axvline(0, color=MUTED, lw=0.8)
+    ax2.axvline(med, color="#333333", ls="--", lw=1.0)
+    ax2.text(med, n + 0.5, f"中央値 {med:+.1f} ポイント", ha="right", fontsize=9)
+    ax2.set_yticks([])
+    ax2.set_ylim(-1, n + 2.5)
+    ax2.set_xlabel("就業している割合の変化（ポイント、最初 → 最後の調査、8 年以上）")
+    ax2.set_title(f"(b) 教育なしの女性の就業率: 上がった国は {n} か国中 {up}",
+                  fontsize=10, loc="left")  # fmt: skip
+    base._style(ax2)
+    fig.suptitle("教育なしの女性の望む子ども数と並んで動いたのは、就業ではなく避妊の普及",
+                 fontsize=11, x=0.01, ha="left")  # fmt: skip
+    _note(fig, "(a) 国の固定効果と年トレンドつきの回帰に 5 つを同時に入れた。橙 = 95% CI が 0 を"
+               "含まない。並んで動いたことを示すだけで、原因とは限らない（避妊は少なく産みたい"
+               "気持ちの表れでもある）。\n(b) 1 本 = 1 か国。橙 = 下がった国。就業には農業・"
+               "家族従業も含む（DHS の定義）。事後に追加した検証（H8b）。")  # fmt: skip
+    fig.tight_layout(rect=(0, 0.10, 1, 0.94))
+    base._save(fig, path, SRC_DHS)
+
+
 # ---------------------------------------------------------------- driver
 def t2_specs(st: pl.DataFrame, t2: h8.T2Result) -> list[tuple[str, Coef]]:
     """Main T2(c) and the two specification checks of H8's exploratory E7 (no trend) and
@@ -436,6 +495,21 @@ def run(data_dir: Path, fig_dir: Path) -> list[tuple[str, str]]:
         f"（{s2.n} 区間・{s2.countries} か国、区切りや標本で変わる脆い結果）。採点表: "
         + "・".join(f"{mm} {v}" for mm, _, v in scorecard_rows(verdicts))
         + "。",
+    ))  # fmt: skip
+
+    ne = h8b.no_edu_frame(cells, st)
+    x1 = h8b.horse(ne, "wanted_tfr", h8b.X1_VARS, label="S X1", allowed=h8b.X1_VARS)
+    x5 = h8b.run_x5(cells, st, "S")
+    fig7_within_group(x1, x5, fig_dir / "h8s07_within_group_drivers.png")
+    mc, emp = x1.est.coefs["mcpr"], x1.est.coefs["emp"]
+    med5, up, n5 = rise_summary(x5.pairs["d_women_employed"].to_list())
+    captions.append((
+        "h8s07_within_group_drivers.png",
+        f"同じ国の中で、教育なしの女性の望む出生と並んで動いたのは近代的避妊の普及だけで、"
+        f"1 標準偏差あたり {mc[0]:+.2f} 人 [{mc[2]:+.2f}, {mc[3]:+.2f}]。就業は {emp[0]:+.2f} 人"
+        f" [{emp[2]:+.2f}, {emp[3]:+.2f}] で確かめられず、子どもの就学率・死亡率も CI が 0 を含む"
+        f"（{x1.est.n} 調査・{x1.est.countries} か国）。教育なしの女性の就業率は中央値で"
+        f" {med5:+.1f} ポイント変化し、上がった国は {n5} か国中 {up}（事後に追加した検証 H8b）。",
     ))  # fmt: skip
 
     lines = ["# H8 記事用図のキャプション", "", SRC_DHS, "", SRC_WDI, ""]
