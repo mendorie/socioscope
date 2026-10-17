@@ -10,7 +10,7 @@
 ## 候補ソース（採用時に状態を更新）
 | ソース | 内容 | 取得 | ライセンス（確認要） | 状態 |
 |---|---|---|---|---|
-| World Bank WDI API | GDP 成長率、出生率、人口、Gini 等（国×年）。H8（2026-10-17 取得）で `SP.DYN.SMAM.FE`（女性初婚年齢）, `SP.DYN.WFRT`（wanted TFR）, `SP.M18.2024.FE.ZS`（18 歳未満婚 %）, `SP.DYN.CONU.ZS`（避妊実行率）を追加 | REST JSON（`api.worldbank.org/v2`） | CC BY 4.0 | **採用**（growth-fertility） |
+| World Bank WDI API | GDP 成長率、出生率、人口、Gini 等（国×年）。H8（2026-10-17 取得）で `SP.DYN.SMAM.FE`（女性初婚年齢）, `SP.DYN.WFRT`（wanted TFR）, `SP.M18.2024.FE.ZS`（18 歳未満婚 %）, `SP.DYN.CONU.ZS`（避妊実行率）を追加。H8c（2026-10-17 取得）で `SE.TER.ENRR`（高等教育総就学率）, `SE.SCH.LIFE`（期待就学年数。WDI には無く Education Statistics source 12 から返るため `date=1960:2025` を付けて取得）, `SE.XPD.TOTL.GD.ZS`（政府教育支出 % GDP）, `SE.XPD.SECO.PC.ZS` / `SE.XPD.TERT.PC.ZS`（中等・高等の生徒一人当たり政府支出 % of GDP pc）, `SE.SEC.PRIV.ZS`（中等教育の私立在籍割合）を追加 | REST JSON（`api.worldbank.org/v2`） | CC BY 4.0 | **採用**（growth-fertility） |
 | World Inequality Database (WID.world) | 所得・資産の上位シェア、人口、長期系列 | 国別 zip（`bulk_download/WID_fulldataset_<ISO2>.zip`） | **CC BY-NC-SA 4.0**（サイト表記。CC BY 4.0 は未確認） | **採用**（wealth-population-distribution） |
 | UN World Population Prospects | 人口・年齢構成・出生率 | CSV / API | CC BY 3.0 IGO | 候補 |
 | OECD Data Explorer（SDMX REST） | 最高限界所得税率（Tax Database Table I.7）、公的社会支出 %GDP（SOCX）、税収 %GDP・相続税収 %GDP（Revenue Statistics）；家族支出 TP51（growth-fertility H5） | SDMX REST CSV（`sdmx.oecd.org/public/rest/data/...?format=csvfilewithlabels`、鍵不要） | **OECD Terms & Conditions（2024-07-01 改定）: 出典表示で商用含め自由利用。OECD 発行物は CC BY 4.0**（確認 2026-10-04） | **採用**（wealth-population-distribution H2 / growth-fertility H5） |

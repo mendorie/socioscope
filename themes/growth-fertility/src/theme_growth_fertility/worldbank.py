@@ -31,11 +31,27 @@ INDICATORS: dict[str, str] = {
     "wanted_tfr_wdi": "SP.DYN.WFRT",  # Wanted fertility rate (births per woman)
     "married_by18": "SP.M18.2024.FE.ZS",  # Women first married by age 18 (% of women 20-24)
     "contraceptive_any": "SP.DYN.CONU.ZS",  # Contraceptive prevalence, any method (% married 15-49)
+    # H8c education cost / credentialism (design "### H8c")
+    "tert_enrol": "SE.TER.ENRR",  # School enrollment, tertiary (% gross), 1970-
+    "school_life_exp": "SE.SCH.LIFE",  # School life expectancy, primary-tertiary (years), 1970-
+    "educ_exp_gdp": "SE.XPD.TOTL.GD.ZS",  # Gov. expenditure on education, total (% of GDP), 1970-
+    "spend_per_student_sec": "SE.XPD.SECO.PC.ZS",  # Gov. spend per student, secondary (% GDP pc)
+    "spend_per_student_tert": "SE.XPD.TERT.PC.ZS",  # Gov. spend per student, tertiary (% GDP pc)
+    "private_sec_share": "SE.SEC.PRIV.ZS",  # Secondary pupils in private institutions (%)
 }
 
 
+# Indicators the API serves from a non-WDI source whose default year grid differs from the
+# panel's. SE.SCH.LIFE (Education Statistics, source 12) comes on a 1960-2100 grid (27,472 rows,
+# over one page); pinning the date range keeps the raw on one page and the staged grid aligned
+# with the other indicators. Existing indicators keep their URLs (manifest stability).
+INDICATOR_DATE_RANGE: dict[str, str] = {"SE.SCH.LIFE": "1960:2025"}
+
+
 def indicator_url(indicator_code: str, *, per_page: int = 20000) -> str:
-    return f"{BASE}/country/all/indicator/{indicator_code}?format=json&per_page={per_page}"
+    url = f"{BASE}/country/all/indicator/{indicator_code}?format=json&per_page={per_page}"
+    date_range = INDICATOR_DATE_RANGE.get(indicator_code)
+    return url if date_range is None else f"{url}&date={date_range}"
 
 
 def countries_url(*, per_page: int = 400) -> str:
