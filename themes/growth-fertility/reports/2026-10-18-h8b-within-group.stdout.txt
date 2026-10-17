@@ -1,0 +1,282 @@
+== Data ==
+dhs_mechanisms rows=26270 surveys=374 countries=87 metrics=23
+  women_employed              Education        rows= 1022 surveys=262 countries=76 years=1994–2024
+  women_employed              Total 15-49      rows=  262 surveys=262 countries=76 years=1994–2024
+  women_employed              Wealth quintile  rows= 1310 surveys=262 countries=76 years=1994–2024
+  married_employed            Total 15-49      rows=  254 surveys=254 countries=77 years=1994–2024
+  married_cash_only           Total 15-49      rows=  204 surveys=204 countries=71 years=1999–2024
+  married_cash_inkind         Total 15-49      rows=  202 surveys=202 countries=70 years=1999–2024
+  child_primary_attendance    Total            rows=  182 surveys=182 countries=68 years=1999–2025
+  child_secondary_attendance  Total            rows=  182 surveys=182 countries=68 years=1999–2025
+  married_cash_employed (derived) surveys=202 median=44.9% min=5.3 max=85.7
+  X1 No-edu complete cases: surveys=170 countries=63 years=1999–2024 types={'DHS': 170}
+      wanted_tfr mean=   4.328 sd=  1.545 min=   1.000 max=   7.800
+      emp        mean=  54.642 sd= 22.127 min=   9.700 max=  94.000
+      mcpr       mean=  24.110 sd= 17.371 min=   1.300 max=  68.000
+      att_pri    mean=  73.755 sd= 15.079 min=  27.700 max=  94.200
+      att_sec    mean=  40.931 sd= 20.111 min=   4.900 max=  88.300
+      ln_u5      mean=   4.178 sd=  0.619 min=   2.708 max=   5.434
+  X2 Total complete cases: surveys=173 countries=66 years=1999–2024 types={'DHS': 173}
+      wanted_tfr mean=   3.470 sd=  1.319 min=   1.100 max=   7.400
+      cash_emp   mean=  43.789 sd= 17.563 min=   8.478 max=  85.733
+      emp_tot    mean=  51.489 sd= 17.382 min=  11.700 max=  86.300
+      att_pri    mean=  73.692 sd= 15.323 min=  27.700 max=  95.800
+      att_sec    mean=  41.532 sd= 20.268 min=   4.900 max=  88.300
+      mcpr       mean=  31.645 sd= 18.621 min=   4.600 max=  75.900
+      ln_u5      mean=   4.152 sd=  0.642 min=   1.792 max=   5.434
+      sec        mean=  44.866 sd= 24.036 min=   6.100 max=  99.900
+
+== X1 (main): No-education cell wanted TFR horse race ==
+X1 joint  n=170 G=63 r2=0.954
+    emp       +0.165 (se 0.134) [-0.097, +0.428]   SD=22.127  (women employed (No-edu cell, %))
+    mcpr      -0.656 (se 0.238) [-1.124, -0.189]*  SD=17.371  (modern contraception, married (%))
+    att_pri   +0.031 (se 0.139) [-0.242, +0.304]   SD=15.079  (child primary attendance (Total, %))
+    att_sec   -0.025 (se 0.220) [-0.457, +0.406]   SD=20.111  (child secondary attendance (Total, %))
+    ln_u5     -0.226 (se 0.251) [-0.717, +0.265]   SD=0.619  (ln U5MR (Total, 5 y))
+    trend     -0.0230 per year [-0.0696, +0.0235]
+    -> leader: mcpr (C)
+-- X1 each variable alone, same sample --
+X1 single(same sample)     emp       alone: +0.056 [-0.259, +0.371]   n=170 G=63
+X1 single(same sample)     mcpr      alone: -0.541 [-0.979, -0.103]*  n=170 G=63
+X1 single(same sample)     att_pri   alone: -0.057 [-0.289, +0.175]   n=170 G=63
+X1 single(same sample)     att_sec   alone: -0.024 [-0.498, +0.449]   n=170 G=63
+X1 single(same sample)     ln_u5     alone: +0.108 [-0.406, +0.622]   n=170 G=63
+-- X1 each variable alone, own maximal sample --
+X1 single(max sample)      emp       alone: -0.158 [-0.412, +0.096]   n=238 G=70
+X1 single(max sample)      mcpr      alone: -0.602 [-0.887, -0.317]*  n=306 G=80
+X1 single(max sample)      att_pri   alone: -0.028 [-0.267, +0.210]   n=175 G=66
+X1 single(max sample)      att_sec   alone: -0.073 [-0.550, +0.403]   n=175 G=66
+X1 single(max sample)      ln_u5     alone: +0.241 [-0.127, +0.608]   n=310 G=83
+
+== X2: Total wanted TFR horse race ==
+X2 joint  n=173 G=66 r2=0.976
+    cash_emp  +0.103 (se 0.110) [-0.112, +0.318]   SD=17.563  (married women earning cash (%))
+    emp_tot   +0.066 (se 0.095) [-0.120, +0.252]   SD=17.382  (women employed (Total, %))
+    att_pri   -0.015 (se 0.068) [-0.149, +0.118]   SD=15.323  (child primary attendance (Total, %))
+    att_sec   +0.080 (se 0.157) [-0.227, +0.387]   SD=20.268  (child secondary attendance (Total, %))
+    mcpr      -0.550 (se 0.175) [-0.894, -0.206]*  SD=18.621  (modern contraception, married (%))
+    ln_u5     -0.065 (se 0.133) [-0.326, +0.195]   SD=0.642  (ln U5MR (Total, 5 y))
+    sec       -0.369 (se 0.273) [-0.905, +0.167]   SD=24.036  (women secondary+ (%))
+    trend     -0.0077 per year [-0.0423, +0.0268]
+    -> leader: mcpr (C)
+X2 single(same sample)     cash_emp  alone: -0.063 [-0.318, +0.192]   n=173 G=66
+X2 single(same sample)     emp_tot   alone: +0.052 [-0.162, +0.267]   n=173 G=66
+X2 single(same sample)     att_pri   alone: -0.032 [-0.222, +0.158]   n=173 G=66
+X2 single(same sample)     att_sec   alone: -0.075 [-0.393, +0.242]   n=173 G=66
+X2 single(same sample)     mcpr      alone: -0.435 [-0.684, -0.185]*  n=173 G=66
+X2 single(same sample)     ln_u5     alone: +0.056 [-0.328, +0.440]   n=173 G=66
+X2 single(same sample)     sec       alone: -0.206 [-0.704, +0.292]   n=173 G=66
+
+== X3: first→last changes, No-education group ==
+[main] X3 joint Δwanted(No-edu) vs Δemp: Spearman ρ=+0.157 p=0.359 n=36 countries; median Δemp=-9.70, median Δwanted=-0.60
+[main] X3 joint Δwanted(No-edu) vs Δatt_pri: Spearman ρ=-0.209 p=0.220 n=36 countries; median Δatt_pri=+7.25, median Δwanted=-0.60
+[main] X3 joint Δwanted(No-edu) vs Δmcpr: Spearman ρ=-0.391 p=0.019 n=36 countries; median Δmcpr=+12.40, median Δwanted=-0.60
+[main] X3 leader (|ρ| max with p<0.05): mcpr (C)
+
+== X4: within-survey mediation of the education gradient by employment ==
+[main] X4 cells n=969 surveys=248 G=75
+    g_w (Sec−None) without emp -1.522 [-1.794, -1.249] -> with emp -1.410 [-1.721, -1.100]  shrink=+7.3%
+    women_employed (per pp, within survey) +0.0100 [-0.0017, +0.0216]
+    employment gradient vs No education (pp): Primary -2.3 [-4.2, -0.4], Secondary -11.2 [-14.7, -7.6], Higher +6.3 [+0.3, +12.2]
+    -> X4 supports W: False
+
+== X5: employment of women with no education, first→last ==
+[main] X5 women_employed No education  first→last (>=8 y): countries=51 median Δ=-3.5 pp, mean Δ=-5.3, rose in 17/51 (33%); median level first 57.6%
+[main] X5 women_employed Primary       first→last (>=8 y): countries=51 median Δ=+0.3 pp, mean Δ=-1.2, rose in 26/51 (51%); median level first 53.2%
+[main] X5 women_employed Secondary     first→last (>=8 y): countries=53 median Δ=-2.4 pp, mean Δ=-2.7, rose in 19/53 (36%); median level first 44.8%
+[main] X5 women_employed Higher        first→last (>=8 y): countries=53 median Δ=-4.7 pp, mean Δ=-4.7, rose in 15/53 (28%); median level first 62.1%
+[main] X5 women_employed Total         first→last (>=8 y): countries=53 median Δ=-2.9 pp, mean Δ=-4.6, rose in 20/53 (38%); median level first 51.8%
+
+== DECISION (pre-fixed rule) ==
+X1 leader=mcpr -> C; X2 -> C; X3 -> C; X4 supports W=False; X5 median Δ(No-edu emp)=-3.5 pp
+X1 leader sign: -0.656 children per SD
+SELECTED: C
+判定: 教育なし群の望む数と最も強く並走する候補は C（避妊・小家族規範の普及） である。
+
+== Robustness (pre-registered list, all reported) ==
+R X1 primary attendance only  n=170 G=63 r2=0.954
+    emp       +0.165 (se 0.134) [-0.096, +0.427]   SD=22.127  (women employed (No-edu cell, %))
+    mcpr      -0.655 (se 0.241) [-1.127, -0.182]*  SD=17.371  (modern contraception, married (%))
+    att_pri   +0.024 (se 0.137) [-0.244, +0.292]   SD=15.079  (child primary attendance (Total, %))
+    ln_u5     -0.223 (se 0.247) [-0.707, +0.261]   SD=0.619  (ln U5MR (Total, 5 y))
+    trend     -0.0239 per year [-0.0697, +0.0220]
+    -> leader: mcpr (C)
+[R X1 primary attendance only] -> X1-rule leader mcpr (C)
+R X1 secondary attendance only  n=170 G=63 r2=0.954
+    emp       +0.163 (se 0.135) [-0.101, +0.427]   SD=22.127  (women employed (No-edu cell, %))
+    mcpr      -0.649 (se 0.228) [-1.097, -0.201]*  SD=17.371  (modern contraception, married (%))
+    att_sec   -0.008 (se 0.216) [-0.431, +0.414]   SD=20.111  (child secondary attendance (Total, %))
+    ln_u5     -0.223 (se 0.244) [-0.701, +0.255]   SD=0.619  (ln U5MR (Total, 5 y))
+    trend     -0.0229 per year [-0.0688, +0.0231]
+    -> leader: mcpr (C)
+[R X1 secondary attendance only] -> X1-rule leader mcpr (C)
+R X1 1999+  n=170 G=63 r2=0.954
+    emp       +0.165 (se 0.134) [-0.097, +0.428]   SD=22.127  (women employed (No-edu cell, %))
+    mcpr      -0.656 (se 0.238) [-1.124, -0.189]*  SD=17.371  (modern contraception, married (%))
+    att_pri   +0.031 (se 0.139) [-0.242, +0.304]   SD=15.079  (child primary attendance (Total, %))
+    att_sec   -0.025 (se 0.220) [-0.457, +0.406]   SD=20.111  (child secondary attendance (Total, %))
+    ln_u5     -0.226 (se 0.251) [-0.717, +0.265]   SD=0.619  (ln U5MR (Total, 5 y))
+    trend     -0.0230 per year [-0.0696, +0.0235]
+    -> leader: mcpr (C)
+[R X1 1999+] -> X1-rule leader mcpr (C)
+R X1 DHS surveys only  n=170 G=63 r2=0.954
+    emp       +0.165 (se 0.134) [-0.097, +0.428]   SD=22.127  (women employed (No-edu cell, %))
+    mcpr      -0.656 (se 0.238) [-1.124, -0.189]*  SD=17.371  (modern contraception, married (%))
+    att_pri   +0.031 (se 0.139) [-0.242, +0.304]   SD=15.079  (child primary attendance (Total, %))
+    att_sec   -0.025 (se 0.220) [-0.457, +0.406]   SD=20.111  (child secondary attendance (Total, %))
+    ln_u5     -0.226 (se 0.251) [-0.717, +0.265]   SD=0.619  (ln U5MR (Total, 5 y))
+    trend     -0.0230 per year [-0.0696, +0.0235]
+    -> leader: mcpr (C)
+[R X1 DHS surveys only] -> X1-rule leader mcpr (C)
+R X1 country-equal weight  n=170 G=63 r2=0.962
+    emp       +0.159 (se 0.147) [-0.129, +0.446]   SD=22.127  (women employed (No-edu cell, %))
+    mcpr      -0.572 (se 0.290) [-1.141, -0.004]*  SD=17.371  (modern contraception, married (%))
+    att_pri   +0.020 (se 0.138) [-0.250, +0.291]   SD=15.079  (child primary attendance (Total, %))
+    att_sec   -0.132 (se 0.236) [-0.595, +0.331]   SD=20.111  (child secondary attendance (Total, %))
+    ln_u5     -0.308 (se 0.256) [-0.810, +0.194]   SD=0.619  (ln U5MR (Total, 5 y))
+    trend     -0.0281 per year [-0.0770, +0.0208]
+    -> leader: mcpr (C)
+[R X1 country-equal weight] -> X1-rule leader mcpr (C)
+-- X2 variants --
+R X2 married_cash_employed instead of women_employed  n=173 G=66 r2=0.976
+    cash_emp  +0.132 (se 0.099) [-0.062, +0.326]   SD=17.563  (married women earning cash (%))
+    att_pri   -0.018 (se 0.069) [-0.153, +0.117]   SD=15.323  (child primary attendance (Total, %))
+    att_sec   +0.069 (se 0.160) [-0.245, +0.382]   SD=20.268  (child secondary attendance (Total, %))
+    mcpr      -0.554 (se 0.169) [-0.885, -0.222]*  SD=18.621  (modern contraception, married (%))
+    ln_u5     -0.051 (se 0.136) [-0.317, +0.214]   SD=0.642  (ln U5MR (Total, 5 y))
+    sec       -0.376 (se 0.279) [-0.923, +0.171]   SD=24.036  (women secondary+ (%))
+    trend     -0.0076 per year [-0.0419, +0.0267]
+    -> leader: mcpr (C)
+[R X2 married_cash_employed instead of women_employed] -> leader mcpr (C)
+R X2 women_employed only (no cash)  n=176 G=67 r2=0.976
+    emp_tot   +0.110 (se 0.092) [-0.071, +0.291]   SD=17.787  (women employed (Total, %))
+    att_pri   -0.019 (se 0.067) [-0.151, +0.112]   SD=15.228  (child primary attendance (Total, %))
+    att_sec   +0.093 (se 0.159) [-0.219, +0.405]   SD=20.474  (child secondary attendance (Total, %))
+    mcpr      -0.487 (se 0.141) [-0.764, -0.210]*  SD=18.488  (modern contraception, married (%))
+    ln_u5     -0.084 (se 0.142) [-0.362, +0.194]   SD=0.653  (ln U5MR (Total, 5 y))
+    sec       -0.309 (se 0.262) [-0.823, +0.206]   SD=24.403  (women secondary+ (%))
+    trend     -0.0117 per year [-0.0452, +0.0218]
+    -> leader: mcpr (C)
+[R X2 women_employed only (no cash)] -> leader mcpr (C)
+R X2 primary attendance only  n=173 G=66 r2=0.976
+    cash_emp  +0.108 (se 0.110) [-0.107, +0.324]   SD=17.563  (married women earning cash (%))
+    emp_tot   +0.060 (se 0.097) [-0.129, +0.249]   SD=17.382  (women employed (Total, %))
+    att_pri   -0.003 (se 0.074) [-0.147, +0.142]   SD=15.323  (child primary attendance (Total, %))
+    mcpr      -0.546 (se 0.175) [-0.889, -0.203]*  SD=18.621  (modern contraception, married (%))
+    ln_u5     -0.067 (se 0.127) [-0.317, +0.182]   SD=0.642  (ln U5MR (Total, 5 y))
+    sec       -0.285 (se 0.219) [-0.713, +0.144]   SD=24.036  (women secondary+ (%))
+    trend     -0.0091 per year [-0.0443, +0.0262]
+    -> leader: mcpr (C)
+[R X2 primary attendance only] -> leader mcpr (C)
+R X2 secondary attendance only  n=173 G=66 r2=0.976
+    cash_emp  +0.104 (se 0.109) [-0.110, +0.318]   SD=17.563  (married women earning cash (%))
+    emp_tot   +0.067 (se 0.095) [-0.119, +0.253]   SD=17.382  (women employed (Total, %))
+    att_sec   +0.071 (se 0.163) [-0.248, +0.390]   SD=20.268  (child secondary attendance (Total, %))
+    mcpr      -0.551 (se 0.174) [-0.892, -0.210]*  SD=18.621  (modern contraception, married (%))
+    ln_u5     -0.062 (se 0.133) [-0.323, +0.200]   SD=0.642  (ln U5MR (Total, 5 y))
+    sec       -0.362 (se 0.276) [-0.903, +0.179]   SD=24.036  (women secondary+ (%))
+    trend     -0.0080 per year [-0.0418, +0.0258]
+    -> leader: mcpr (C)
+[R X2 secondary attendance only] -> leader mcpr (C)
+R X2 1999+  n=173 G=66 r2=0.976
+    cash_emp  +0.103 (se 0.110) [-0.112, +0.318]   SD=17.563  (married women earning cash (%))
+    emp_tot   +0.066 (se 0.095) [-0.120, +0.252]   SD=17.382  (women employed (Total, %))
+    att_pri   -0.015 (se 0.068) [-0.149, +0.118]   SD=15.323  (child primary attendance (Total, %))
+    att_sec   +0.080 (se 0.157) [-0.227, +0.387]   SD=20.268  (child secondary attendance (Total, %))
+    mcpr      -0.550 (se 0.175) [-0.894, -0.206]*  SD=18.621  (modern contraception, married (%))
+    ln_u5     -0.065 (se 0.133) [-0.326, +0.195]   SD=0.642  (ln U5MR (Total, 5 y))
+    sec       -0.369 (se 0.273) [-0.905, +0.167]   SD=24.036  (women secondary+ (%))
+    trend     -0.0077 per year [-0.0423, +0.0268]
+    -> leader: mcpr (C)
+[R X2 1999+] -> leader mcpr (C)
+R X2 DHS surveys only  n=173 G=66 r2=0.976
+    cash_emp  +0.103 (se 0.110) [-0.112, +0.318]   SD=17.563  (married women earning cash (%))
+    emp_tot   +0.066 (se 0.095) [-0.120, +0.252]   SD=17.382  (women employed (Total, %))
+    att_pri   -0.015 (se 0.068) [-0.149, +0.118]   SD=15.323  (child primary attendance (Total, %))
+    att_sec   +0.080 (se 0.157) [-0.227, +0.387]   SD=20.268  (child secondary attendance (Total, %))
+    mcpr      -0.550 (se 0.175) [-0.894, -0.206]*  SD=18.621  (modern contraception, married (%))
+    ln_u5     -0.065 (se 0.133) [-0.326, +0.195]   SD=0.642  (ln U5MR (Total, 5 y))
+    sec       -0.369 (se 0.273) [-0.905, +0.167]   SD=24.036  (women secondary+ (%))
+    trend     -0.0077 per year [-0.0423, +0.0268]
+    -> leader: mcpr (C)
+[R X2 DHS surveys only] -> leader mcpr (C)
+R X2 country-equal weight  n=173 G=66 r2=0.980
+    cash_emp  +0.074 (se 0.135) [-0.190, +0.339]   SD=17.563  (married women earning cash (%))
+    emp_tot   +0.070 (se 0.116) [-0.156, +0.297]   SD=17.382  (women employed (Total, %))
+    att_pri   -0.020 (se 0.073) [-0.162, +0.122]   SD=15.323  (child primary attendance (Total, %))
+    att_sec   +0.146 (se 0.186) [-0.218, +0.511]   SD=20.268  (child secondary attendance (Total, %))
+    mcpr      -0.500 (se 0.178) [-0.848, -0.152]*  SD=18.621  (modern contraception, married (%))
+    ln_u5     -0.074 (se 0.134) [-0.337, +0.189]   SD=0.642  (ln U5MR (Total, 5 y))
+    sec       -0.567 (se 0.297) [-1.149, +0.015]   SD=24.036  (women secondary+ (%))
+    trend     -0.0042 per year [-0.0390, +0.0305]
+    -> leader: mcpr (C)
+[R X2 country-equal weight] -> leader mcpr (C)
+-- X3 / X4 variants --
+[R pairwise samples] X3 pairwise Δwanted(No-edu) vs Δemp: Spearman ρ=-0.311 p=0.028 n=50 countries; median Δemp=-3.65, median Δwanted=-0.60
+[R pairwise samples] X3 pairwise Δwanted(No-edu) vs Δatt_pri: Spearman ρ=-0.170 p=0.315 n=37 countries; median Δatt_pri=+7.20, median Δwanted=-0.60
+[R pairwise samples] X3 pairwise Δwanted(No-edu) vs Δmcpr: Spearman ρ=-0.506 p=0.000 n=53 countries; median Δmcpr=+17.70, median Δwanted=-0.70
+[R pairwise samples] X3 leader (|ρ| max with p<0.05): mcpr (C)
+[R 1999+] X3 joint Δwanted(No-edu) vs Δemp: Spearman ρ=+0.157 p=0.359 n=36 countries; median Δemp=-9.70, median Δwanted=-0.60
+[R 1999+] X3 joint Δwanted(No-edu) vs Δatt_pri: Spearman ρ=-0.209 p=0.220 n=36 countries; median Δatt_pri=+7.25, median Δwanted=-0.60
+[R 1999+] X3 joint Δwanted(No-edu) vs Δmcpr: Spearman ρ=-0.391 p=0.019 n=36 countries; median Δmcpr=+12.40, median Δwanted=-0.60
+[R 1999+] X3 leader (|ρ| max with p<0.05): mcpr (C)
+[R country-equal] X4 cells n=969 surveys=248 G=75 (country-equal)
+    g_w (Sec−None) without emp -1.411 [-1.665, -1.157] -> with emp -1.263 [-1.552, -0.975]  shrink=+10.5%
+    women_employed (per pp, within survey) +0.0152 [+0.0048, +0.0257]
+    employment gradient vs No education (pp): Primary -2.6 [-4.4, -0.8], Secondary -9.7 [-13.4, -6.0], Higher +9.0 [+2.8, +15.1]
+    -> X4 supports W: False
+[R 1999+] X4 cells n=838 surveys=213 G=73
+    g_w (Sec−None) without emp -1.474 [-1.767, -1.182] -> with emp -1.349 [-1.684, -1.015]  shrink=+8.5%
+    women_employed (per pp, within survey) +0.0107 [-0.0012, +0.0226]
+    employment gradient vs No education (pp): Primary -2.4 [-4.4, -0.3], Secondary -11.6 [-15.3, -8.0], Higher +5.6 [-0.3, +11.5]
+    -> X4 supports W: False
+-- added at implementation (not in the design list): SD convention --
+R X1 within-country SD  n=170 G=63 r2=0.954
+    emp       +0.055 (se 0.044) [-0.032, +0.142]   SD=7.324  (women employed (No-edu cell, %))
+    mcpr      -0.266 (se 0.097) [-0.455, -0.077]*  SD=7.033  (modern contraception, married (%))
+    att_pri   +0.013 (se 0.058) [-0.101, +0.127]   SD=6.281  (child primary attendance (Total, %))
+    att_sec   -0.009 (se 0.082) [-0.171, +0.152]   SD=7.511  (child secondary attendance (Total, %))
+    ln_u5     -0.115 (se 0.127) [-0.364, +0.135]   SD=0.315  (ln U5MR (Total, 5 y))
+    trend     -0.0230 per year [-0.0696, +0.0235]
+    -> leader: mcpr (C)
+[R X1 within-country SD] -> X1-rule leader mcpr (C)
+
+== Exploratory (post hoc, not part of the decision) ==
+E1 Total wanted ~ cash vs non-cash employment  n=198 G=68 r2=0.976
+    cash_emp  +0.131 (se 0.087) [-0.039, +0.302]   SD=17.331  (married women earning cash (%))
+    noncash_emp +0.057 (se 0.073) [-0.086, +0.200]   SD=16.275  (married women employed, no cash (%))
+    mcpr      -0.565 (se 0.142) [-0.842, -0.288]*  SD=18.552  (modern contraception, married (%))
+    ln_u5     -0.053 (se 0.125) [-0.299, +0.193]   SD=0.629  (ln U5MR (Total, 5 y))
+    sec       -0.240 (se 0.193) [-0.618, +0.138]   SD=24.260  (women secondary+ (%))
+    trend     -0.0085 per year [-0.0401, +0.0232]
+    -> leader: mcpr (C)
+E2 wealth quintile Lowest: wanted ~ emp(quintile) + mcpr(Total) + ln U5  n=239 G=74 r2=0.953
+    emp_q     -0.204 (se 0.125) [-0.448, +0.040]   SD=23.442  (women employed (wealth-quintile cell, %))
+    mcpr      -0.328 (se 0.148) [-0.617, -0.038]*  SD=18.931  (modern contraception, married (%))
+    ln_u5     +0.111 (se 0.153) [-0.189, +0.411]   SD=0.653  (ln U5MR (Total, 5 y))
+    trend     -0.0200 per year [-0.0453, +0.0053]
+    -> leader: mcpr (C)
+E2 wealth quintile Highest: wanted ~ emp(quintile) + mcpr(Total) + ln U5  n=239 G=74 r2=0.948
+    emp_q     +0.098 (se 0.100) [-0.098, +0.294]   SD=13.814  (women employed (wealth-quintile cell, %))
+    mcpr      -0.500 (se 0.113) [-0.722, -0.279]*  SD=18.931  (modern contraception, married (%))
+    ln_u5     -0.131 (se 0.105) [-0.336, +0.074]   SD=0.653  (ln U5MR (Total, 5 y))
+    trend     -0.0031 per year [-0.0212, +0.0150]
+    -> leader: mcpr (C)
+E2b quintile cells, survey FE: wanted ~ women_employed + quintile n= 1200 G= 74
+  women_employed: +0.0100 (se 0.0059) [-0.0016, +0.0216]
+  q_Second: -0.4849 (se 0.0494) [-0.5817, -0.3882]
+  q_Middle: -0.8394 (se 0.0824) [-1.0009, -0.6779]
+  q_Fourth: -1.3125 (se 0.1203) [-1.5482, -1.0767]
+  q_Highest: -1.9951 (se 0.1449) [-2.2790, -1.7111]
+  r2=0.9230
+E3 No-edu cell TFR horse race  n=170 G=63 r2=0.935
+    emp       +0.078 (se 0.167) [-0.249, +0.405]   SD=22.127  (women employed (No-edu cell, %))
+    mcpr      -0.661 (se 0.238) [-1.127, -0.194]*  SD=17.371  (modern contraception, married (%))
+    att_pri   +0.067 (se 0.133) [-0.195, +0.329]   SD=15.079  (child primary attendance (Total, %))
+    att_sec   -0.077 (se 0.209) [-0.486, +0.332]   SD=20.111  (child secondary attendance (Total, %))
+    ln_u5     -0.144 (se 0.235) [-0.604, +0.316]   SD=0.619  (ln U5MR (Total, 5 y))
+    trend     -0.0304 per year [-0.0715, +0.0107]
+    -> leader: mcpr (C)
+E4 employment by wealth quintile (median across surveys, %): Lowest 50.4, Second 49.5, Middle 50.2, Fourth 51.7, Highest 52.5
+E5 No-edu employment first→last, last survey < 2014: countries=9 median Δ=-3.4 pp, rose in 3/9
+E5 No-edu employment first→last, last survey >= 2014: countries=42 median Δ=-4.8 pp, rose in 14/42
