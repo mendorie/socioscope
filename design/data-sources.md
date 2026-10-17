@@ -16,6 +16,8 @@
 | OECD Data Explorer（SDMX REST） | 最高限界所得税率（Tax Database Table I.7）、公的社会支出 %GDP（SOCX）、税収 %GDP・相続税収 %GDP（Revenue Statistics）；家族支出 TP51（growth-fertility H5） | SDMX REST CSV（`sdmx.oecd.org/public/rest/data/...?format=csvfilewithlabels`、鍵不要） | **OECD Terms & Conditions（2024-07-01 改定）: 出典表示で商用含め自由利用。OECD 発行物は CC BY 4.0**（確認 2026-10-04） | **採用**（wealth-population-distribution H2 / growth-fertility H5） |
 | Eurostat dissemination API（JSON-stat 2.0） | 2021 センサス 配偶関係×年齢×性×ISCED（`cens_21me_r2`）、母の年齢×出生順位の出生数（`demo_fordagec`）、女性人口（`demo_pjan`）、母の年齢×ISCED の出生数（`demo_faeduc`）、LFS 女性人口×ISCED（`lfsa_pgaed`） | REST JSON（`ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/<dataset>?format=JSON&lang=EN&<dim>=<code>`、キー不要、国別リクエスト） | **Eurostat copyright notice: 出典表示で商用含め再利用可**（第三国データは別条件、本件は EU/EFTA のみ。確認 2026-10-06） | **採用**（growth-fertility H5） |
 | OECD Education at a Glance（SDMX REST、`OECD.EDU.IMEP`） | 財源別教育支出割合・%GDP（UOE finance）、学歴別相対賃金（LSO earnings）、学生 1 人当たり支出（USD PPP） | 同上（3 リクエスト、鍵不要） | 同上（OECD Terms & Conditions、出典表示） | **採用**（growth-fertility H8c） |
+| UN SDG Global Database（UNSD SDG API） | 5.4.1 無償家事・ケア労働時間の 24 時間比 %（`SL_DOM_TSPD`、性 × 年齢 × 地域、98 か国・地域 2000–）、5.5.2 管理職に占める女性割合 %（`IC_GEN_MGTL`、ILO 由来、195 か国・地域 2000–） | REST JSON（`unstats.un.org/sdgapi/v1/sdg/Series/Data?seriesCode=…&pageSize=…`、鍵不要、series ごと 1 リクエスト） | **UN Terms of Use（`un.org/en/about-us/terms-of-use`）と UNdata Terms（`data.un.org/Host.aspx?Content=UNdataUse`、出典引用で複製・再配布可）が食い違う → raw 非コミット、staged/mart は出典明記で保持**（確認 2026-10-17） | **採用**（growth-fertility H8d） |
+| UNDP Human Development Report 2025 複合指数 CSV | GII とその構成要素（`gii, mmr, abr, se_f, se_m, pr_f, pr_m, lfpr_f, lfpr_m`）の国 × 年 1990–2023 | 静的 CSV（`hdr.undp.org/sites/default/files/2025_HDR/HDR25_Composite_indices_complete_time_series.csv`、latin-1、2.0 MB、鍵不要） | **CC BY 3.0 IGO**（`hdr.undp.org/terms-use`、確認 2026-10-17） | **採用**（growth-fertility H8d） |
 | OECD Data Explorer（IDD 等） | 所得分配（IDD）、出生率 | SDMX API | 同上 | 候補 |
 | Maddison Project / Penn World Table | 長期 GDP 系列 | Excel/CSV | 要確認 | 候補（戦後長期） |
 | Our World in Data | 整形済み系列（出典明記） | CSV / grapher API | CC BY | 候補（検証用） |
@@ -277,6 +279,32 @@
   - STD92 の Volume A 本体は EU27＋UK のみ（候補国は "with CC" ファイル、未取込）。STD100 は 35 か国（CH/NO/IS なし等、波により調査対象国が変わる）。
   - 「−」は回答者 0 を意味し 0 として扱う。割合は Volume A の四捨五入済み整数 %（ごく一部は小数）。
   - 質問は「今後 12 か月の期待」であり不確実性の分散ではない（H6 の限界）。
+
+### UN SDG Global Database（UNSD SDG API）— 無償労働時間の性差・女性管理職割合（growth-fertility H8d: 男女分業の深さ仮説 G）
+- URL / API（REST JSON、鍵不要。source-scout が 2026-10-17 に httpx で成功を確認。URL は `theme_growth_fertility.unsdg.SERIES` に固定し改変しない。`pageSize` は全件が 1 ページに収まる値）:
+  | raw（`data/raw/growth-fertility/unsdg/`） | URL | 行（うち国・地域） | 内容 |
+  |---|---|---|---|
+  | `sl_dom_tspd.json`（2.8 MB） | `https://unstats.un.org/sdgapi/v1/sdg/Series/Data?seriesCode=SL_DOM_TSPD&pageSize=5000` | 3,960（3,946、98 か国・地域） | 5.4.1 無償家事・ケア労働時間の 24 時間比 %。`dimensions`: Location(ALLAREA/RURAL/URBAN)、Sex(FEMALE/MALE)、Age（"15+" 628 行が最多。10+/12+/14+/16+/20-74 や 5 歳階級など国で異なる）。`attributes.Nature`: C 国データ 3,544 / CA 国データ調整済み 402 / N 非該当 14（集計地域） |
+  | `ic_gen_mgtl.json`（2.2 MB） | `https://unstats.un.org/sdgapi/v1/sdg/Series/Data?seriesCode=IC_GEN_MGTL&pageSize=10000` | 3,472（2,458、195 か国・地域） | 5.5.2 管理職に占める女性割合 %（13th ICLS、ILO 由来）。Sex=FEMALE、Age=15+ のみ、Location 次元なし。Nature N 1,014 行はすべて集計地域 |
+  - メタデータ: 応答の `attributes`/`dimensions` にコード表が同梱。シリーズ一覧は `https://unstats.un.org/sdgs/dataportal`。
+- 対象指標・粒度: 国 × 年 × 性 × 年齢層 × 地域（long）。`geoAreaCode` は UN M49 数値コードで、`unsdg.M49_TO_ISO3`（本データに出る国・地域 195 件の固定辞書）で ISO3 を付け、辞書に無い集計地域（World、大陸・小地域、LDCs/LLDCs/SIDS、Developed/Developing regions、SDG 地域区分）は落として stage の skipped に列挙する（SL_DOM_TSPD 7 件、IC_GEN_MGTL 39 件）。`value` は文字列で返るので float に変換し、変換できない行は落として skipped に出す（2026-10-17 の実データでは 0 行）。`totalPages != 1`／`totalElements != len(data)`（ページ分割）、他 series の行、`Units != PERCENT`、Sex/Location の閉集合外、非整数年は `ValueError`。年齢層の選択（15+ → 10+ → 20+ → 16+ → ALLAGE、設計 H8d）と `female_share = F/(F+M)` は分析側。結果: `marts/gender_equity` 6,404 行、195 か国・地域、2000–2026（SL_DOM_TSPD 3,946 / IC_GEN_MGTL 2,458）。SL_DOM_TSPD の ALLAREA で F・M がそろう国 × 年は 228（93 か国）、設計の優先年齢層でそろうのは 178 国・年（83 か国、うち 2 時点が 5 年以上離れる国 38）。
+- ライセンス・利用規約（確認 2026-10-17）: UN Terms of Use（`https://www.un.org/en/about-us/terms-of-use`、UN サイト全体の一般規約）と UNdata Terms of Use（`https://data.un.org/Host.aspx?Content=UNdataUse`、出典引用で複製・再配布可）が食い違う。**raw はコミットしない**（manifest のみ、`unsdg.LICENSE` に両 URL を記録）、staged/marts は集計統計の派生物として出典明記で保持する。出典表記: 「United Nations Statistics Division, SDG Global Database (Series SL_DOM_TSPD, IC_GEN_MGTL), https://unstats.un.org/sdgs/dataportal (accessed 2026-10-18)」。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.unsdg`（`SERIES`・`M49_TO_ISO3`・`parse`・`build_mart` の純粋変換、Pydantic で検証し fail-closed）＋ `pipeline._fetch_h8d / _stage_h8d / _mart_h8d`（`HttpxFetcher`）。**2 リクエスト（計 ~5 MB）**。staged は series ごと `staged/unsdg/{sl_dom_tspd,ic_gen_mgtl}`、mart は `marts/gender_equity`（ある staged だけを結合、キー `(iso3, year, series, sex, age, location)` 一意）。公開レート制限なし。再取得は年 1 回程度（SDG 報告の更新時）。
+- 既知の欠損・断絶・定義変更:
+  - 無償労働の測り方は国で異なる（調査設計・年齢下限・ICATUS 調整の有無）。年齢層は ESP 20-74 のみ、KOR 2004・2009 と DEU 2002 は 10+ のみ、SWE 2001 は 20+ のみ、NOR 2001 は 16+ のみ、JPN は 10+ と 15+ の両方（2001/2006/2011/2016/2021、総務省 社会生活基本調査）。
+  - 日本の男性値は `Nature=C` のまま極端に低い（例 2021 年 15+ 男性 3.75 % vs 女性 14.71 %、USA 男性 10.1 %）。定義差とみて主指標は差ではなく比 `F/(F+M)`、日本除外を頑健性に（設計 H8d）。
+  - GBR に year 2026 の行がある（上流の時点表記、そのまま保持。分析で 2000 年以降の最新年を取るときに注意）。
+  - IC_GEN_MGTL は ILO モデル推計ではなく国データ（Nature C）のみが国・地域行に残る。
+
+### UNDP Human Development Report 2025 — 複合指数の時系列 CSV（growth-fertility H8d: GII と構成要素）
+- URL / API: 静的 CSV `https://hdr.undp.org/sites/default/files/2025_HDR/HDR25_Composite_indices_complete_time_series.csv`（2.0 MB、**latin-1**。`hdr.URL` に固定、鍵不要。source-scout が 2026-10-17 に httpx で成功を確認）。列定義は `https://hdr.undp.org/sites/default/files/2025_HDR/HDR25_Composite_indices_metadata.xlsx`（取得しない、リンクのみ `hdr.METADATA_URL`）。
+- 対象指標・粒度: wide（206 行 × 1,112 列: `iso3, country, hdicode, region, hdi_rank_2023, hdi_1990…, gii_1990…gii_2023, gii_rank_2023, mmr_YYYY, abr_YYYY, se_f_YYYY, se_m_YYYY, pr_f_YYYY, pr_m_YYYY, lfpr_f_YYYY, lfpr_m_YYYY, …`）→ long（国 × 年 × metric）。取り込む metric は `gii`（ジェンダー不平等指数）, `mmr`（妊産婦死亡率）, `abr`（15–19 歳出生率）, `se_f`/`se_m`（中等教育以上の割合 25 歳以上、%）, `pr_f`/`pr_m`（議席割合 %）, `lfpr_f`/`lfpr_m`（労働力率 %）の 9 本。`<metric>_<YYYY>` の列だけを正規表現で拾い、`gii_rank_2023`・`hdi_*`・`hdicode`・`region` などは無視。`iso3` が 3 大文字でない集計行（`ZZA.VHHD` 〜 `ZZK.WORLD` の 11 行: 人間開発 4 区分・地域 6・World）は落として skipped に列挙。空セルは行を作らない。非数値セル・ヘッダ欠落・metric 列ゼロは `ValueError`。結果: `marts/hdr_gender` 51,522 行、195 か国、1990–2023（gii 4,600 行・172 か国 / mmr 6,256 / abr 6,630 / se_f・se_m 5,623 / pr_f・pr_m 6,135 / lfpr_f・lfpr_m 5,260）。
+- ライセンス・利用規約（確認 2026-10-17）: **CC BY 3.0 IGO**（`https://hdr.undp.org/terms-use`）。raw はコミットしない（manifest のみ）。出典表記: 「UNDP (2025), Human Development Report 2025, composite indices time series, https://hdr.undp.org (accessed 2026-10-18), CC BY 3.0 IGO」。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.hdr`（`URL`・`METRICS`・`parse`・`build_mart` の純粋変換）＋ `pipeline._fetch_h8d / _stage_h8d / _mart_h8d`。**1 リクエスト**。staged `staged/hdr/composite`、mart `marts/hdr_gender`（キー `(iso3, year, metric)` 一意）。再取得は年 1 回（HDR 刊行時。ファイル名に年が入るので新版は `hdr.URL` の更新が必要）。
+- 既知の欠損・断絶・定義変更:
+  - GII は 172 か国のみ（構成要素が欠ける国は空）。`mmr`・`abr` は TFR と機械的に関係するので判定には使わない（設計 H8d Z4）。GII 総合も Z4 では使わない。
+  - 国名は UNDP 表記（例 "Korea (Republic of)", "Türkiye", "Côte d'Ivoire"）。latin-1 で復号するので UTF-8 として読むと壊れる。
+  - 値は HDR 2025 時点の改訂済み系列で、過去版 HDR の数値とは一致しない。
 
 ## 記録テンプレート（ソース採用時）
 ```

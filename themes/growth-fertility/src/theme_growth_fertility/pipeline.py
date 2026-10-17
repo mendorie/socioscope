@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_growth_fertility import dhs, estat, kostat, moekr, oecd, surveys
+from theme_growth_fertility import dhs, estat, hdr, kostat, moekr, oecd, surveys, unsdg
 from theme_growth_fertility import eurobarometer as ebm
 from theme_growth_fertility import eurostat as es
 from theme_growth_fertility import oecd_eag as eag
@@ -136,6 +136,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h6(ctx, written, skipped)
     written, skipped = _fetch_h8(ctx, written, skipped)
     written, skipped = _fetch_h8c(ctx, written, skipped)
+    written, skipped = _fetch_h8d(ctx, written, skipped)
     written, skipped = _fetch_h8d_k(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
@@ -218,6 +219,7 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h6(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8c(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h8d(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8d_k(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
@@ -479,6 +481,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h6(ctx, written, skipped)
     written, skipped = _mart_h8(ctx, written, skipped)
     written, skipped = _mart_h8c(ctx, written, skipped)
+    written, skipped = _mart_h8d(ctx, written, skipped)
     written, skipped = _mart_h8d_k(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
@@ -950,6 +953,99 @@ def _mart_h8c(ctx: Context, written: list[str], skipped: list[str]) -> tuple[lis
     if staged:
         ctx.tables.write_table(EAG_MART, eag.build_mart(staged))
         written.append(EAG_MART)
+    return written, skipped
+
+
+# ---- H8d: UN SDG Global Database (two series) + UNDP HDR 2025 composite indices ------------
+# (1) UN SDG: one raw / staged table per series; a missing raw is skipped and the other is
+# staged. The mart `gender_equity` concatenates whichever staged series exist (key uniqueness
+# enforced there). (2) HDR: one CSV -> staged/hdr/composite -> marts/hdr_gender. Independent of
+# every other source. The Korean private-tutoring PDF lives in its own `# ---- H8d-K` block.
+
+UNSDG_TABLES: dict[str, str] = {s.key: f"staged/unsdg/{s.key}" for s in unsdg.SERIES}
+UNSDG_MART = "marts/gender_equity"
+HDR_TABLE = "staged/hdr/composite"
+HDR_MART = "marts/hdr_gender"
+
+
+def _fetch_h8d(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    for s in unsdg.SERIES:
+        try:
+            payload = ctx.fetcher.fetch(s.url)
+        except FetchError as e:
+            skipped.append(f"{s.raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=unsdg.SOURCE,
+            name=s.raw_name,
+            url=s.url,
+            license=unsdg.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    try:
+        payload = ctx.fetcher.fetch(hdr.URL)
+    except FetchError as e:
+        skipped.append(f"{hdr.RAW_NAME}: {e}")
+    else:
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=hdr.SOURCE,
+            name=hdr.RAW_NAME,
+            url=hdr.URL,
+            license=hdr.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h8d(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    for s in unsdg.SERIES:
+        payload = ctx.raw.get(theme=THEME, source=unsdg.SOURCE, name=s.raw_name)
+        if payload is None:
+            skipped.append(f"{s.raw_name}: raw missing (run fetch)")
+            continue
+        parsed = unsdg.parse(payload, s)
+        ctx.tables.write_table(UNSDG_TABLES[s.key], parsed.rows)
+        written.append(UNSDG_TABLES[s.key])
+        if parsed.dropped_areas:
+            skipped.append(
+                f"{s.raw_name}: aggregate geoArea dropped: {', '.join(parsed.dropped_areas)}"
+            )
+        skipped.extend(f"{s.raw_name}: {reason}" for reason in parsed.skipped)
+    payload = ctx.raw.get(theme=THEME, source=hdr.SOURCE, name=hdr.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{hdr.RAW_NAME}: raw missing (run fetch)")
+    else:
+        parsed_hdr = hdr.parse(payload)
+        ctx.tables.write_table(HDR_TABLE, parsed_hdr.rows)
+        written.append(HDR_TABLE)
+        if parsed_hdr.dropped_areas:
+            skipped.append(
+                f"{hdr.RAW_NAME}: aggregate row dropped: {', '.join(parsed_hdr.dropped_areas)}"
+            )
+    return written, skipped
+
+
+def _mart_h8d(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    staged: dict[str, list[dict[str, object]]] = {}
+    for key, table in UNSDG_TABLES.items():
+        try:
+            staged[key] = ctx.tables.read_table(table)
+        except FileNotFoundError:
+            skipped.append(f"{table}: staged table missing (run stage)")
+    if staged:
+        ctx.tables.write_table(UNSDG_MART, unsdg.build_mart(staged))
+        written.append(UNSDG_MART)
+    try:
+        hdr_rows = ctx.tables.read_table(HDR_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{HDR_TABLE}: staged table missing (run stage)")
+    else:
+        ctx.tables.write_table(HDR_MART, hdr.build_mart(hdr_rows))
+        written.append(HDR_MART)
     return written, skipped
 
 

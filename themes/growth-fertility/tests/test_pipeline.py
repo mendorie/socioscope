@@ -5,7 +5,18 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_growth_fertility import dhs, estat, kostat, moekr, oecd, oecd_eag, pipeline, surveys
+from theme_growth_fertility import (
+    dhs,
+    estat,
+    hdr,
+    kostat,
+    moekr,
+    oecd,
+    oecd_eag,
+    pipeline,
+    surveys,
+    unsdg,
+)
 from theme_growth_fertility import eurobarometer as ebm
 from theme_growth_fertility import eurostat as es
 from theme_growth_fertility import worldbank as wb
@@ -33,6 +44,8 @@ H6_ITEMS = 2 + len(ebm.WAVES)
 H8_ITEMS = len(dhs.H8_REQUESTS)
 # H8c items: three OECD Education at a Glance CSVs
 H8C_ITEMS = len(oecd_eag.DATASETS)
+# H8d items: two UN SDG series + one UNDP HDR CSV
+H8D_ITEMS = len(unsdg.SERIES) + 1
 # H8d-K items: one 교육부 사교육비조사 press-release PDF
 H8D_K_ITEMS = 1
 
@@ -80,6 +93,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H6_ITEMS
         + H8_ITEMS
         + H8C_ITEMS
+        + H8D_ITEMS
         + H8D_K_ITEMS
     )
     recs = ctx.raw.records()
@@ -109,7 +123,18 @@ def test_fetch_also_stores_country_metadata() -> None:
     h6 = (surveys.TESTA_RAW, surveys.BIB_RAW, "eb_STD")
     assert all(
         s.startswith(
-            (*estat_keys, "eurostat_", "newlywed_", *h6, "dhs_h8_", "eag_", moekr.RAW_NAME)
+            (
+                *estat_keys,
+                "eurostat_",
+                "newlywed_",
+                *h6,
+                "dhs_h8_",
+                "eag_",
+                "sl_dom_",
+                "ic_gen_",
+                "hdr25_",
+                moekr.RAW_NAME,
+            )
         )
         for s in result.skipped
     )
@@ -191,6 +216,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H6_ITEMS
         + 1  # H8: the countries raw is missing -> one fail-closed message
         + H8C_ITEMS  # H8c: three raw missing
+        + H8D_ITEMS  # H8d: two UN SDG + one HDR raw missing
         + H8D_K_ITEMS  # H8d-K: raw missing
     )
 
@@ -230,6 +256,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H6_ITEMS
         + H8_ITEMS
         + H8C_ITEMS
+        + H8D_ITEMS
         + H8D_K_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
@@ -589,6 +616,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H6_ITEMS
         + (H8_ITEMS - 1)  # the wealth-quintile request shares the H4 URL
         + H8C_ITEMS
+        + H8D_ITEMS
         + H8D_K_ITEMS
     )
     recs = ctx.raw.records()
@@ -683,6 +711,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H6_ITEMS
         + H8_ITEMS
         + H8C_ITEMS
+        + H8D_ITEMS
         + H8D_K_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
@@ -1380,6 +1409,110 @@ def test_mart_eag_skips_without_staged_and_fails_on_duplicate_keys() -> None:
     assert any(s.startswith("staged/oecd_eag/") for s in result.skipped)
     rows = oecd_eag.parse(EAG_BY_KEY["fin_source"], oecd_eag.DATASETS[0]).rows
     ctx.tables.write_table(pipeline.EAG_TABLES["fin_source"], rows + [dict(rows[0])])
+    with pytest.raises(ValueError, match="duplicate"):
+        PIPELINE.run(Stage.MART, ctx)
+
+
+# ---------------------------------------------------------------- H8d: UN SDG + UNDP HDR
+
+UNSDG_BY_KEY = {
+    "sl_dom_tspd": (FIXTURES / "unsdg_sl_dom_tspd.json").read_bytes(),
+    "ic_gen_mgtl": (FIXTURES / "unsdg_ic_gen_mgtl.json").read_bytes(),
+}
+HDR_CSV = (FIXTURES / "hdr25_composite.csv").read_bytes()
+
+
+def h8d_responses() -> dict[str, bytes]:
+    out = {s.url: UNSDG_BY_KEY[s.key] for s in unsdg.SERIES}
+    out[hdr.URL] = HDR_CSV
+    return out
+
+
+def test_fetch_stores_unsdg_and_hdr_raws_with_their_licenses() -> None:
+    ctx = make_ctx(h8d_responses())
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert result.written == (
+        "growth-fertility/unsdg/sl_dom_tspd.json",
+        "growth-fertility/unsdg/ic_gen_mgtl.json",
+        "growth-fertility/undp_hdr/hdr25_composite_indices.csv",
+    )
+    recs = {r.name: r for r in ctx.raw.records()}
+    assert recs["sl_dom_tspd.json"].source == "unsdg"
+    assert recs["sl_dom_tspd.json"].url == unsdg.SERIES[0].url
+    assert "data.un.org" in recs["ic_gen_mgtl.json"].license
+    assert "un.org/en/about-us/terms-of-use" in recs["ic_gen_mgtl.json"].license
+    assert recs["hdr25_composite_indices.csv"].source == "undp_hdr"
+    assert recs["hdr25_composite_indices.csv"].url == hdr.URL
+    assert "CC BY 3.0 IGO" in recs["hdr25_composite_indices.csv"].license
+
+
+def test_stage_and_mart_h8d_tables_independent_of_other_sources() -> None:
+    ctx = make_ctx(h8d_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (*pipeline.UNSDG_TABLES.values(), pipeline.HDR_TABLE)
+    assert pipeline.UNSDG_TABLES == {
+        "sl_dom_tspd": "staged/unsdg/sl_dom_tspd",
+        "ic_gen_mgtl": "staged/unsdg/ic_gen_mgtl",
+    }
+    assert pipeline.HDR_TABLE == "staged/hdr/composite"
+    assert "sl_dom_tspd.json: aggregate geoArea dropped: 9 Oceania" in result.skipped
+    assert "ic_gen_mgtl.json: aggregate geoArea dropped: 9 Oceania" in result.skipped
+    assert "sl_dom_tspd.json: 392 Japan 1999 15+ FEMALE: non-numeric value 'N/A'" in result.skipped
+    assert "hdr25_composite_indices.csv: aggregate row dropped: ZZK.WORLD World" in result.skipped
+    tspd = ctx.tables.read_table(pipeline.UNSDG_TABLES["sl_dom_tspd"])
+    assert len(tspd) == 32 and {r["series"] for r in tspd} == {"SL_DOM_TSPD"}
+    assert {r["source"] for r in tspd} == {"unsdg"}
+    comp = ctx.tables.read_table(pipeline.HDR_TABLE)
+    assert {r["source"] for r in comp} == {"undp_hdr"}
+    assert {r["iso3"] for r in comp} == {"JPN", "KOR", "SWE", "TUR", "USA"}
+
+    mart = PIPELINE.run(Stage.MART, ctx)
+    assert mart.written == (pipeline.UNSDG_MART, pipeline.HDR_MART)
+    assert pipeline.UNSDG_MART == "marts/gender_equity"
+    assert pipeline.HDR_MART == "marts/hdr_gender"
+    rows = ctx.tables.read_table(pipeline.UNSDG_MART)
+    assert len(rows) == 40
+    assert {r["series"] for r in rows} == {"SL_DOM_TSPD", "IC_GEN_MGTL"}
+    assert {r["iso3"] for r in rows} == {"JPN", "KOR", "SWE", "USA"}
+    assert set(rows[0]) == {
+        "iso3", "country", "year", "series", "sex", "age", "location", "value", "nature",
+        "source",
+    }  # fmt: skip
+    keys = [unsdg.mart_key(r) for r in rows]
+    assert keys == sorted(keys) and len(set(keys)) == len(keys)
+    hrows = ctx.tables.read_table(pipeline.HDR_MART)
+    assert hrows == comp
+    assert set(hrows[0]) == {"iso3", "country", "year", "metric", "value", "source"}
+
+
+def test_stage_h8d_with_one_unsdg_raw_writes_that_table_and_mart_uses_it() -> None:
+    s = unsdg.SERIES[1]
+    ctx = make_ctx({s.url: UNSDG_BY_KEY[s.key]})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.UNSDG_TABLES["ic_gen_mgtl"],)
+    assert "sl_dom_tspd.json: raw missing (run fetch)" in result.skipped
+    assert "hdr25_composite_indices.csv: raw missing (run fetch)" in result.skipped
+    mart = PIPELINE.run(Stage.MART, ctx)
+    assert mart.written == (pipeline.UNSDG_MART,)
+    assert len(ctx.tables.read_table(pipeline.UNSDG_MART)) == 8
+    assert f"{pipeline.HDR_TABLE}: staged table missing (run stage)" in mart.skipped
+
+
+def test_mart_h8d_skips_without_staged_and_fails_on_duplicate_keys() -> None:
+    ctx = make_ctx({})
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert pipeline.UNSDG_MART not in result.written and pipeline.HDR_MART not in result.written
+    assert any(s.startswith("staged/unsdg/") for s in result.skipped)
+    assert any(s.startswith("staged/hdr/") for s in result.skipped)
+    rows = unsdg.parse(UNSDG_BY_KEY["sl_dom_tspd"], unsdg.SERIES[0]).rows
+    ctx.tables.write_table(pipeline.UNSDG_TABLES["sl_dom_tspd"], rows + [dict(rows[0])])
+    with pytest.raises(ValueError, match="duplicate"):
+        PIPELINE.run(Stage.MART, ctx)
+    ctx = make_ctx({})
+    hrows = hdr.parse(HDR_CSV).rows
+    ctx.tables.write_table(pipeline.HDR_TABLE, hrows + [dict(hrows[0])])
     with pytest.raises(ValueError, match="duplicate"):
         PIPELINE.run(Stage.MART, ctx)
 

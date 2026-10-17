@@ -1,0 +1,357 @@
+{
+ "size": 10000,
+ "totalElements": 9,
+ "totalPages": 1,
+ "pageNumber": 1,
+ "data": [
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2010.0,
+   "value": "10.41",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "LFS - Labour Force Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Repository: ILO-STATISTICS - Micro data processing"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "392",
+   "geoAreaName": "Japan",
+   "timePeriodStart": 2020.0,
+   "value": "13.06",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "LFS - Labour Force Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Repository: ILO-STATISTICS - Micro data processing"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2010.0,
+   "value": "9.4",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "LFS - Economically Active Population Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Repository: ILO-STATISTICS - Micro data processing"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "410",
+   "geoAreaName": "Republic of Korea",
+   "timePeriodStart": 2020.0,
+   "value": "15.65",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "LFS - Economically Active Population Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Repository: ILO-STATISTICS - Micro data processing"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "752",
+   "geoAreaName": "Sweden",
+   "timePeriodStart": 2010.0,
+   "value": "31.36",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "LFS - EU Labour Force Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Repository: ILO-STATISTICS - Micro data processing"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "752",
+   "geoAreaName": "Sweden",
+   "timePeriodStart": 2020.0,
+   "value": "42.29",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "LFS - EU Labour Force Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Repository: ILO-STATISTICS - Micro data processing"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "840",
+   "geoAreaName": "United States of America",
+   "timePeriodStart": 2010.0,
+   "value": "39.17",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "LFS - Current Population Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Repository: ILO-STATISTICS - Micro data processing | Age cov"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "840",
+   "geoAreaName": "United States of America",
+   "timePeriodStart": 2020.0,
+   "value": "41.06",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "LFS - Current Population Survey",
+   "geoInfoUrl": null,
+   "footnotes": [
+    "Repository: ILO-STATISTICS - Micro data processing | Age cov"
+   ],
+   "attributes": {
+    "Nature": "C",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  },
+  {
+   "goal": [
+    "5"
+   ],
+   "target": [
+    "5.5"
+   ],
+   "indicator": [
+    "5.5.2"
+   ],
+   "series": "IC_GEN_MGTL",
+   "seriesDescription": "Proportion of women in managerial positions - 13th ICLS (%)",
+   "seriesCount": "3472",
+   "geoAreaCode": "9",
+   "geoAreaName": "Oceania",
+   "timePeriodStart": 2000.0,
+   "value": "31.5",
+   "valueType": "Float",
+   "time_detail": null,
+   "timeCoverage": null,
+   "upperBound": null,
+   "lowerBound": null,
+   "basePeriod": null,
+   "source": "ILO modelled estimates, Nov. 2025",
+   "geoInfoUrl": null,
+   "footnotes": [],
+   "attributes": {
+    "Nature": "N",
+    "Units": "PERCENT",
+    "Observation Status": "A"
+   },
+   "dimensions": {
+    "Age": "15+",
+    "Sex": "FEMALE",
+    "Reporting Type": "G"
+   }
+  }
+ ]
+}
