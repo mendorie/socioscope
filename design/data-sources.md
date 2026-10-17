@@ -15,6 +15,7 @@
 | UN World Population Prospects | 人口・年齢構成・出生率 | CSV / API | CC BY 3.0 IGO | 候補 |
 | OECD Data Explorer（SDMX REST） | 最高限界所得税率（Tax Database Table I.7）、公的社会支出 %GDP（SOCX）、税収 %GDP・相続税収 %GDP（Revenue Statistics）；家族支出 TP51（growth-fertility H5） | SDMX REST CSV（`sdmx.oecd.org/public/rest/data/...?format=csvfilewithlabels`、鍵不要） | **OECD Terms & Conditions（2024-07-01 改定）: 出典表示で商用含め自由利用。OECD 発行物は CC BY 4.0**（確認 2026-10-04） | **採用**（wealth-population-distribution H2 / growth-fertility H5） |
 | Eurostat dissemination API（JSON-stat 2.0） | 2021 センサス 配偶関係×年齢×性×ISCED（`cens_21me_r2`）、母の年齢×出生順位の出生数（`demo_fordagec`）、女性人口（`demo_pjan`）、母の年齢×ISCED の出生数（`demo_faeduc`）、LFS 女性人口×ISCED（`lfsa_pgaed`） | REST JSON（`ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/<dataset>?format=JSON&lang=EN&<dim>=<code>`、キー不要、国別リクエスト） | **Eurostat copyright notice: 出典表示で商用含め再利用可**（第三国データは別条件、本件は EU/EFTA のみ。確認 2026-10-06） | **採用**（growth-fertility H5） |
+| OECD Education at a Glance（SDMX REST、`OECD.EDU.IMEP`） | 財源別教育支出割合・%GDP（UOE finance）、学歴別相対賃金（LSO earnings）、学生 1 人当たり支出（USD PPP） | 同上（3 リクエスト、鍵不要） | 同上（OECD Terms & Conditions、出典表示） | **採用**（growth-fertility H8c） |
 | OECD Data Explorer（IDD 等） | 所得分配（IDD）、出生率 | SDMX API | 同上 | 候補 |
 | Maddison Project / Penn World Table | 長期 GDP 系列 | Excel/CSV | 要確認 | 候補（戦後長期） |
 | Our World in Data | 整形済み系列（出典明記） | CSV / grapher API | CC BY | 候補（検証用） |
@@ -115,6 +116,22 @@
   - `tax_revenue_gdp` / `inheritance_tax_rev_gdp` は 1980 年時点で 26 か国。遅れて始まる国: CHL/COL/CRI 1990, HUN/POL 1991, CZE 1993, EST/ISR/LTU/LVA/SVK/SVN 1995。
   - `OBS_VALUE` 空（`OBS_STATUS` M/L 等）は行ごと落とす（補完しない）。staged に `obs_status` 列を残す。
   - 最高税率は賃金所得に対する法定税率で、資本所得・配当の税率ではない。社会支出・税収は GDP 比で、GDP 改定の影響を受ける。
+
+#### H8c EAG: Education at a Glance（growth-fertility、`marts/oecd_education_finance`、取得日 2026-10-17）
+- URL / API（同じ SDMX REST、`format=csvfilewithlabels`、鍵不要。source-scout が 2026-10-17 に httpx で成功を確認。URL は `theme_growth_fertility.oecd_eag.DATASETS` に固定し改変しない）:
+  | raw（`data/raw/growth-fertility/oecd_eag/`） | dataflow（STRUCTURE_ID） | key（次元順） | 行（うち値あり） | 内容 |
+  |---|---|---|---|---|
+  | `eag_fin_source.csv`（18 MB） | `OECD.EDU.IMEP:DSD_EAG_UOE_FIN@DF_UOE_FIN_SOURCE_GV_PR_NDOM(3.2)` | `REF_AREA.MEASURE.EDUCATION_LEV.EXP_SOURCE.EXP_DESTINATION.EXPENDITURE_TYPE.PRICE_BASE.UNIT_MEASURE.Q_SHEET` = `.EXP.ISCED11_1T8+ISCED11_1T4+ISCED11_5T8+ISCED11_02.S13+S1D_NON_EDU+S2+_T.INST_EDU.DIR_EXP..PT_EXP+PT_B1GQ.SOURCE`、`startPeriod=1995` | 24,780（15,135） | 財源別（政府 S13 / 私的 S1D_NON_EDU / 国外 S2 / 合計）の教育機関支出。`PT_EXP` = 支出に占める割合（`S1D_NON_EDU` が私的負担割合）、`PT_B1GQ` = %GDP |
+  | `eag_earn_rel.csv`（11.7 MB） | `OECD.EDU.IMEP:DSD_EAG_LSO_EA@DF_LSO_EARN_REL_UPPER(1.0)` | 17 次元 `REF_AREA.SEX.AGE.ATTAINMENT_LEV.EDUCATION_FIELD.MEASURE.INCOME.BIRTH_PLACE.MIGRATION_AGE.EDU_STATUS.LABOUR_FORCE_STATUS.DURATION_UNEMP.UNIT_MEASURE.STATISTICAL_OPERATION.WORK_TIME_ARNGMNT.QUESTIONNAIRE.FREQ` = `..Y25T64.ISCED11A_0T2+ISCED11A_5T8+ISCED11A_5+ISCED11A_6+ISCED11A_7_8._T.EARN_RELATIVE._Z._T._Z.ED_NED.EMP._Z.PT_EARN_WR_ISCED11A_3.OBS..EARNINGS.A`、`startPeriod=2000`（SEX と WORK_TIME_ARNGMNT が可変） | 16,545（12,796） | 25–64 歳就業者の学歴別相対賃金（後期中等 = 100）。性 `_T/F/M`、労働時間 `_T/FT`（`_O` も返るが全件空） |
+  | `eag_fin_perstud.csv`（5.1 MB） | `OECD.EDU.IMEP:DSD_EAG_UOE_FIN@DF_UOE_INDIC_FIN_PERSTUD(3.2)` | 上と同じ 9 次元 = `.FIN_PERSTUD.ISCED11_1T8+ISCED11_1T4+ISCED11_5T8+ISCED11_02._T.INST_EDU.DIR_EXP.Q+V.USD_PPP_ST.SOURCE`、`startPeriod=1995` | 7,080（4,530） | フルタイム換算学生 1 人当たり教育機関支出（USD PPP）。`PRICE_BASE` Q = 2020 年不変価格（`BASE_PER=2020`）、V = 当年価格 |
+- 対象指標・粒度: 国 × 年 × 次元（long）。dataflow には 53 REF_AREA（集計 OECD/EU25/G20、非加盟 ARG/BGR/BRA/CHN/HRV/IDN/IND/PER/ROU/SAU/THA/ZAF）が混ざるので、stage で `oecd.OECD_MEMBERS` の 38 か国に限定し、落とした REF_AREA を skipped に列挙する。空 `OBS_VALUE` は `OBS_STATUS` を問わず落とす（`O` 欠損のほか `A`/`B`/`K` にも空がある）。`OBS_STATUS`（A 通常 / W 他区分を含む / B 断絶 / R 改訂 / L・U）と `BASE_PER` は列として保持する。使わない次元は `_Z`（`base_per` は空文字）で埋め、mart のキー `(iso3, year, dataset, measure, education_level, exp_source, sex, work_time, price_base, unit)` は一意（重複は `ValueError`）。結果: 28,329 行、38 か国、1995–2025（fin_source 13,069 / earn_rel 11,272（37 か国、ISL なし）/ fin_perstud 3,988。2012 年以降が中心）。
+- ライセンス・利用規約: 上の OECD 節と同じ（OECD Terms & Conditions 2024-07-01、出典表示で商用含め自由利用）。raw はコミットしない。staged/marts の出典表記: 「OECD (2026), Education at a Glance database (UOE finance / LSO earnings), https://sdmx.oecd.org (accessed on 2026-10-18)」。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.oecd_eag`（`DATASETS`・`parse`・`build_mart` の純粋変換、Pydantic で STRUCTURE_ID・固定次元・閉じた可変次元を照合し fail-closed）＋ `pipeline._fetch_h8c / _stage_h8c / _mart_h8c`（`HttpxFetcher`）。**3 リクエスト（計 ~35 MB）**。staged は dataset ごと `staged/oecd_eag/{fin_source,earn_rel,fin_perstud}`、mart は `marts/oecd_education_finance`（ある staged だけを結合）。公開レート制限なし。再取得は年 1 回程度（EAG 刊行時）。
+- 既知の欠損・断絶・定義変更:
+  - KOR の私的負担割合（`S1D_NON_EDU`/`PT_EXP`/ISCED11_1T8）は 2015 30.3 → 2022 17.4 → 2023 20.5 と大きく下がり全年 `OBS_STATUS=W`（他区分を含む）。定義改訂の疑いがあり、H8c の頑健性で韓国除外を行う。
+  - JPN の相対賃金は 2005・2012 の 2 年のみ（`_T`/`_T` で 148.3・151.7）。Y2 では相対賃金を外した版も報告する。ISL は相対賃金なし。
+  - `fin_perstud` の Q（不変価格）は 2020 年基準で、V（当年価格）と混ぜない。分析では Q を使う。
+  - 一人当たり支出は「子どもが少ないほど 1 人当たりが増える」機械的な逆因果を含むため判定には使わない（設計 H8c）。
 
 ### DHS Program Indicator Data API（growth-fertility H4: 国内の富裕五分位別 TFR）
 - URL / API:
