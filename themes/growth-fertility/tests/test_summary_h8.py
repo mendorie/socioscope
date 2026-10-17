@@ -31,3 +31,12 @@ def test_spec_rows_flags_ci_excluding_zero() -> None:
     assert rows[0] == ("a", 0.2, -0.19, 0.6, False)
     assert rows[1][4] is True
     assert s.spec_rows([("c", (-0.3, 0.1, -0.5, -0.1))])[0][4] is True
+
+
+def test_rise_summary_counts_strict_rises() -> None:
+    assert s.rise_summary([-3.0, 0.0, 2.0, -1.0]) == (-0.5, 1, 4)
+
+
+def test_rise_summary_rejects_empty() -> None:
+    with pytest.raises(ValueError):
+        s.rise_summary([])
