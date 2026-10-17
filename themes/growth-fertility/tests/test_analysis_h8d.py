@@ -168,3 +168,26 @@ def test_z4_note_flags_disagreement() -> None:
     assert h8d.z4_note("no", SIG_NEG) == "国の中の変化では負の関連が見られる（主判定と食い違う）"
     assert h8d.z4_note("no", NS_NEG) == ""
     assert h8d.z4_note("support", None) == "国の中の変化では確かめられない"
+
+
+def test_framed_stance_quotes_template_and_qualifies() -> None:
+    s = h8d.framed_stance(
+        "no",
+        hits=[],
+        reverse=[],
+        n=53,
+        cut=2.5,
+        flips=[("TFR < 2.1", "support"), ("10+ band only", "partial")],
+        depends_on=["KOR"],
+    )
+    assert s.startswith("事前の規則では不支持である。TFR < 2.5 の広い標本（53 か国）")
+    assert "事前の文型では「家庭内の男女分業でも深さは説明できない。" in s
+    assert "TFR < 2.1では支持、10+ 年齢層のみでは部分的支持になり、判定は仕様に左右される" in s
+    assert "OECD の支持は韓国 1 か国に依存する" in s
+    assert "規範の拡散そのものは測っていない" in s
+
+
+def test_framed_stance_without_flips_has_no_qualifier() -> None:
+    s = h8d.framed_stance("support", hits=[], reverse=[], n=40, cut=2.5, flips=[])
+    assert s.startswith("事前の規則では支持である。事前の文型では「2 人未満への低下の深さは")
+    assert "左右される" not in s and "規範の拡散" not in s

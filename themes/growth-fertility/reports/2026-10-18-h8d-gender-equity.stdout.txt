@@ -92,29 +92,20 @@ growth_fertility_panel: rows=14322 cols=27
   학교급별 spend/student (10k KRW/month): 2024 초등학교 44.2; 2024 중학교 49.0; 2024 고등학교 52.0; 2025 초등학교 43.3; 2025 중학교 46.1; 2025 고등학교 49.9
 
 == Z6: focus countries (latest observation; descriptive) ==
-  East Asia         JPN 2021 [15+] F=14.71 M=3.75 share=0.797 flfp=53.5 TFR=1.30  history 2001:0.872 2006:0.852 2011:0.840 2016:0.829 2021:0.797
-  East Asia         KOR 2024 [15+] F=13.06 M=4.72 share=0.734 flfp=56.8 TFR=0.75  history 2004:0.840 2009:0.821 2014:0.802 2019:0.763 2024:0.734
-  Southern Europe   ITA 2023 [15+] F=19.46 M=8.46 share=0.697 flfp=41.3 TFR=1.21  history 2003:0.765 2009:0.752 2014:0.727 2023:0.697
+  East Asia         JPN 2021 [15+] F=14.71 M=3.75 share=0.797 flfp=53.5 TFR=1.30 (TFR year 2021)  history 2001:0.872 2006:0.852 2011:0.840 2016:0.829 2021:0.797
+  East Asia         KOR 2024 [15+] F=13.06 M=4.72 share=0.734 flfp=56.8 TFR=0.75 (TFR year 2024)  history 2004:0.840 2009:0.821 2014:0.802 2019:0.763 2024:0.734
+  Southern Europe   ITA 2023 [15+] F=19.46 M=8.46 share=0.697 flfp=41.3 TFR=1.21 (TFR year 2023)  history 2003:0.765 2009:0.752 2014:0.727 2023:0.697
   Southern Europe   ESP: no priority band
-  Nordic            DNK 2001 [16+] F=14.58 M=10.14 share=0.590 flfp=59.9 TFR=1.74  history 2001:0.590
-  Nordic            FIN 2021 [15+] F=14.06 M=10.75 share=0.567 flfp=55.9 TFR=1.46  history 2000:0.612 2010:0.592 2021:0.567
-  Nordic            NOR 2023 [15+] F=14.50 M=11.50 share=0.558 flfp=62.4 TFR=1.40  history 2001:0.594 2011:0.554 2023:0.558
-  Nordic            SWE 2011 [15+] F=16.04 M=12.83 share=0.556 flfp=59.5 TFR=1.90  history 2001:0.582 2011:0.556
-  English-speaking  USA 2023 [15+] F=15.42 M=10.08 share=0.605 flfp=56.6 TFR=1.62  history 2003:0.626 2004:0.629 2005:0.631 2006:0.629 2007:0.618 2008:0.624 2009:0.620 2010:0.608 2011:0.611 2012:0.621 2013:0.616 2014:0.616 2015:0.620 2016:0.619 2017:0.610 2018:0.617 2019:0.613 2021:0.606 2022:0.599 2023:0.605
-  English-speaking  GBR 2026 [15+] F=15.83 M=12.29 share=0.563 flfp=57.3 TFR=1.55  history 2001:0.646 2015:0.645 2022:0.566 2026:0.563
-  English-speaking  CAN 2023 [15+] F=16.46 M=11.62 share=0.586 flfp=61.1 TFR=1.27  history 2005:0.613 2010:0.609 2016:0.586 2023:0.586
-  English-speaking  AUS 2024 [15+] F=17.92 M=12.64 share=0.586 flfp=62.6 TFR=1.48  history 2006:0.647 2021:0.605 2024:0.586
+  Nordic            DNK 2001 [16+] F=14.58 M=10.14 share=0.590 flfp=59.9 TFR=1.74 (TFR year 2001)  history 2001:0.590
+  Nordic            FIN 2021 [15+] F=14.06 M=10.75 share=0.567 flfp=55.9 TFR=1.46 (TFR year 2021)  history 2000:0.612 2010:0.592 2021:0.567
+  Nordic            NOR 2023 [15+] F=14.50 M=11.50 share=0.558 flfp=62.4 TFR=1.40 (TFR year 2023)  history 2001:0.594 2011:0.554 2023:0.558
+  Nordic            SWE 2011 [15+] F=16.04 M=12.83 share=0.556 flfp=59.5 TFR=1.90 (TFR year 2011)  history 2001:0.582 2011:0.556
+  English-speaking  USA 2023 [15+] F=15.42 M=10.08 share=0.605 flfp=56.6 TFR=1.62 (TFR year 2023)  history 2003:0.626 2004:0.629 2005:0.631 2006:0.629 2007:0.618 2008:0.624 2009:0.620 2010:0.608 2011:0.611 2012:0.621 2013:0.616 2014:0.616 2015:0.620 2016:0.619 2017:0.610 2018:0.617 2019:0.613 2021:0.606 2022:0.599 2023:0.605
+  English-speaking  GBR 2026 [15+] F=15.83 M=12.29 share=0.563 flfp=57.3 TFR=1.55 (TFR year 2024)  history 2001:0.646 2015:0.645 2022:0.566 2026:0.563
+  English-speaking  CAN 2023 [15+] F=16.46 M=11.62 share=0.586 flfp=61.1 TFR=1.27 (TFR year 2023)  history 2005:0.613 2010:0.609 2016:0.586 2023:0.586
+  English-speaking  AUS 2024 [15+] F=17.92 M=12.64 share=0.586 flfp=62.6 TFR=1.48 (TFR year 2024)  history 2006:0.647 2021:0.605 2024:0.586
 
-== Verdict (pre-registered) ==
-Z1 share: -0.039 [-0.178, +0.100]   (n=53)
-Z2 interaction: -0.033 [-0.091, +0.024] ; upper-half slope: -0.122 [-0.237, -0.008]*
-Z3 hits (predicted direction, CI∌0): none
-reverse: none
-VERDICT G: no = 不支持
-FINAL STANCE: 家庭内の男女分業でも深さは説明できない。2 人未満への低下について本シリーズで残る説明は、規範の拡散仮説だけである。
-Z4 consistency note: none (Z4a Δshare -0.053 [-0.149, +0.044] )
-
-== Robustness (pre-registered list) ==
+== Robustness (pre-registered list: 8 runnable of 10; the nearest-band run is an added post hoc variant) ==
 -- excl JPN --
 [R excl JPN] Z1 sample: n=52 (TFR < 2.5; of 82 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2016; age bands [('10+', 11), ('15+', 40), ('16+', 1)]
   [R excl JPN] Z1 OLS HC1 (standardised)  n=52 r2=0.252
@@ -339,35 +330,35 @@ Z4 consistency note: none (Z4a Δshare -0.053 [-0.149, +0.044] )
   [R no income/enrolment] Z3 lfp_ratio n=56 -0.128 [-0.270, +0.014]  SD=0.142 (predicted sign +); Spearman rho=-0.320 p=0.016  (female / male labour-force participation)
   [R no income/enrolment] Z3 gii       n=55 +0.204 [+0.129, +0.279]* SD=0.151 (predicted sign -); Spearman rho=+0.633 p=0.000  (Gender Inequality Index (0-1))
 [R no income/enrolment] verdict=no (不支持); Z3 hits=none; reverse=none
--- + nearest band (ESP etc.) --
-[R + nearest band (ESP etc.)] Z1 sample: n=58 (TFR < 2.5; of 93 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2015; age bands [('10+', 9), ('12+', 2), ('15+', 40), ('15-64', 1), ('20-74', 5), ('6+', 1)]
-  [R + nearest band (ESP etc.)] Z1 OLS HC1 (standardised)  n=58 r2=0.206
+-- + nearest band (post hoc, ESP etc.) --
+[R + nearest band (post hoc, ESP etc.)] Z1 sample: n=58 (TFR < 2.5; of 93 countries with an unpaid-work observation >= 2000); years 2001–2025, median 2015; age bands [('10+', 9), ('12+', 2), ('15+', 40), ('15-64', 1), ('20-74', 5), ('6+', 1)]
+  [R + nearest band (post hoc, ESP etc.)] Z1 OLS HC1 (standardised)  n=58 r2=0.206
       share      -0.017 [-0.150, +0.116]   SD=0.0818  (unpaid-work female share F/(F+M))
       flfp       -0.040 [-0.142, +0.062]   SD=8.4793  (female LFP (%))
       ln_gdp     -0.062 [-0.163, +0.039]   SD=0.6689  (ln GDP pc PPP)
       tert       -0.107 [-0.214, -0.000]*  SD=25.2089  (tertiary enrolment (%))
       Spearman tfr × share rho=+0.268 p=0.042
-  [R + nearest band (ESP etc.)] Z2 + share x female LFP  n=58 r2=0.231
+  [R + nearest band (post hoc, ESP etc.)] Z2 + share x female LFP  n=58 r2=0.231
       share      -0.013 [-0.144, +0.118]   SD=0.0818  (unpaid-work female share F/(F+M))
       flfp       -0.005 [-0.109, +0.099]   SD=8.4793  (female LFP (%))
       ln_gdp     -0.059 [-0.162, +0.043]   SD=0.6689  (ln GDP pc PPP)
       tert       -0.114 [-0.218, -0.011]*  SD=25.2089  (tertiary enrolment (%))
       inter      -0.045 [-0.099, +0.009]   (share x female LFP)
-  [R + nearest band (ESP etc.)] Z2 upper half (female LFP >= 53.4)  n=29 r2=0.362
+  [R + nearest band (post hoc, ESP etc.)] Z2 upper half (female LFP >= 53.4)  n=29 r2=0.362
       share      -0.149 [-0.275, -0.023]*  (unpaid-work female share F/(F+M))
       flfp       -0.006 [-0.228, +0.215]   (female LFP (%))
       ln_gdp     -0.058 [-0.222, +0.105]   (ln GDP pc PPP)
       tert       -0.177 [-0.333, -0.020]*  (tertiary enrolment (%))
-  [R + nearest band (ESP etc.)] Z2 lower half (female LFP < 53.4)  n=29 r2=0.165
+  [R + nearest band (post hoc, ESP etc.)] Z2 lower half (female LFP < 53.4)  n=29 r2=0.165
       share      +0.098 [-0.074, +0.270]   (unpaid-work female share F/(F+M))
       flfp       +0.004 [-0.158, +0.166]   (female LFP (%))
       ln_gdp     -0.024 [-0.168, +0.119]   (ln GDP pc PPP)
       tert       -0.075 [-0.216, +0.066]   (tertiary enrolment (%))
-  [R + nearest band (ESP etc.)] Z3 mgr       n=56 +0.029 [-0.082, +0.140]  SD=8.748 (predicted sign +); Spearman rho=-0.078 p=0.565  (women in managerial positions (%))
-  [R + nearest band (ESP etc.)] Z3 parl      n=57 +0.097 [+0.003, +0.192]* SD=12.552 (predicted sign +); Spearman rho=+0.006 p=0.967  (women's share of parliamentary seats (%))
-  [R + nearest band (ESP etc.)] Z3 lfp_ratio n=58 -0.087 [-0.262, +0.089]  SD=0.136 (predicted sign +); Spearman rho=-0.292 p=0.026  (female / male labour-force participation)
-  [R + nearest band (ESP etc.)] Z3 gii       n=57 +0.194 [+0.080, +0.308]* SD=0.148 (predicted sign -); Spearman rho=+0.543 p=0.000  (Gender Inequality Index (0-1))
-[R + nearest band (ESP etc.)] verdict=no (不支持); Z3 hits=['parl']; reverse=none
+  [R + nearest band (post hoc, ESP etc.)] Z3 mgr       n=56 +0.029 [-0.082, +0.140]  SD=8.748 (predicted sign +); Spearman rho=-0.078 p=0.565  (women in managerial positions (%))
+  [R + nearest band (post hoc, ESP etc.)] Z3 parl      n=57 +0.097 [+0.003, +0.192]* SD=12.552 (predicted sign +); Spearman rho=+0.006 p=0.967  (women's share of parliamentary seats (%))
+  [R + nearest band (post hoc, ESP etc.)] Z3 lfp_ratio n=58 -0.087 [-0.262, +0.089]  SD=0.136 (predicted sign +); Spearman rho=-0.292 p=0.026  (female / male labour-force participation)
+  [R + nearest band (post hoc, ESP etc.)] Z3 gii       n=57 +0.194 [+0.080, +0.308]* SD=0.148 (predicted sign -); Spearman rho=+0.543 p=0.000  (Gender Inequality Index (0-1))
+[R + nearest band (post hoc, ESP etc.)] verdict=no (不支持); Z3 hits=['parl']; reverse=none
 -- housework only (SL_DOM_TSPDDC) / care only (SL_DOM_TSPDCW): not run (series not in mart) --
 
 -- Robustness summary --
@@ -380,7 +371,7 @@ TFR < 3.0                     62 -0.062 [-0.216, +0.092]      -0.026 [-0.113, +0
 OECD members                  25 -0.175 [-0.315, -0.035]*     -0.131 [-0.192, -0.071]*     -0.304 [-0.425, -0.183]*     ['parl'] / support rev=-
 excl pop < 1m                 50 -0.056 [-0.192, +0.080]      -0.022 [-0.082, +0.039]      -0.165 [-0.280, -0.049]*     - / no rev=-
 no income/enrolment           57 +0.064 [-0.020, +0.149]      -0.028 [-0.078, +0.023]      +0.027 [-0.101, +0.155]      - / no rev=-
-+ nearest band (ESP etc.)     58 -0.017 [-0.150, +0.116]      -0.045 [-0.099, +0.009]      -0.149 [-0.275, -0.023]*     ['parl'] / no rev=-
++ nearest band (post hoc, ESP etc.)  58 -0.017 [-0.150, +0.116]      -0.045 [-0.099, +0.009]      -0.149 [-0.275, -0.023]*     ['parl'] / no rev=-
 
 == Exploratory (post hoc, not part of the verdict) ==
 E1 tfr ~ share on the Z1 sample: n=53 share +0.094 [+0.027, +0.161]*
@@ -388,8 +379,22 @@ E1 tfr ~ share + flfp on the Z1 sample: n=53 share +0.052 [-0.041, +0.145]
 E2 Z1 with M (unpaid %, level) instead of share: n=53 M +0.024 [-0.091, +0.139] 
 E2 Z1 with F (unpaid %, level) instead of share: n=53 F -0.007 [-0.106, +0.091] 
 E3 high-income only: n=31 share -0.095 [-0.215, +0.024] ; Spearman rho=-0.185 p=0.320
+E5 Z1 sample by Nature: [('C', 35), ('CA', 18)]; CA countries ['ALB', 'ARG', 'AZE', 'BLR', 'BTN', 'CHN', 'DNK', 'HKG', 'LUX', 'MKD', 'MLT', 'MUS', 'QAT', 'SLV', 'THA', 'TUN', 'URY', 'ZAF']
+E5 Nature=C: n=35 share -0.074 [-0.256, +0.108] 
+E5 Nature=CA: n=18 share -0.066 [-0.251, +0.120] 
+E6 obs year >= 2010                n=45 Z1 -0.033 [-0.175, +0.109]   Z2 inter -0.036 [-0.109, +0.037]   upper -0.125 [-0.271, +0.020]   -> no
 E4 OECD sample (TFR < 2.5): AUS:0.59/1.48 AUT:0.65/1.41 BEL:0.61/1.74 CAN:0.59/1.27 CHE:0.60/1.46 CRI:0.73/1.71 DEU:0.60/1.46 DNK:0.59/1.74 EST:0.60/1.61 FIN:0.57/1.46 FRA:0.62/2.03 GRC:0.72/1.30 HUN:0.63/1.41 ITA:0.70/1.21 JPN:0.80/1.30 KOR:0.73/0.75 LTU:0.67/1.26 LUX:0.67/1.50 MEX:0.72/1.89 NOR:0.56/1.40 POL:0.62/1.20 PRT:0.63/1.31 SWE:0.56/1.90 TUR:0.83/2.16 USA:0.60/1.62  (iso3:share/TFR)
 E4 OECD excl JPN                   n=24 Z1 -0.193 [-0.377, -0.010]*  Z2 inter -0.128 [-0.182, -0.074]*  upper -0.274 [-0.390, -0.158]*  -> support
 E4 OECD excl KOR                   n=24 Z1 -0.103 [-0.238, +0.032]   Z2 inter -0.125 [-0.188, -0.062]*  upper -0.258 [-0.551, +0.036]   -> no
 E4 OECD excl JPN KOR               n=23 Z1 -0.062 [-0.326, +0.203]   Z2 inter -0.130 [-0.191, -0.069]*  upper -0.234 [-0.501, +0.033]   -> no
 E4 OECD excl JPN KOR ITA           n=22 Z1 -0.109 [-0.353, +0.134]   Z2 inter -0.111 [-0.165, -0.056]*  upper -0.170 [-0.442, +0.102]   -> no
+
+== Verdict (pre-registered) ==
+Z1 share: -0.039 [-0.178, +0.100]   (n=53)
+Z2 interaction: -0.033 [-0.091, +0.024] ; upper-half slope: -0.122 [-0.237, -0.008]*
+Z3 hits (predicted direction, CI∌0): none
+reverse: none
+VERDICT G: no = 不支持
+PRE-REGISTERED SENTENCE: 家庭内の男女分業でも深さは説明できない。2 人未満への低下について本シリーズで残る説明は、規範の拡散仮説だけである。
+Z4 consistency note: none (Z4a Δshare -0.053 [-0.149, +0.044] )
+STANCE (as reported): 事前の規則では不支持である。TFR < 2.5 の広い標本（53 か国）では、事前の条件で無償労働の女性偏りと TFR の関連を確かめられない。事前の文型では「家庭内の男女分業でも深さは説明できない。2 人未満への低下について本シリーズで残る説明は、規範の拡散仮説だけである。」となる。ただしTFR < 2.1では支持、10+ 年齢層のみでは部分的支持、OECD 加盟国のみでは支持になり、判定は仕様に左右される。OECD の支持は韓国 1 か国に依存する（除くと不支持）。「残る説明は規範の拡散仮説だけ」は検証した候補が条件を満たさなかったという消去法の言明で、規範の拡散そのものは測っていない。

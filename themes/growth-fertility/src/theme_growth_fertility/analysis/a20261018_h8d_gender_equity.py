@@ -337,6 +337,54 @@ def final_stance_g(verdict: str, *, hits: Sequence[str], reverse: Sequence[str])
     return s
 
 
+ROBUST_JA = {
+    "TFR < 2.1": "TFR < 2.1",
+    "TFR < 3.0": "TFR < 3.0",
+    "OECD members": "OECD 加盟国のみ",
+    "10+ band only": "10+ 年齢層のみ",
+    "excl JPN": "日本除外",
+    "excl KOR": "韓国除外",
+    "excl pop < 1m": "人口 100 万未満除外",
+    "no income/enrolment": "所得・就学率なし",
+}
+ISO_JA = {"KOR": "韓国", "JPN": "日本", "ITA": "イタリア"}
+
+
+def framed_stance(
+    verdict: str,
+    *,
+    hits: Sequence[str],
+    reverse: Sequence[str],
+    n: int,
+    cut: float,
+    flips: Sequence[tuple[str, str]],
+    depends_on: Sequence[str] = (),
+) -> str:
+    """Report-facing stance: the pre-registered sentence quoted as 「事前の文型では」, followed by
+    the qualifications the methodology review required. `flips` = (pre-registered robustness label,
+    verdict) pairs whose verdict differs from the main one; `depends_on` = countries whose removal
+    turns an OECD 'support' back into the main verdict."""
+    s = f"事前の規則では{VERDICT_JA[verdict]}である。"
+    if verdict == "no":
+        s += (
+            f"TFR < {cut:g} の広い標本（{n} か国）では、事前の条件で無償労働の女性偏りと TFR の"
+            "関連を確かめられない。"
+        )
+    s += f"事前の文型では「{final_stance_g(verdict, hits=hits, reverse=reverse)}」となる。"
+    if flips:
+        parts = "、".join(f"{ROBUST_JA.get(lab, lab)}では{VERDICT_JA[v]}" for lab, v in flips)
+        s += f"ただし{parts}になり、判定は仕様に左右される。"
+    if depends_on:
+        names = "・".join(ISO_JA.get(i, i) for i in depends_on)
+        s += f"OECD の支持は{names} 1 か国に依存する（除くと{VERDICT_JA[verdict]}）。"
+    if verdict == "no":
+        s += (
+            "「残る説明は規範の拡散仮説だけ」は検証した候補が条件を満たさなかったという消去法の"
+            "言明で、規範の拡散そのものは測っていない。"
+        )
+    return s
+
+
 def z4_note(verdict: str, z4: Coef | None) -> str:
     """Pre-registered consistency remark from the within test (Z4a Δshare coefficient)."""
     if verdict in ("support", "partial"):
@@ -1027,7 +1075,7 @@ def describe(
     )
 
 
-def focus_table(cs: pl.DataFrame, sel: pl.DataFrame) -> None:
+def focus_table(cs: pl.DataFrame, sel: pl.DataFrame, tfr_obs: pl.DataFrame) -> None:
     print("\n== Z6: focus countries (latest observation; descriptive) ==")
     for grp, members in GROUPS.items():
         for iso in members:
@@ -1038,9 +1086,16 @@ def focus_table(cs: pl.DataFrame, sel: pl.DataFrame) -> None:
             x = r.row(0, named=True)
             hist = sel.filter(pl.col("iso3") == iso).select("year", "female_share").rows()
             h = " ".join(f"{y}:{s:.3f}" for y, s in hist)
+            tf = {
+                int(y): float(y)
+                for y, v in tfr_obs.filter(pl.col("iso3") == iso).select("year", "tfr").rows()
+                if v is not None
+            }
+            ty = h8.nearest_value(tf, int(x["year"]), WINDOW)
             print(
                 f"  {grp:<17} {iso} {x['year']} [{x['age']}] F={x['F']:.2f} M={x['M']:.2f} "
-                f"share={x['share']:.3f} flfp={x['flfp']:.1f} TFR={x['tfr']:.2f}  history {h}"
+                f"share={x['share']:.3f} flfp={x['flfp']:.1f} TFR={x['tfr']:.2f} "
+                f"(TFR year {'n/a' if ty is None else int(ty)})  history {h}"
             )
 
 
@@ -1068,7 +1123,16 @@ def run(data_dir: Path, fig_dir: Path) -> None:
 
     print()
     kf = run_z5(k, panel)
-    focus_table(cs, sel)
+    focus_table(cs, sel, panel.select("iso3", "year", "tfr"))
+
+    robust = robustness(panel, g, w, hw, cs)
+    fig_z1(main, fig_dir / "h8d_z1_z2_unpaid_share.png")
+    fig_z3(main, robust, fig_dir / "h8d_z3_alternatives_robustness.png")
+    fig_z4(z4a, z4b, fig_dir / "h8d_z4_within.png")
+    fig_z5(kf, k, fig_dir / "h8d_z5_korea_tutoring.png")
+    fig_z6(cs, fig_dir / "h8d_z6_focus_groups.png")
+    exploratory(cs, main, panel, g)
+    depends = exploratory_oecd(cs)
 
     print("\n== Verdict (pre-registered) ==")
     z4c = None if z4a.est is None else z4a.est.coefs["d_share"]
@@ -1079,23 +1143,32 @@ def run(data_dir: Path, fig_dir: Path) -> None:
     print(f"VERDICT G: {main.verdict} = {VERDICT_JA[main.verdict]}")
     stance = final_stance_g(main.verdict, hits=main.hits, reverse=main.reverse)
     note = z4_note(main.verdict, z4c)
-    print(f"FINAL STANCE: {stance}{('（' + note + '）') if note else ''}")
+    print(f"PRE-REGISTERED SENTENCE: {stance}{('（' + note + '）') if note else ''}")
     print(f"Z4 consistency note: {note or 'none'} (Z4a Δshare {_fmt(z4c)})")
-
-    robust = robustness(panel, g, w, hw, cs)
-    fig_z1(main, fig_dir / "h8d_z1_z2_unpaid_share.png")
-    fig_z3(main, robust, fig_dir / "h8d_z3_alternatives_robustness.png")
-    fig_z4(z4a, z4b, fig_dir / "h8d_z4_within.png")
-    fig_z5(kf, k, fig_dir / "h8d_z5_korea_tutoring.png")
-    fig_z6(cs, fig_dir / "h8d_z6_focus_groups.png")
-    exploratory(cs, main, panel)
-    exploratory_oecd(cs)
+    flips = [
+        (lab, r.verdict) for lab, r in robust if lab in ROBUST_JA and r.verdict != main.verdict
+    ]
+    oecd = dict(robust).get("OECD members")
+    dep = depends if oecd is not None and oecd.verdict == "support" else ()
+    framed = framed_stance(
+        main.verdict,
+        hits=main.hits,
+        reverse=main.reverse,
+        n=main.z1.n,
+        cut=CUT,
+        flips=flips,
+        depends_on=dep,
+    )
+    print(f"STANCE (as reported): {framed}")
 
 
 def robustness(
     panel: pl.DataFrame, g: pl.DataFrame, w: pl.DataFrame, hw: pl.DataFrame, cs: pl.DataFrame
 ) -> list[tuple[str, GResult]]:
-    print("\n== Robustness (pre-registered list) ==")
+    print(
+        "\n== Robustness (pre-registered list: 8 runnable of 10; the nearest-band run is an "
+        "added post hoc variant) =="
+    )
     small = h8c.small_countries(panel)
     cs10 = cross_section(select_band(w, priority=("10+",)), panel, g, hw)
     csfb = cross_section(select_band(w, fallback=True), panel, g, hw)
@@ -1108,7 +1181,7 @@ def robustness(
         ("OECD members", cs.filter(pl.col("iso3").is_in(list(OECD_MEMBERS))), {}),
         ("excl pop < 1m", cs.filter(~pl.col("iso3").is_in(small)), {}),
         ("no income/enrolment", cs, {"controls": ("flfp",)}),
-        ("+ nearest band (ESP etc.)", csfb, {}),
+        ("+ nearest band (post hoc, ESP etc.)", csfb, {}),
     ]
     out: list[tuple[str, GResult]] = []
     for lab, f, kw in specs:
@@ -1130,7 +1203,7 @@ def robustness(
     return out
 
 
-def exploratory(cs: pl.DataFrame, main: GResult, panel: pl.DataFrame) -> None:
+def exploratory(cs: pl.DataFrame, main: GResult, panel: pl.DataFrame, g: pl.DataFrame) -> None:
     print("\n== Exploratory (post hoc, not part of the verdict) ==")
     # E1: bivariate Z1 (no controls) and with female LFP only
     f = main.frame
@@ -1156,6 +1229,39 @@ def exploratory(cs: pl.DataFrame, main: GResult, panel: pl.DataFrame) -> None:
             f"E3 high-income only: n={e.n} share {_fmt(e.coefs['share'])}; Spearman "
             f"rho={r[0]:+.3f} p={r[1]:.3f}"
         )
+    # E5: ICATUS-adjusted (Nature=CA) vs country data (C) in the Z1 sample
+    nat = (
+        g.filter(
+            (pl.col("series") == UNPAID)
+            & (pl.col("sex") == "F")
+            & (pl.col("location") == "ALLAREA")
+        )
+        .select("iso3", "year", "age", "nature")
+        .unique(["iso3", "year", "age"], keep="first")
+    )
+    fn = f.join(nat, on=["iso3", "year", "age"], how="left")
+    counts = fn.group_by("nature").len().sort("nature").rows()
+    ca = sorted(fn.filter(pl.col("nature") == "CA")["iso3"].to_list())
+    print(f"E5 Z1 sample by Nature: {counts}; CA countries {ca}")
+    for nv in ("C", "CA"):
+        sub = fn.filter(pl.col("nature") == nv)
+        if sub.height >= len(Z1_VARS) + 3:
+            fs, _ = h8b.standardize(sub, Z1_VARS)
+            e = h8c.ols_hc1(fs, "tfr", Z1_VARS, label="E5")
+            print(f"E5 Nature={nv}: n={e.n} share {_fmt(e.coefs['share'])}")
+        else:
+            rr = (
+                h8b.spearman(sub["share"].to_list(), sub["tfr"].to_list())
+                if sub.height >= 3
+                else None
+            )
+            print(
+                f"E5 Nature={nv}: n={sub.height} (too few for Z1)"
+                + ("" if rr is None else f"; Spearman rho={rr[0]:+.3f} p={rr[1]:.3f}")
+            )
+    # E6: observation year >= 2010 only
+    r6 = run_g(cs.filter(pl.col("year") >= 2010), "E6 obs year >= 2010", verbose=False)
+    _brief("E6 obs year >= 2010", r6)
 
 
 def _brief(lab: str, r: GResult) -> None:
@@ -1165,7 +1271,7 @@ def _brief(lab: str, r: GResult) -> None:
     )
 
 
-def exploratory_oecd(cs: pl.DataFrame) -> None:
+def exploratory_oecd(cs: pl.DataFrame) -> tuple[str, ...]:
     """E4: the OECD robustness run gives 'support'. Does it rest on Japan / Korea (or Italy)?"""
     oe = cs.filter(pl.col("iso3").is_in(list(OECD_MEMBERS)))
     print(
@@ -1179,13 +1285,18 @@ def exploratory_oecd(cs: pl.DataFrame) -> None:
         )
         + "  (iso3:share/TFR)"
     )
+    single: list[str] = []
     for lab, drop in (
         ("E4 OECD excl JPN", ("JPN",)),
         ("E4 OECD excl KOR", ("KOR",)),
         ("E4 OECD excl JPN KOR", ("JPN", "KOR")),
         ("E4 OECD excl JPN KOR ITA", ("JPN", "KOR", "ITA")),
     ):
-        _brief(lab, run_g(oe.filter(~pl.col("iso3").is_in(list(drop))), lab, verbose=False))
+        r = run_g(oe.filter(~pl.col("iso3").is_in(list(drop))), lab, verbose=False)
+        _brief(lab, r)
+        if len(drop) == 1 and r.verdict != "support":
+            single.append(drop[0])
+    return tuple(single)
 
 
 def main() -> None:
