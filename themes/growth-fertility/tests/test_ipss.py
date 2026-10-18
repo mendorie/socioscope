@@ -48,7 +48,7 @@ def births_keyed(rs: list[dict[str, object]]) -> dict[tuple[object, ...], object
 
 def test_tables_registry_urls_sheets_and_marts() -> None:
     assert ipss.SOURCE == "ipss"
-    assert [t.code for t in ipss.TABLES] == [
+    assert [t.code for t in ipss.TABLES][:7] == [  # H10 tables are appended after
         "T04-25",
         "T04-24",
         "T04-23",
@@ -64,7 +64,7 @@ def test_tables_registry_urls_sheets_and_marts() -> None:
     assert t.sheet == "T04-25" and t.mart == "survey"
     assert table("T04-09").sheet == "T04-09★" and table("T04-09").mart == "births"
     assert table("T04-11").sheet == "T04-11★" and table("T04-16").sheet == "T04-16★"
-    assert {t.mart for t in ipss.TABLES} == {"survey", "births"}
+    assert {t.mart for t in ipss.TABLES} == {"survey", "births", "marriage", "prefecture"}
     assert ipss.PDF_URL == "https://www.ipss.go.jp/ps-doukou/j/doukou16/JNFS16gaiyo.pdf"
     assert ipss.PDF_RAW_NAME == "JNFS16gaiyo.pdf"
     assert "PDL" in ipss.LICENSE and "人口統計資料集" in ipss.LICENSE

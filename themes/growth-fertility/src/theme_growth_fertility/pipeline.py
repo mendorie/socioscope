@@ -8,10 +8,12 @@ Third source (H4): DHS Program API, TFR by wealth quintile -> ``dhs_tfr_by_wealt
 
 from collections import defaultdict
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
 from theme_growth_fertility import (
+    cao,
     dhs,
     eb_ideals,
     estat,
@@ -22,6 +24,7 @@ from theme_growth_fertility import (
     oecd,
     oecd_family,
     oecd_labour,
+    prefecture,
     surveys,
     unsdg,
 )
@@ -156,6 +159,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h9_oecd(ctx, written, skipped)
     written, skipped = _fetch_h9_kr(ctx, written, skipped)
     written, skipped = _fetch_h9_eu(ctx, written, skipped)
+    written, skipped = _fetch_h10_pref(ctx, written, skipped)
     written, skipped = _fetch_h10_oecd(ctx, written, skipped)
     written, skipped = _fetch_h10_eu(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
@@ -246,6 +250,7 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h9_oecd(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h9_kr(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h9_eu(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h10_pref(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h10_oecd(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h10_eu(ctx, dhs_written, dhs_skipped)
     return StageResult(
@@ -514,6 +519,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h9_oecd(ctx, written, skipped)
     written, skipped = _mart_h9_kr(ctx, written, skipped)
     written, skipped = _mart_h9_eu(ctx, written, skipped)
+    written, skipped = _mart_h10_pref(ctx, written, skipped)
     written, skipped = _mart_h10_oecd(ctx, written, skipped)
     written, skipped = _mart_h10_eu(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -1640,4 +1646,122 @@ def _mart_h10_eu(
     if staged:
         ctx.tables.write_table(EU_FAMILY_FORMATION_MART, es.build_family_formation_mart(staged))
         written.append(EU_FAMILY_FORMATION_MART)
+    return written, skipped
+
+
+# ---- H10-PREF: Japanese prefecture panel + marriage series ----------------------------------
+# The nine H10 IPSS workbooks (T06-24 … T12-53) are fetched / staged by the H9-JP loop above
+# (`ipss.TABLES`, `staged/ipss/<key>`); this block adds the three explanatory workbooks
+# (就業構造 時系列 第18表, 住宅・土地統計 時系列 第34-2表, 県民経済計算 総括表7), each staged on its
+# own, and builds `marts/jp_marriage_series` (IPSS marriage tables) and `marts/jp_prefecture_panel`
+# (IPSS prefecture tables + the three) from whatever is staged. Independent of every other source.
+
+H10_TABLES: dict[str, str] = {
+    "shugyo_ts18": "staged/estat/shugyo_ts18_employment",
+    "jutaku_34_2": "staged/estat/jutaku_rent",
+    "kenmin": "staged/cao/kenmin_income",
+}
+H10_MARRIAGE_MART = "marts/jp_marriage_series"
+H10_PREF_MART = "marts/jp_prefecture_panel"
+
+
+@dataclass(frozen=True)
+class _H10Item:
+    key: str
+    source: str
+    raw_name: str
+    url: str
+    license: str
+    parse: Callable[[bytes], list[dict[str, object]]]
+
+
+_H10_ITEMS: tuple[_H10Item, ...] = (
+    _H10Item(
+        "shugyo_ts18",
+        prefecture.SHUGYO_TS18_SOURCE,
+        prefecture.SHUGYO_TS18_RAW_NAME,
+        prefecture.SHUGYO_TS18_URL,
+        prefecture.LICENSE,
+        prefecture.employment_rows,
+    ),
+    _H10Item(
+        "jutaku_34_2",
+        prefecture.JUTAKU_SOURCE,
+        prefecture.JUTAKU_RAW_NAME,
+        prefecture.JUTAKU_URL,
+        prefecture.LICENSE,
+        prefecture.rent_rows,
+    ),
+    _H10Item("kenmin", cao.SOURCE, cao.RAW_NAME, cao.URL, cao.LICENSE, cao.income_rows),
+)
+
+
+def _fetch_h10_pref(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for item in _H10_ITEMS:
+        try:
+            payload = ctx.fetcher.fetch(item.url)
+        except FetchError as e:
+            skipped.append(f"{item.raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=item.source,
+            name=item.raw_name,
+            url=item.url,
+            license=item.license,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h10_pref(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for item in _H10_ITEMS:
+        payload = ctx.raw.get(theme=THEME, source=item.source, name=item.raw_name)
+        if payload is None:
+            skipped.append(f"{item.raw_name}: raw missing (run fetch)")
+            continue
+        try:
+            rows = item.parse(payload)
+        except ValueError as e:
+            skipped.append(f"{item.raw_name}: layout not recognised ({e})")
+            continue
+        ctx.tables.write_table(H10_TABLES[item.key], rows)
+        written.append(H10_TABLES[item.key])
+    return written, skipped
+
+
+def _read_parts(
+    ctx: Context, names: Sequence[str], skipped: list[str]
+) -> dict[str, Sequence[dict[str, object]]]:
+    parts: dict[str, Sequence[dict[str, object]]] = {}
+    for name in names:
+        try:
+            parts[name] = ctx.tables.read_table(name)
+        except FileNotFoundError:
+            skipped.append(f"{name}: staged table missing (run stage)")
+    return parts
+
+
+def _mart_h10_pref(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    marriage = [IPSS_TABLES[t.key] for t in ipss.TABLES if t.mart == "marriage"]
+    parts = _read_parts(ctx, marriage, skipped)
+    if parts:
+        ctx.tables.write_table(H10_MARRIAGE_MART, ipss.build_marriage_mart(parts))
+        written.append(H10_MARRIAGE_MART)
+    else:
+        skipped.append(f"{H10_MARRIAGE_MART}: no staged ipss table (run stage)")
+    pref = [IPSS_TABLES[t.key] for t in ipss.TABLES if t.mart == "prefecture"]
+    parts = _read_parts(ctx, [*pref, *H10_TABLES.values()], skipped)
+    if parts:
+        ctx.tables.write_table(H10_PREF_MART, prefecture.build_prefecture_mart(parts))
+        written.append(H10_PREF_MART)
+    else:
+        skipped.append(f"{H10_PREF_MART}: no staged prefecture table (run stage)")
     return written, skipped
