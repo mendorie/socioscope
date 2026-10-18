@@ -668,6 +668,108 @@ def growth_fertility_h9_part5() -> Path:
     return out
 
 
+def growth_fertility_h10_part6() -> Path:
+    """Part6: 男性 30–34 歳の雇用形態別未婚率（左）と Kitagawa 分解（右）。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "themes" / "growth-fertility" / "src"))
+    from theme_growth_fertility.analysis import a20261018_h10_family_formation as h10
+    from theme_growth_fertility.analysis.s20261018_h10_summary import rate_series
+
+    d = h10.load(ROOT / "data")
+    res = h10.compute(d)
+    emp = d["emp"]
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "結婚を阻んでいるのは、非正規でも家賃でも所得でもなかった",
+        "未婚化は正社員でも非正規でも、どの県でも同じように進んだ。残る読みは「結婚という選択からの離脱」",
+        size=31,
+    )
+
+    ax1 = fig.add_axes([0.07, 0.13, 0.40, 0.52])
+    for key, color, lab in (
+        ("nonregular", ORANGE, "非正規"),
+        ("total_pop", INK, "全体"),
+        ("regular", BLUE, "正社員"),
+    ):
+        pts = rate_series(emp, "male", "30-34", key)
+        xs = [y for y, _ in pts]
+        ys = [v for _, v in pts]
+        ax1.plot(xs, ys, color=color, lw=4, marker="o", ms=7)
+        ax1.text(
+            xs[-1] + 0.4,
+            ys[-1],
+            f"{lab} {ys[-1]:.0f}%",
+            color=color,
+            fontsize=12,
+            va="center",
+            fontweight="bold",
+        )
+    ax1.set_xlim(2005, 2029)
+    ax1.set_ylim(30, 90)
+    ax1.set_yticks([40, 60, 80])
+    ax1.set_yticklabels(["40%", "60%", "80%"], fontsize=11, color=MUTED)
+    ax1.set_xticks([2007, 2012, 2017, 2022])
+    ax1.tick_params(colors=MUTED, labelsize=11, length=0)
+    for sp in ax1.spines.values():
+        sp.set_visible(False)
+    ax1.set_facecolor(PAPER)
+    tag(bg, 92, 470, "30〜34 歳男性の未婚率: どの働き方でも上がった", BLUE)
+
+    ax2 = fig.add_axes([0.58, 0.18, 0.37, 0.42])
+    b = res.b
+    parts = [
+        ("同じ働き方の中で\n未婚が増えた分", 100 * b.rate, BLUE),
+        ("年齢構成", 100 * b.age_comp, MUTED),
+        ("働き方の構成\n（正社員に寄った）", 100 * b.emp_comp, ORANGE),
+    ]
+    ys = range(len(parts))
+    ax2.barh(list(ys), [v for _, v, _ in parts], color=[c for _, _, c in parts], height=0.6, lw=0)
+    for i, (_lab, v, c) in enumerate(parts):
+        ax2.text(
+            v + (0.15 if v >= 0 else -0.15),
+            i,
+            f"{v:+.1f}",
+            color=c,
+            fontsize=12,
+            va="center",
+            ha="left" if v >= 0 else "right",
+            fontweight="bold",
+        )
+    ax2.set_yticks(list(ys))
+    ax2.set_yticklabels([lab for lab, _, _ in parts], fontsize=11, color=INK)
+    ax2.axvline(0, color=INK, lw=1)
+    ax2.set_xlim(-2.5, 7)
+    ax2.set_xticks([])
+    ax2.tick_params(length=0)
+    for sp in ax2.spines.values():
+        sp.set_visible(False)
+    ax2.set_facecolor(PAPER)
+    ax2.invert_yaxis()
+    tag(
+        bg,
+        770,
+        470,
+        f"25〜39 歳男性の未婚率 +{100 * b.total:.1f} ポイントの内訳（2012→2022）",
+        ORANGE,
+    )
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: 就業構造基本調査（総務省）を加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-18-note-what-blocks-family-formation.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     for p in (
         growth_fertility(),
@@ -676,5 +778,6 @@ if __name__ == "__main__":
         growth_fertility_h8(),
         growth_fertility_h8_part4(),
         growth_fertility_h9_part5(),
+        growth_fertility_h10_part6(),
     ):
         print(p)
