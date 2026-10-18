@@ -52,6 +52,8 @@ H8D_ITEMS = len(unsdg.SERIES) + 1
 H8D_K_ITEMS = 1
 # H9-JP items: seven 人口統計資料集 workbooks + one 出生動向基本調査 PDF
 H9_JP_ITEMS = len(ipss.TABLES) + 1
+# H10-JP items: 就業構造基本調査 有業者 + 無業者 tables, four waves
+H10_JP_ITEMS = len(estat.MARITAL_EMPLOYMENT_TABLES)
 # H9 items: one Special Eurobarometer wave (JSON-LD first, volumes after) + one OECD SF2.5 xlsx
 H9_EB_OECD_ITEMS = len(ebm.SPECIAL_WAVES) + 1
 # H9 items: one 국가데이터처 출생통계 PDF + one Eurostat demo_frate request per ORDER_GEOS country
@@ -104,6 +106,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H8D_ITEMS
         + H8D_K_ITEMS
         + H9_JP_ITEMS
+        + H10_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
     )
@@ -146,6 +149,8 @@ def test_fetch_also_stores_country_metadata() -> None:
                 "hdr25_",
                 moekr.RAW_NAME,
                 "T04-",
+                "shugyo_employment_",
+                "shugyo_not_employed_",
                 ipss.PDF_RAW_NAME,
                 "eb_EBS",
                 oecd_family.RAW_NAME,
@@ -235,6 +240,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H8D_ITEMS  # H8d: two UN SDG + one HDR raw missing
         + H8D_K_ITEMS  # H8d-K: raw missing
         + H9_JP_ITEMS
+        + H10_JP_ITEMS
         + H9_EB_OECD_ITEMS
         + H9_ITEMS  # H9: one births PDF + 13 demo_frate raws missing
     )
@@ -278,6 +284,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H8D_ITEMS
         + H8D_K_ITEMS
         + H9_JP_ITEMS
+        + H10_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
     )
@@ -641,6 +648,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H8D_ITEMS
         + H8D_K_ITEMS
         + H9_JP_ITEMS
+        + H10_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
     )
@@ -739,6 +747,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H8D_ITEMS
         + H8D_K_ITEMS
         + H9_JP_ITEMS
+        + H10_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
     )
@@ -2056,3 +2065,104 @@ def test_stage_h9_eu_without_any_raw_writes_nothing_and_mart_is_skipped() -> Non
     assert any(
         s.startswith(f"{pipeline.EU_FRATE_TABLE}: staged table missing") for s in result.skipped
     )
+
+
+# ---------------------------------------------------------------- H10-JP: 就業構造基本調査 4 waves
+
+
+def h10_jp_responses() -> dict[str, bytes]:
+    out = {}
+    for t in estat.MARITAL_EMPLOYMENT_TABLES:
+        ext = t.raw_name.rsplit(".", 1)[1]
+        out[t.url] = (FIXTURES / f"estat_{t.key}.{ext}").read_bytes()
+    return out
+
+
+def test_fetch_h10_jp_stores_eight_shugyo_files_with_estat_license() -> None:
+    ctx = make_ctx(h10_jp_responses())
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    expected = tuple(
+        f"growth-fertility/estat_shugyo/{t.raw_name}" for t in estat.MARITAL_EMPLOYMENT_TABLES
+    )
+    assert result.written == expected
+    recs = ctx.raw.records()
+    assert len(recs) == H10_JP_ITEMS
+    assert all(r.license == estat.LICENSE and r.source == "estat_shugyo" for r in recs)
+    assert {r.url for r in recs} == {t.url for t in estat.MARITAL_EMPLOYMENT_TABLES}
+    assert not any(
+        s.startswith(("shugyo_employment_", "shugyo_not_employed_")) for s in result.skipped
+    )
+    result = PIPELINE.run(Stage.FETCH, make_ctx({}))
+    assert sum(
+        s.startswith(("shugyo_employment_", "shugyo_not_employed_")) for s in result.skipped
+    ) == (H10_JP_ITEMS)
+
+
+def test_stage_h10_jp_writes_one_long_table_with_every_wave() -> None:
+    ctx = make_ctx(h10_jp_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.H10_JP_TABLE,)
+    assert pipeline.H10_JP_TABLE == "staged/estat/shugyo_marital_by_employment"
+    rows = ctx.tables.read_table(pipeline.H10_JP_TABLE)
+    assert {r["survey_year"] for r in rows} == {2007, 2012, 2017, 2022}
+    # 2022/2017/2012: 8 employed-side items + not_employed + total_pop; 2007 has no nonregular
+    assert len(rows) == 3 * 2 * 16 * (10 + 10 + 10 + 9)
+    by = {
+        (r["survey_year"], r["sex"], r["marital"], r["age_class"], r["employment"]): r["persons"]
+        for r in rows
+    }
+    assert len(by) == len(rows)
+    assert by[(2022, "male", "never_married", "30-34", "total_pop")] == 1_447_600 + 236_500
+    assert by[(2007, "male", "total", "30-34", "regular")] == 3_568_200
+    assert all(r["source"] == "estat_shugyo" for r in rows)
+    assert not any(
+        s.startswith(("shugyo_employment_", "shugyo_not_employed_", "wave "))
+        for s in result.skipped
+    )
+
+
+def test_stage_h10_jp_skips_a_wave_whose_raw_is_missing_or_inconsistent_and_keeps_the_rest() -> (
+    None
+):
+    responses = h10_jp_responses()
+    tables = {t.key: t for t in estat.MARITAL_EMPLOYMENT_TABLES}
+    del responses[tables["shugyo_not_employed_2012"].url]  # 2012: one raw missing -> not staged
+    responses[tables["shugyo_employment_2017"].url] = responses[
+        tables["shugyo_not_employed_2017"].url
+    ]  # 2017: wrong table -> layout error
+    ctx = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.H10_JP_TABLE,)
+    rows = ctx.tables.read_table(pipeline.H10_JP_TABLE)
+    assert {r["survey_year"] for r in rows} == {2007, 2022}
+    assert any(s.startswith("shugyo_not_employed_2012.xls: raw missing") for s in result.skipped)
+    assert any(s.startswith("wave 2017: layout not recognised (") for s in result.skipped)
+    # nothing fetched -> nothing staged, every raw reported
+    result = PIPELINE.run(Stage.STAGE, make_ctx({}))
+    assert pipeline.H10_JP_TABLE not in result.written
+    assert (
+        sum(
+            s.startswith(("shugyo_employment_", "shugyo_not_employed_")) and "raw missing" in s
+            for s in result.skipped
+        )
+        == H10_JP_ITEMS
+    )
+
+
+def test_mart_h10_jp_sorts_the_staged_rows_and_is_skipped_without_them() -> None:
+    ctx = make_ctx(h10_jp_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    PIPELINE.run(Stage.STAGE, ctx)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.H10_JP_MART,)
+    assert pipeline.H10_JP_MART == "marts/jp_marital_by_employment"
+    mart = ctx.tables.read_table(pipeline.H10_JP_MART)
+    assert len(mart) == 3 * 2 * 16 * 39
+    assert [r["survey_year"] for r in mart] == sorted(r["survey_year"] for r in mart)
+    assert mart[0]["survey_year"] == 2007 and mart[0]["employment"] == "total_pop"
+    assert (mart[0]["sex"], mart[0]["age_class"], mart[0]["marital"]) == ("total", "total", "total")
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert pipeline.H10_JP_MART not in result.written
+    assert f"{pipeline.H10_JP_TABLE}: staged table missing (run stage)" in result.skipped

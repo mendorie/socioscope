@@ -18,12 +18,14 @@ import io
 import re
 import unicodedata
 import zipfile
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from xml.etree import ElementTree as ET
 
+import xlrd
 from pydantic import BaseModel, ConfigDict
+from xlrd.biffh import XLRDError
 
 BASE = "https://www.e-stat.go.jp/stat-search/file-download"
 LICENSE = (
@@ -49,6 +51,27 @@ class TableKind(StrEnum):
     SHUGYO_MARITAL_AGE_INCOME = (
         "shugyo_marital_age_income"  # 有業者数，男女・配偶関係・年齢・所得別 (persons, xlsx)
     )
+    MARITAL_EMPLOYMENT = (
+        "marital_employment"  # H10: 有業者数，男女・配偶関係・年齢・雇用形態別 (persons)
+    )
+    MARITAL_NOT_EMPLOYED = "marital_not_employed"  # H10: 無業者数，男女・配偶関係・年齢別 (persons)
+
+
+_SHUGYO_KINDS = frozenset(
+    {
+        TableKind.SHUGYO_MARITAL_AGE_INCOME,
+        TableKind.MARITAL_EMPLOYMENT,
+        TableKind.MARITAL_NOT_EMPLOYED,
+    }
+)
+
+
+class Layout(StrEnum):
+    """Physical layout of a 就業構造基本調査 workbook (the survey changed exports twice)."""
+
+    TIDY = "tidy"  # 2022: one dimension-header row (階層レベル columns), item row above it
+    TIDY_JE = "tidy_je"  # 2017: as TIDY plus row numbers / J-E flags and English dimension columns
+    WIDE_XLS = "wide_xls"  # 2012 / 2007 .xls: one sheet per panel, value groups across columns
 
 
 @dataclass(frozen=True)
@@ -59,15 +82,19 @@ class Table:
     survey_year: int
     population: str | None = None  # INCOME_DIST_TS only: "all" | "with_children"
     file_kind: int = FILE_KIND_CSV
+    layout: Layout = Layout.TIDY
 
     @property
     def raw_name(self) -> str:
-        ext = "csv" if self.file_kind == FILE_KIND_CSV else "xlsx"
+        if self.file_kind == FILE_KIND_CSV:
+            ext = "csv"
+        else:
+            ext = "xls" if self.layout is Layout.WIDE_XLS else "xlsx"
         return f"{self.key}.{ext}"
 
     @property
     def source(self) -> str:
-        return SOURCE_SHUGYO if self.kind is TableKind.SHUGYO_MARITAL_AGE_INCOME else SOURCE
+        return SOURCE_SHUGYO if self.kind in _SHUGYO_KINDS else SOURCE
 
     @property
     def url(self) -> str:
@@ -562,7 +589,8 @@ class AgeClass(BaseModel):
 
 
 _RE_CODE_PREFIX = re.compile(r"^\d+_")
-_RE_AGE_RANGE = re.compile(r"^(\d+)[~〜-](\d+)歳$")
+_RE_FOOTNOTE = re.compile(r"\d\)")
+_RE_AGE_RANGE = re.compile(r"^(\d+)[~〜-](\d+)歳?$")
 _RE_AGE_OVER = re.compile(r"^(\d+)歳以上$")
 _RE_SHUGYO_RANGE = re.compile(r"^(\d+)[~〜-](\d+)万円$")
 
@@ -573,7 +601,9 @@ def _strip_code(label: str) -> str:
 
 
 def parse_age_class(label: str) -> AgeClass | None:
-    c = _strip_code(label)
+    """'03_25～29歳', '20～24' (wide-xls column headers) and '15 ～ 19 歳 1)' (footnote marker)
+    all parse; education or size labels return None."""
+    c = _RE_FOOTNOTE.sub("", _strip_code(label))
     if c in {"総数", "合計"}:
         return AgeClass(code="total", lower=None, upper=None)
     if m := _RE_AGE_RANGE.match(c):
@@ -706,3 +736,617 @@ def shugyo_marital_age_income_rows(payload: bytes, table: Table) -> list[dict[st
         }
         for r in parse_shugyo_marital_age_income(payload)
     ]
+
+
+# ------------------ H10: 就業構造基本調査 雇用形態×配偶関係×年齢×性, four waves, three layouts
+#
+# Two tables per wave: 有業者 by 従業上の地位・雇用形態 (第16表 2022/2017/2012, 第14表 2007) and
+# 無業者 (第118表 2022, 第99表 2017, 第93表 2012, 第86表 2007), both by 男女 × 配偶関係 (総数 /
+# うち未婚) × 年齢 (5-year classes). The 15 歳以上人口 denominator is 有業者 + 無業者
+# (``total_pop``): the 第1-1表 配偶関係 columns only cover one-person-household heads, so they
+# are not used. 教育 / 従業者規模 / 就業希望 / 前職 are kept at 総数 only.
+
+EMPLOYMENT_ORDER: tuple[str, ...] = (
+    "total_pop",  # 有業者 + 無業者 (derived)
+    "employed",  # 有業者 総数
+    "employee",  # うち雇用者 (会社などの役員を含む)
+    "regular",  # うち正規の職員・従業員
+    "nonregular",  # うち非正規の職員・従業員 (not published in the 2007 table)
+    "part_time",
+    "arbeit",
+    "dispatched",
+    "contract",
+    "not_employed",  # 無業者
+)
+_EMPLOYMENT_ITEMS: dict[str, str | None] = {
+    "総数": "employed",
+    "うち雇用者": "employee",
+    "うち雇用者総数": "employee",  # 2007 wide header: うち雇用者 over a 総数 sub-header
+    "うち起業者": None,  # 起業の有無 is orthogonal to 雇用形態; dropped
+    "うち正規の職員・従業員": "regular",
+    "うち非正規の職員・従業員": "nonregular",
+    "うちパート": "part_time",
+    "うちアルバイト": "arbeit",
+    "うち労働者派遣事業所の派遣社員": "dispatched",
+    "うち労働派遣事業所の派遣社員": "dispatched",  # 2007 spelling
+    "うち契約社員": "contract",
+}
+_NOT_EMPLOYED_ITEMS: dict[str, str | None] = {
+    "総数": "not_employed",
+    "家事をしている者": None,
+    "通学している者": None,
+    "その他": None,
+}
+_SEX_ORDER: tuple[str, ...] = ("total", "male", "female")
+_MARITAL_ORDER: tuple[str, ...] = ("total", "never_married")
+_AGE_CODES: tuple[str, ...] = ("total", *(f"{lo}-{lo + 4}" for lo in range(15, 85, 5)), "85-")
+_TOLERANCE = 0.005  # relative; plus 100 persons per summed cell (cells are rounded to 100)
+_ROUNDING = 100.0
+_RE_ASCII = re.compile(r"[A-Za-z(),.'/-]+")
+_TITLE_MUSTS: dict[TableKind, tuple[str, str]] = {
+    TableKind.MARITAL_EMPLOYMENT: ("配偶関係", "雇用形態"),
+    TableKind.MARITAL_NOT_EMPLOYED: ("配偶関係", "就業希望"),
+}
+
+
+def _h10(key: str, stat_inf_id: str, kind: TableKind, year: int, layout: Layout) -> Table:
+    return Table(key, stat_inf_id, kind, year, file_kind=FILE_KIND_EXCEL, layout=layout)
+
+
+MARITAL_EMPLOYMENT_TABLES: tuple[Table, ...] = (
+    _h10("shugyo_employment_2022", "000040077274", TableKind.MARITAL_EMPLOYMENT, 2022, Layout.TIDY),
+    _h10(
+        "shugyo_not_employed_2022",
+        "000040077389",
+        TableKind.MARITAL_NOT_EMPLOYED,
+        2022,
+        Layout.TIDY,
+    ),
+    _h10(
+        "shugyo_employment_2017", "000031738323", TableKind.MARITAL_EMPLOYMENT, 2017, Layout.TIDY_JE
+    ),
+    _h10(
+        "shugyo_not_employed_2017",
+        "000031729447",
+        TableKind.MARITAL_NOT_EMPLOYED,
+        2017,
+        Layout.TIDY_JE,
+    ),
+    _h10(
+        "shugyo_employment_2012",
+        "000021291492",
+        TableKind.MARITAL_EMPLOYMENT,
+        2012,
+        Layout.WIDE_XLS,
+    ),
+    _h10(
+        "shugyo_not_employed_2012",
+        "000021291719",
+        TableKind.MARITAL_NOT_EMPLOYED,
+        2012,
+        Layout.WIDE_XLS,
+    ),
+    _h10(
+        "shugyo_employment_2007",
+        "000001234529",
+        TableKind.MARITAL_EMPLOYMENT,
+        2007,
+        Layout.WIDE_XLS,
+    ),
+    _h10(
+        "shugyo_not_employed_2007",
+        "000001234601",
+        TableKind.MARITAL_NOT_EMPLOYED,
+        2007,
+        Layout.WIDE_XLS,
+    ),
+)
+
+
+class MaritalRow(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    sex: str  # "total" | "male" | "female"
+    marital: str  # "total" | "never_married"
+    age_class: AgeClass
+    employment: str  # one of EMPLOYMENT_ORDER except total_pop
+    persons: float | None
+
+
+def _label(cell: str) -> str:
+    """NFKC, no whitespace, no DB code prefix, no footnote markers ('うち雇用者 3)')."""
+    return _RE_FOOTNOTE.sub("", _strip_code(cell))
+
+
+def _jp_label(cell: str) -> str:
+    """_label without the English fragments the wide .xls headers interleave."""
+    return _RE_ASCII.sub("", _label(cell))
+
+
+def _items_of(kind: TableKind) -> dict[str, str | None]:
+    return _EMPLOYMENT_ITEMS if kind is TableKind.MARITAL_EMPLOYMENT else _NOT_EMPLOYED_ITEMS
+
+
+def _employment_of(label: str, kind: TableKind) -> str | None:
+    items = _items_of(kind)
+    if label not in items:
+        msg = f"unexpected employment item {label!r}"
+        raise ValueError(msg)
+    return items[label]
+
+
+def _check_h10_title(rows: Sequence[dict[int, str]], kind: TableKind) -> None:
+    head = _norm("".join(c for r in rows[:8] for c in r.values()))
+    for must in _TITLE_MUSTS[kind]:
+        if must not in head:
+            msg = f"table title does not mention {must!r}; wrong table?"
+            raise ValueError(msg)
+
+
+def _check_panels(rows: Sequence[MaritalRow]) -> None:
+    """Every (sex, marital, employment) must carry the 16 age classes exactly once."""
+    seen: dict[tuple[str, str, str], list[str]] = {}
+    for r in rows:
+        seen.setdefault((r.sex, r.marital, r.employment), []).append(r.age_class.code)
+    panels = {(s, m) for s, m, _ in seen}
+    if panels != {(s, m) for s in _SEX_ORDER for m in _MARITAL_ORDER}:
+        msg = f"incomplete 男女×配偶関係 panels: {sorted(panels)}"
+        raise ValueError(msg)
+    for key, codes in seen.items():
+        if sorted(codes) != sorted(_AGE_CODES):
+            msg = f"age classes incomplete or duplicated for {key}: {sorted(codes)}"
+            raise ValueError(msg)
+
+
+# ---------------------------------------------------------------- tidy (2022) / tidy J-E (2017)
+
+_TIDY_DIMS = {"男女": "sex", "配偶関係": "marital", "年齢": "age", "地域区分": "region"}
+_TIDY_FILTER_DIMS = frozenset(
+    {"教育", "従業者規模", "就業希望の有無・求職活動の有無", "前職の有無・離職期間"}
+)
+_RE_ITEM = re.compile(r"^\d+_")
+
+
+def _tidy_header(rows: Sequence[dict[int, str]]) -> tuple[int, dict[str, int], list[int], int]:
+    """(header row index, role -> column, filter columns, first value column)."""
+    for i, r in enumerate(rows):
+        texts = {c: _norm(v) for c, v in r.items()}
+        if not {"男女", "配偶関係", "年齢"} <= set(texts.values()):
+            continue
+        roles: dict[str, int] = {}
+        filters: list[int] = []
+        first_value: int | None = None
+        for c, t in sorted(texts.items()):
+            if t in _TIDY_DIMS:
+                roles.setdefault(_TIDY_DIMS[t], c)
+            elif t in _TIDY_FILTER_DIMS:
+                filters.append(c)
+            elif not t:
+                first_value = c if first_value is None else first_value
+            elif t == "階層レベル" or t.isascii():
+                continue
+            else:
+                msg = f"unknown dimension column {t!r}"
+                raise ValueError(msg)
+        if "region" not in roles:
+            msg = "地域区分 column missing from the dimension header"
+            raise ValueError(msg)
+        if first_value is None:
+            first_value = max(texts) + 1
+        return i, roles, filters, first_value
+    msg = "dimension header row (男女/配偶関係/年齢) not found"
+    raise ValueError(msg)
+
+
+def _tidy_items(
+    rows: Sequence[dict[int, str]], header: int, first_value: int, kind: TableKind
+) -> dict[int, str]:
+    """Value column -> employment code, from the 項目名 row above the header."""
+    for i in range(header - 1, -1, -1):
+        if _RE_ITEM.match(_norm(rows[i].get(first_value, ""))):
+            out: dict[int, str] = {}
+            for c, v in rows[i].items():
+                if c >= first_value and _RE_ITEM.match(_norm(v)):
+                    emp = _employment_of(_label(v), kind)
+                    if emp is not None:
+                        out[c] = emp
+            if not out:
+                msg = "item row carries no usable column"
+                raise ValueError(msg)
+            return out
+    msg = "item row (項目名: 0_総数 ...) not found above the dimension header"
+    raise ValueError(msg)
+
+
+def _parse_tidy(payload: bytes, table: Table) -> list[MaritalRow]:
+    rows = xlsx_rows(payload)
+    _check_h10_title(rows, table.kind)
+    header, roles, filters, first_value = _tidy_header(rows)
+    items = _tidy_items(rows, header, first_value, table.kind)
+    out: list[MaritalRow] = []
+    for r in rows[header + 1 :]:
+        if _strip_code(r.get(roles["region"], "")) != "全国":
+            continue
+        if any(_strip_code(r.get(c, "")) != "総数" for c in filters):
+            continue
+        sex, marital = (
+            _strip_code(r.get(roles["sex"], "")),
+            _strip_code(r.get(roles["marital"], "")),
+        )
+        if sex not in _SHUGYO_SEX or marital not in _SHUGYO_MARITAL:
+            msg = f"unexpected 男女/配偶関係 labels {sex!r}/{marital!r}"
+            raise ValueError(msg)
+        age = parse_age_class(r.get(roles["age"], ""))
+        if age is None:
+            msg = f"unexpected 年齢 label {r.get(roles['age'])!r}"
+            raise ValueError(msg)
+        out.extend(
+            MaritalRow(
+                sex=_SHUGYO_SEX[sex],
+                marital=_SHUGYO_MARITAL[marital],
+                age_class=age,
+                employment=emp,
+                persons=_number(r.get(c, "")),
+            )
+            for c, emp in items.items()
+        )
+    return out
+
+
+# ---------------------------------------------------------------- wide .xls (2012 / 2007)
+
+
+def xls_sheets(payload: bytes) -> list[tuple[str, list[dict[int, str]]]]:
+    """Every worksheet of a legacy .xls as (name, rows of {1-based column: text}) via xlrd.
+
+    Integral floats come back as integer text ('64420700'), other cells as their text; empty
+    cells are absent. ``ValueError`` when *payload* is not a BIFF workbook.
+    """
+    try:
+        book = xlrd.open_workbook(file_contents=payload)
+    except XLRDError as e:
+        msg = "payload is not an xls workbook"
+        raise ValueError(msg) from e
+    out: list[tuple[str, list[dict[int, str]]]] = []
+    for sheet in book.sheets():
+        rows: list[dict[int, str]] = []
+        for r in range(sheet.nrows):
+            cells: dict[int, str] = {}
+            for c in range(sheet.ncols):
+                v = sheet.cell_value(r, c)
+                if v == "" or v is None:
+                    continue
+                if isinstance(v, float):
+                    cells[c + 1] = str(int(v)) if v.is_integer() else repr(v)
+                else:
+                    cells[c + 1] = str(v)
+            rows.append(cells)
+        out.append((sheet.name, rows))
+    return out
+
+
+_C_LABEL = 8  # row labels live in column H of every wide sheet
+_RE_PANEL = re.compile(r"^(総数|男|女)(総数|うち未婚)$")
+
+
+def _wide_panel(rows: Sequence[dict[int, str]], header: int) -> tuple[str, str]:
+    """(sex, marital) of one 第16表/第14表 sheet from the labels above the header."""
+    parts = [
+        t
+        for r in rows[:header]
+        if re.fullmatch(r"(総数|男|女|うち未婚)+", t := _jp_label(r.get(_C_LABEL, "")))
+    ]
+    m = _RE_PANEL.match("".join(parts))
+    if m is None:
+        msg = f"panel label (男女 × 配偶関係) not recognised: {parts}"
+        raise ValueError(msg)
+    return _SHUGYO_SEX[m.group(1)], _SHUGYO_MARITAL[m.group(2)]
+
+
+def _wide_group_columns(
+    rows: Sequence[dict[int, str]], header: int, label_start: int, kind: TableKind
+) -> dict[int, str]:
+    """Value column (従業者規模 = 総数 of each group) -> employment code.
+
+    The group label is the Japanese text of the header rows over the group's column span
+    (English fragments and footnotes dropped), which also absorbs the 2007 '総数' sub-header.
+    """
+    starts = sorted(c for c, v in rows[header].items() if _norm(v) == "総数")
+    if not starts:
+        msg = "従業者規模 header row has no 総数 column"
+        raise ValueError(msg)
+    out: dict[int, str] = {}
+    for n, c in enumerate(starts):
+        end = starts[n + 1] if n + 1 < len(starts) else c + 14
+        label = "".join(
+            _jp_label(rows[r].get(k, "")) for r in range(label_start, header) for k in range(c, end)
+        )
+        emp = _employment_of(label, kind)
+        if emp is not None:
+            out[c] = emp
+    return out
+
+
+def _parse_wide_employment(payload: bytes, table: Table) -> list[MaritalRow]:
+    out: list[MaritalRow] = []
+    for _name, rows in xls_sheets(payload):
+        _check_h10_title(rows, table.kind)
+        header = next(
+            (
+                i
+                for i, r in enumerate(rows)
+                if _norm(r.get(10, "")) == "総数" and _norm(r.get(11, "")) == "1人"
+            ),
+            None,
+        )
+        label_start = next(
+            (i for i, r in enumerate(rows) if "従業上の地位" in _norm(r.get(_C_LABEL, ""))), None
+        )
+        if header is None or label_start is None or label_start >= header:
+            msg = "従業者規模 header row or 従業上の地位 label row not found"
+            raise ValueError(msg)
+        sex, marital = _wide_panel(rows, header)
+        columns = _wide_group_columns(rows, header, label_start, table.kind)
+        for r in rows[header + 1 :]:
+            label = r.get(_C_LABEL, "")
+            if not _norm(label):
+                continue
+            age = parse_age_class(label)
+            if age is None:  # 教育 sub-rows under each age
+                continue
+            out.extend(
+                MaritalRow(
+                    sex=sex,
+                    marital=marital,
+                    age_class=age,
+                    employment=emp,
+                    persons=_number(r.get(c, "")),
+                )
+                for c, emp in columns.items()
+            )
+    return out
+
+
+def _parse_wide_not_employed(payload: bytes, table: Table) -> list[MaritalRow]:
+    """第93表 / 第86表: first sheet (就業状態 総数); 男女 blocks across columns, each with a
+    配偶関係 うち未婚 sub-block except 総数 (both sexes), which is derived as male + female."""
+    _name, rows = xls_sheets(payload)[0]
+    _check_h10_title(rows, table.kind)
+    header = next(
+        (
+            i
+            for i, r in enumerate(rows)
+            if {"男女", "配偶関係"} <= set(re.findall(r"男女|配偶関係", _norm(r.get(_C_LABEL, ""))))
+        ),
+        None,
+    )
+    if header is None:
+        msg = "header row (男女 / 配偶関係 / 前職の有無) not found"
+        raise ValueError(msg)
+    if not any(_jp_label(r.get(_C_LABEL, "")) == "総数" for r in rows[:header]):
+        msg = "first sheet is not the 就業状態 総数 panel"
+        raise ValueError(msg)
+    starts = {
+        c: _SHUGYO_SEX[t]
+        for c, v in rows[header].items()
+        if c >= 10 and (t := _jp_label(v)) in _SHUGYO_SEX
+    }
+    if sorted(starts.values()) != sorted(_SEX_ORDER):
+        msg = f"男女 blocks not found: {starts}"
+        raise ValueError(msg)
+    never = sorted(c for c, v in rows[header + 1].items() if _jp_label(v) == "うち未婚")
+    columns: dict[tuple[str, str], int] = {}
+    ordered = sorted(starts)
+    for n, s in enumerate(ordered):
+        end = ordered[n + 1] if n + 1 < len(ordered) else 10**6
+        if not any(
+            _jp_label(r.get(s, "")) == "総数" and _jp_label(r.get(s + 1, "")) == "前職あり"
+            for r in rows[header + 1 : header + 6]
+        ):
+            msg = f"前職の有無 総数 column not found at column {s}"
+            raise ValueError(msg)
+        columns[(starts[s], "total")] = s
+        hits = [c for c in never if s < c < end]
+        if len(hits) == 1:
+            columns[(starts[s], "never_married")] = hits[0]
+        elif hits or starts[s] != "total":
+            msg = f"うち未婚 block for {starts[s]} not found uniquely: {hits}"
+            raise ValueError(msg)
+    out: list[MaritalRow] = []
+    started = False
+    for r in rows[header + 1 :]:
+        label = r.get(_C_LABEL, "")
+        if not _norm(label):
+            continue
+        age = parse_age_class(label)
+        if age is None:
+            if started:
+                break  # the next 就業希望 / 教育 block repeats the ages
+            continue
+        started = True
+        values = {key: _number(r.get(c, "")) for key, c in columns.items()}
+        m, f = values.get(("male", "never_married")), values.get(("female", "never_married"))
+        values[("total", "never_married")] = None if m is None or f is None else m + f
+        out.extend(
+            MaritalRow(sex=s, marital=mar, age_class=age, employment="not_employed", persons=v)
+            for (s, mar), v in values.items()
+        )
+    return out
+
+
+# ---------------------------------------------------------------- dispatch, wave checks, mart
+
+
+def parse_marital_employment(payload: bytes, table: Table) -> list[MaritalRow]:
+    if table.kind not in (TableKind.MARITAL_EMPLOYMENT, TableKind.MARITAL_NOT_EMPLOYED):
+        msg = f"{table.key} is not a 就業構造基本調査 marital×employment table"
+        raise ValueError(msg)
+    if table.layout is Layout.WIDE_XLS:
+        rows = (
+            _parse_wide_employment(payload, table)
+            if table.kind is TableKind.MARITAL_EMPLOYMENT
+            else _parse_wide_not_employed(payload, table)
+        )
+    else:
+        rows = _parse_tidy(payload, table)
+    _check_panels(rows)
+    return rows
+
+
+def _marital_dict(r: MaritalRow, table: Table) -> dict[str, object]:
+    return {
+        "survey_year": table.survey_year,
+        "sex": r.sex,
+        "marital": r.marital,
+        "age_class": r.age_class.code,
+        "age_lower": r.age_class.lower,
+        "age_upper": r.age_class.upper,
+        "employment": r.employment,
+        "persons": r.persons,
+        "source": table.source,
+        "stat_inf_id": table.stat_inf_id,
+    }
+
+
+def marital_employment_rows(payload: bytes, table: Table) -> list[dict[str, object]]:
+    """Staged rows of one table (survey year, sex, marital, age class, employment, persons)."""
+    return [_marital_dict(r, table) for r in parse_marital_employment(payload, table)]
+
+
+_Key = tuple[str, str, str, str]
+
+
+def _wave_index(rows: Iterable[dict[str, object]]) -> dict[_Key, float | None]:
+    by: dict[_Key, float | None] = {}
+    for r in rows:
+        key = (str(r["sex"]), str(r["marital"]), str(r["age_class"]), str(r["employment"]))
+        if key in by:
+            msg = f"duplicate key {key}"
+            raise ValueError(msg)
+        v = r["persons"]
+        by[key] = None if v is None else float(str(v))
+    return by
+
+
+def with_total_pop(rows: Sequence[dict[str, object]]) -> list[dict[str, object]]:
+    """Append ``total_pop`` = employed + not_employed per (sex, marital, age); None if either
+    side is unpublished. The row inherits the employed row's provenance columns."""
+    by = _wave_index(rows)
+    out = list(rows)
+    for r in rows:
+        if r["employment"] != "employed":
+            continue
+        ne = by.get((str(r["sex"]), str(r["marital"]), str(r["age_class"]), "not_employed"))
+        emp = by[(str(r["sex"]), str(r["marital"]), str(r["age_class"]), "employed")]
+        total = None if emp is None or ne is None else emp + ne
+        out.append({**r, "employment": "total_pop", "persons": total})
+    return out
+
+
+def _close(a: float, b: float, terms: int) -> bool:
+    return abs(a - b) <= max(_TOLERANCE * max(abs(a), abs(b)), _ROUNDING * terms)
+
+
+def check_marital_wave(rows: Iterable[dict[str, object]]) -> None:
+    """Internal consistency of one survey wave; ``ValueError`` on the first violation.
+
+    (a) うち未婚 ≤ 総数, (b) 正規 + 非正規 (or the published sub-types when 非正規 is absent)
+    ≤ 雇用者, (c) Σ age classes = 総数 within 0.5 %, (d) male + female = 総数 within 0.5 %.
+    Unpublished (None) cells are skipped.
+    """
+    by = _wave_index(rows)
+    for (sex, marital, age, emp), v in by.items():
+        if marital != "total" or v is None:
+            continue
+        nm = by.get((sex, "never_married", age, emp))
+        if nm is not None and nm > v:
+            msg = f"うち未婚 exceeds 総数 for {sex}/{age}/{emp}: {nm} > {v}"
+            raise ValueError(msg)
+    cells = {(s, m, a) for s, m, a, _ in by}
+    for sex, marital, age in sorted(cells):
+        employee = by.get((sex, marital, age, "employee"))
+        parts = (
+            ["regular", "nonregular"]
+            if (sex, marital, age, "nonregular") in by
+            else ["regular", "part_time", "arbeit", "dispatched", "contract"]
+        )
+        values = [by.get((sex, marital, age, p)) for p in parts]
+        if employee is None or any(x is None for x in values):
+            continue
+        total = sum(x for x in values if x is not None)
+        if total > employee * (1 + _TOLERANCE):
+            msg = f"正規+非正規 exceeds 雇用者 for {sex}/{marital}/{age}: {total} > {employee}"
+            raise ValueError(msg)
+    series = {(s, m, e) for s, m, _, e in by}
+    for sex, marital, emp in sorted(series):
+        age_total = by.get((sex, marital, "total", emp))
+        classes = [
+            v for (s, m, a, e), v in by.items() if (s, m, e) == (sex, marital, emp) and a != "total"
+        ]
+        if age_total is None or not classes or any(v is None for v in classes):
+            continue
+        s = sum(v for v in classes if v is not None)
+        if not _close(s, age_total, len(classes)):
+            msg = f"sum of age classes != 総数 for {sex}/{marital}/{emp}: {s} vs {age_total}"
+            raise ValueError(msg)
+    for marital, age, emp in sorted({(m, a, e) for _, m, a, e in by}):
+        t, m, f = (by.get((sx, marital, age, emp)) for sx in _SEX_ORDER)
+        if t is None or m is None or f is None:
+            continue
+        if not _close(m + f, t, 2):
+            msg = f"male + female != total for {marital}/{age}/{emp}: {m} + {f} vs {t}"
+            raise ValueError(msg)
+
+
+def marital_wave_rows(
+    employment_payload: bytes,
+    employment_table: Table,
+    not_employed_payload: bytes,
+    not_employed_table: Table,
+) -> list[dict[str, object]]:
+    """One wave: both tables parsed, ``total_pop`` added, consistency checked (fail-closed)."""
+    if employment_table.kind is not TableKind.MARITAL_EMPLOYMENT:
+        msg = f"{employment_table.key} is not the 有業者 table"
+        raise ValueError(msg)
+    if not_employed_table.kind is not TableKind.MARITAL_NOT_EMPLOYED:
+        msg = f"{not_employed_table.key} is not the 無業者 table"
+        raise ValueError(msg)
+    if employment_table.survey_year != not_employed_table.survey_year:
+        msg = (
+            f"survey_year mismatch: {employment_table.survey_year} vs "
+            f"{not_employed_table.survey_year}"
+        )
+        raise ValueError(msg)
+    rows = marital_employment_rows(employment_payload, employment_table)
+    rows += marital_employment_rows(not_employed_payload, not_employed_table)
+    rows = with_total_pop(rows)
+    check_marital_wave(rows)
+    return rows
+
+
+def _mart_sort_key(r: dict[str, object]) -> tuple[int, int, int, int, int]:
+    sex, emp, marital = str(r["sex"]), str(r["employment"]), str(r["marital"])
+    if sex not in _SEX_ORDER or emp not in EMPLOYMENT_ORDER or marital not in _MARITAL_ORDER:
+        msg = f"unexpected sex/employment/marital {sex!r}/{emp!r}/{marital!r}"
+        raise ValueError(msg)
+    lower = r["age_lower"]
+    return (
+        int(str(r["survey_year"])),
+        _SEX_ORDER.index(sex),
+        -1 if lower is None else int(str(lower)),
+        EMPLOYMENT_ORDER.index(emp),
+        _MARITAL_ORDER.index(marital),
+    )
+
+
+def build_marital_employment_mart(rows: Iterable[dict[str, object]]) -> list[dict[str, object]]:
+    """``marts/jp_marital_by_employment``: staged rows sorted by survey year, sex, age,
+    employment, marital; the key must be unique (``ValueError`` otherwise)."""
+    out = sorted((dict(r) for r in rows), key=_mart_sort_key)
+    seen: set[tuple[object, ...]] = set()
+    for r in out:
+        key = (r["survey_year"], r["sex"], r["age_class"], r["employment"], r["marital"])
+        if key in seen:
+            msg = f"duplicate key in jp_marital_by_employment: {key}"
+            raise ValueError(msg)
+        seen.add(key)
+    return out
