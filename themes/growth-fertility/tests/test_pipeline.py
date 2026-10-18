@@ -13,6 +13,7 @@ from theme_growth_fertility import (
     ipss,
     kostat,
     moekr,
+    nhk,
     oecd,
     oecd_eag,
     oecd_family,
@@ -67,6 +68,8 @@ H10_PREF_ITEMS = 3
 H10_ITEMS = len(oecd_labour.DATASETS) + 1 + len(es.family_formation_requests())
 # H11 items: one OECD SF2.4 births-outside-marriage xlsx
 H11_ITEMS = 1
+# H12 items: twelve 出生動向基本調査 報告書グラフデータ CSVs + one NHK 日本人の意識 JSON
+H12_ITEMS = len(ipss.GRAPH_FILES) + 1
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -121,6 +124,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H10_PREF_ITEMS
         + H10_ITEMS
         + H11_ITEMS  # H11: one SF2.4 xlsx missing
+        + H12_ITEMS  # H12: twelve graph CSVs + NHK JSON missing
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -175,6 +179,8 @@ def test_fetch_also_stores_country_metadata() -> None:
                 kostat.BIRTHS_RAW_NAME,
                 *(d.raw_name for d in oecd_labour.DATASETS),
                 oecd_labour.MARRIAGE_RAW_NAME,
+                "houkokuFigure",  # H12: 報告書グラフデータ CSVs
+                nhk.RAW_NAME,  # H12: NHK 日本人の意識 Q49
             )
         )
         for s in result.skipped
@@ -266,6 +272,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H10_PREF_ITEMS
         + H10_ITEMS  # H10: 4 OECD raws + 64 Eurostat raws missing
         + H11_ITEMS  # H11: one SF2.4 xlsx missing
+        + H12_ITEMS  # H12: twelve graph CSVs + NHK JSON missing
     )
 
 
@@ -313,6 +320,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H10_PREF_ITEMS
         + H10_ITEMS
         + H11_ITEMS  # H11: one SF2.4 xlsx missing
+        + H12_ITEMS  # H12: twelve graph CSVs + NHK JSON missing
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -680,6 +688,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H10_PREF_ITEMS
         + H10_ITEMS
         + H11_ITEMS  # H11: one SF2.4 xlsx missing
+        + H12_ITEMS  # H12: twelve graph CSVs + NHK JSON missing
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -782,6 +791,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H10_PREF_ITEMS
         + H10_ITEMS
         + H11_ITEMS  # H11: one SF2.4 xlsx missing
+        + H12_ITEMS  # H12: twelve graph CSVs + NHK JSON missing
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -2180,8 +2190,17 @@ def test_mart_h10_pref_builds_marriage_series_and_prefecture_panel_from_staged()
     assert "marts/jp_marriage_series" in result.written
     assert "marts/jp_prefecture_panel" in result.written
     series = ctx.tables.read_table("marts/jp_marriage_series")
-    assert len(series) == (4 * 352 - 6) + 270 + 24  # T06-24 four sheets (H11)
-    assert {r["table"] for r in series} == {"T06-24", "T06-12", "T06-23"}
+    # T06-24 four sheets (H11) + T06-12 + T06-23 + T06-01★ (H12: 135 years x 2 + 114 x 6)
+    assert len(series) == (4 * 352 - 6) + 270 + 24 + (135 * 2 + 114 * 6)
+    assert {r["table"] for r in series} == {"T06-24", "T06-12", "T06-23", "T06-01"}
+    assert (
+        next(
+            r["value"]
+            for r in series
+            if r["year"] == 2021 and r["metric"] == "first_marriages_wife"
+        )
+        == 417783
+    )
     panel = ctx.tables.read_table("marts/jp_prefecture_panel")
     staged_n = sum(
         len(ctx.tables.read_table(f"staged/ipss/{t.key}"))

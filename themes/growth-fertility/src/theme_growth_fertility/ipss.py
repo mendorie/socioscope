@@ -33,8 +33,19 @@ H10 (family-formation constraints) adds two more mart sides, see the ``# ---- H1
   never_married_m30_34 / never_married_f25_29, T12-37 never_married_at_50, T12-52 lfp by sex x
   age class, T12-53 unemployment_rate by sex. 全国 is ``pref_code`` "00"; the 47 prefectures must
   appear in JIS order.
+
+H12 (why marriage dropped out) appends, see the ``# ---- H12`` section:
+
+- T06-01★ (``marriage`` side): marriages_total / first_marriages_* / remarriages_* /
+  first_marriage_share_*_pct / crude_marriage_rate, every year 1884–2024.
+- 第16回出生動向基本調査 報告書グラフデータ CSV (``GRAPH_FILES``, CP932, tidy, PDL1.0):
+  ``graph_rows`` -> one long row per (figure, round / period / marriage year, sex, age, category,
+  item, sub) with count / share_pct / se / ci / denominator; ``build_attitudes_mart`` ->
+  ``marts/jp_marriage_attitudes``.
 """
 
+import csv
+import io
 import re
 import unicodedata
 from collections.abc import Callable, Sequence
@@ -130,6 +141,8 @@ TABLES: tuple[Table, ...] = (
     Table("t12_37", "T12-37", "T12-37(1)", "prefecture"),
     Table("t12_52", "T12-52", "T12-52(1)", "prefecture"),
     Table("t12_53", "T12-53", "T12-53", "prefecture"),
+    # ---- H12 (appended): 初婚・再婚別婚姻数, every year 1884–2024 on the second sheet
+    Table("t06_01", "T06-01", "T06-01★", "marriage"),
 )
 
 Rows = Sequence[dict[int, str]]
@@ -768,6 +781,17 @@ def build_births_mart(parts: dict[str, Sequence[dict[str, object]]]) -> list[dic
 # ---- H10: 婚姻時系列 (T06-24 / T06-12 / T06-23) と 都道府県表 (T12-33★ … T12-53) -----------
 # ============================================================================================
 
+# H12 T06-01★ (appended after the H10 / H11 metrics so the mart order of earlier rows is unchanged)
+FIRST_MARRIAGE_METRICS: tuple[str, ...] = (
+    "marriages_total",
+    "first_marriages_husband",
+    "remarriages_husband",
+    "first_marriages_wife",
+    "remarriages_wife",
+    "first_marriage_share_husband_pct",
+    "first_marriage_share_wife_pct",
+    "crude_marriage_rate",
+)
 MARRIAGE_METRICS: tuple[str, ...] = (
     "never_married_share",
     "mean_age_marriage_all",
@@ -777,6 +801,7 @@ MARRIAGE_METRICS: tuple[str, ...] = (
     "married_share",
     "widowed_share",
     "divorced_share",
+    *FIRST_MARRIAGE_METRICS,
 )
 SEX_LABELS: dict[str, str] = {"男": "M", "女": "F"}
 CENSUS_YEARS: tuple[int, ...] = (
@@ -1228,3 +1253,338 @@ def build_marriage_mart(parts: dict[str, Sequence[dict[str, object]]]) -> list[d
         )
 
     return _combine(parts, key, "(year, metric, sex, age_class)")
+
+
+# ============================================================================================
+# ---- H12: T06-01★ 初婚・再婚別婚姻数 と 第16回出生動向基本調査 報告書グラフデータ CSV ------------
+# ============================================================================================
+
+# ---- T06-01★: 初婚・再婚別婚姻数および婚姻率, every year 1884–2024 -------------------------------
+
+_T0601_FIRST_YEAR = 1884
+_T0601_LAST_YEAR = 2024
+_T0601_MISSING_YEARS: tuple[int, ...] = tuple(range(1941, 1947))  # no rows for the war years
+# (who, first metric, remarriage metric, share metric) checked as 初婚 + 再婚 <= 総数
+_T0601_SPLITS: tuple[tuple[str, str, str, str], ...] = (
+    (
+        "husband",
+        "first_marriages_husband",
+        "remarriages_husband",
+        "first_marriage_share_husband_pct",
+    ),
+    ("wife", "first_marriages_wife", "remarriages_wife", "first_marriage_share_wife_pct"),
+)
+# Upstream inconsistencies in the 2026 edition (checked 2026-10-18): 1918 夫 518,228 and 1926 妻
+# 538,388 exceed 総数 (500,580 / 502,847) and the printed share does not match either. Those
+# split / share cells are dropped (no row); any other year that fails the check is a ValueError.
+_T0601_KNOWN_INCONSISTENT: frozenset[tuple[int, str]] = frozenset(
+    {(1918, "husband"), (1926, "wife")}
+)
+# (column, metric, sex). 総数 and 婚姻率 are published every year; the 初婚 / 再婚 split and the
+# 初婚の割合 are '…' for 1884–1898 and 1947–1951 (no row); 1941–1946 have no row at all.
+_T0601_COLS: tuple[tuple[int, str, str], ...] = (
+    (2, "marriages_total", "T"),
+    (3, "first_marriages_husband", "M"),
+    (4, "remarriages_husband", "M"),
+    (5, "first_marriages_wife", "F"),
+    (6, "remarriages_wife", "F"),
+    (7, "first_marriage_share_husband_pct", "M"),
+    (8, "first_marriage_share_wife_pct", "F"),
+    (9, "crude_marriage_rate", "T"),
+)
+
+
+def first_marriage_rows(rows: Rows) -> list[dict[str, object]]:
+    """T06-01★: marriages by first marriage / remarriage of husband and wife (件), the share of
+    first marriages (%) and the crude marriage rate (‰), every year 1884–2024. Title, the two
+    header rows, consecutive years and 初婚 + 再婚 <= 総数 are checked (``ValueError``);
+    '…' cells produce no row. 1947–72 exclude Okinawa; before 1940 総数 includes 不詳."""
+    code = "T06-01"
+    _title(rows, "表6-1初婚・再婚別婚姻数および婚姻率", code)
+    h = _header_row(rows, "年次", code)
+    _check_header(
+        rows[h], {1: "年次", 2: "総数", 3: "夫", 5: "妻", 7: "初婚の割合(%)", 9: "婚姻率"}, code
+    )
+    _check_header(
+        rows[h + 1], {3: "初婚", 4: "再婚", 5: "初婚", 6: "再婚", 7: "夫", 8: "妻", 9: "(‰)"}, code
+    )
+    body: list[tuple[int, dict[int, str]]] = []
+    for r in rows[h + 2 :]:
+        y = _int(r.get(1))
+        if y is None:
+            break
+        body.append((y, r))
+    years = [y for y, _ in body]
+    want = [
+        y for y in range(_T0601_FIRST_YEAR, _T0601_LAST_YEAR + 1) if y not in _T0601_MISSING_YEARS
+    ]
+    if years != want:
+        msg = (
+            f"{code}: years must run {want[0]}…{want[-1]} consecutively (except "
+            f"{_T0601_MISSING_YEARS[0]}–{_T0601_MISSING_YEARS[-1]}), got {years[:3]}…{years[-3:]}"
+        )
+        raise ValueError(msg)
+    out: list[dict[str, object]] = []
+    for year, r in body:
+        values: dict[str, float | None] = {}
+        for c, metric, _sex in _T0601_COLS:
+            where = f"{code} {year} {metric}"
+            values[metric] = _num(r.get(c), where) if c in (2, 9) else _opt_num(r.get(c), where)
+        total = values["marriages_total"]
+        assert total is not None
+        for who, first, re_, share in _T0601_SPLITS:
+            f, m = values[first], values[re_]
+            if (f is None) != (m is None):
+                msg = f"{code} {year}: {first} and {re_} must both be published or both '…'"
+                raise ValueError(msg)
+            if f is not None and m is not None and f + m > total:
+                if (year, who) not in _T0601_KNOWN_INCONSISTENT:
+                    msg = f"{code} {year}: {first} + {re_} = {f + m:.0f} exceeds 総数 {total:.0f}"
+                    raise ValueError(msg)
+                values[first] = values[re_] = values[share] = None  # upstream typo: no row
+        for _c, metric, sex in _T0601_COLS:
+            v = values[metric]
+            if v is not None:
+                out.append(_marriage_row(year, metric, sex, None, v, code))
+    return out
+
+
+_PARSERS["T06-01"] = first_marriage_rows
+
+
+# ---- 第16回出生動向基本調査 報告書グラフデータ CSV (CP932, tidy; one file per figure) ----------
+
+GRAPH_BASE_URL = "https://www.ipss.go.jp/ps-doukou/j/db_16/16HoukokuBaseData/"
+GRAPH_SOURCE = "ipss_jnfs16_graph"
+GRAPH_FILES: tuple[str, ...] = (
+    "1_1_1",  # 未婚者の生涯の結婚意思 (第8–16回, CI)
+    "1_1_2",  # 同, 年齢別
+    "1_2_1",  # 結婚の利点 (第9–16回)
+    "1_2_2",  # 独身生活の利点
+    "1_3_2",  # 独身でいる理由, 年齢別 (第10–16回)
+    "2_1_1",  # 恋人または婚約者がいる割合, 年齢別
+    "2_1_2",  # 交際相手なし と 交際希望, 年齢別
+    "2_3_1",  # 未婚者の交際相手と知り合ったきっかけ
+    "3_2_1",  # 結婚相手の条件 (重視 / 考慮, 第10–16回, 第13回なし)
+    "5_2_1",  # 結婚年次別 恋愛 / 見合い (1930–39 … 2019–21年, CI)
+    "5_2_2",  # 夫婦の知り合ったきっかけ (第8–16回; 第16回は a / b の 2 期間)
+    "12_1_2",  # 結婚・家族に関する考え方 (支持 / 不支持, 第10–16回)
+)
+GRAPH_ROUND_YEARS: dict[int, int] = {
+    8: 1982,
+    9: 1987,
+    10: 1992,
+    11: 1997,
+    12: 2002,
+    13: 2005,
+    14: 2010,
+    15: 2015,
+    16: 2021,
+}
+# 第16回(2021)a / b in 5_2_2: couples married 2015/7–2018/6 and 2018/7–2021/6 (b is under COVID).
+GRAPH_PERIODS: dict[str, str] = {"a": "2015/7-2018/6", "b": "2018/7-2021/6"}
+GRAPH_SEX: dict[str, str] = {
+    "男性": "male",
+    "女性": "female",
+    "計": "total",
+    "男性が相手の女性に求める条件": "male",
+    "女性が相手の男性に求める条件": "female",
+}
+GRAPH_CATEGORIES: tuple[str, ...] = (
+    "生涯の結婚意思",
+    "結婚の利点",
+    "独身生活の利点",
+    "独身の理由",
+    "異性との交際状況",
+    "交際希望",
+    "知り合ったきっかけ",
+    "重視する項目",
+    "結婚・家族に関する考え方",
+)
+GRAPH_SUBS: tuple[str, ...] = ("重視する程度", "旧来的な考え方への支持／不支持")
+_GRAPH_DIMS: dict[str, str] = {
+    "調査回": "round",
+    "結婚年": "marriage_year",
+    "性別": "sex",
+    "年齢": "age",
+}
+_GRAPH_NUMERIC: dict[str, str] = {
+    "度数": "count",
+    "割合": "share_pct",
+    "標準誤差": "se",
+    "95%信頼区間上限": "ci_high",
+    "95%信頼区間下限": "ci_low",
+    "総数": "denominator",
+}
+_CI = ("標準誤差", "95%信頼区間上限", "95%信頼区間下限")
+# Expected header (row 2) of every file, closed. Verified against the real files 2026-10-18.
+GRAPH_HEADERS: dict[str, tuple[str, ...]] = {
+    "1_1_1": ("調査回", "性別", "生涯の結婚意思", "度数", "割合", *_CI),
+    "1_1_2": ("調査回", "性別", "年齢", "生涯の結婚意思", "度数", "割合", *_CI),
+    "1_2_1": ("調査回", "性別", "結婚の利点", "度数", "割合", "総数"),
+    "1_2_2": ("調査回", "性別", "独身生活の利点", "度数", "割合", "総数"),
+    "1_3_2": ("調査回", "性別", "年齢", "独身の理由", "度数", "割合", "総数"),
+    "2_1_1": ("調査回", "性別", "年齢", "異性との交際状況", "度数", "割合", "総数"),
+    "2_1_2": ("調査回", "性別", "年齢", "交際希望", "度数", "割合", "総数"),
+    "2_3_1": ("調査回", "性別", "知り合ったきっかけ", "度数", "割合"),
+    "3_2_1": ("調査回", "性別", "重視する項目", "重視する程度", "度数", "割合", "総数"),
+    "5_2_1": ("結婚年", "知り合ったきっかけ", "度数", "割合", *_CI),
+    "5_2_2": ("調査回", "知り合ったきっかけ", "度数", "割合"),
+    "12_1_2": (
+        "調査回",
+        "性別",
+        "結婚・家族に関する考え方",
+        "旧来的な考え方への支持／不支持",
+        "割合",
+        "度数",
+    ),
+}
+ATTITUDES_KEY: tuple[str, ...] = (
+    "figure",
+    "survey_round",
+    "period",
+    "marriage_year",
+    "sex",
+    "age",
+    "category",
+    "item",
+    "sub",
+)
+_GRAPH_ROUND = re.compile(r"^第(\d+)回\((\d{4})\)([ab]?)$")
+_GRAPH_NULL = ("", "-", "NA", "…", "...")
+
+
+def graph_url(figure: str) -> str:
+    return f"{GRAPH_BASE_URL}{graph_raw_name(figure)}"
+
+
+def graph_raw_name(figure: str) -> str:
+    return f"houkokuFigure{figure}.csv"
+
+
+def _graph_num(text: str, where: str) -> float | None:
+    s = text.strip()
+    if s in _GRAPH_NULL:
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        msg = f"{where}: non-numeric cell {text!r}"
+        raise ValueError(msg) from None
+
+
+def _graph_round(text: str, where: str) -> tuple[int, int, str]:
+    m = _GRAPH_ROUND.match(_norm(text))
+    if not m:
+        msg = f"{where}: unexpected survey round {text!r}"
+        raise ValueError(msg)
+    rnd, year, suffix = int(m.group(1)), int(m.group(2)), m.group(3)
+    if GRAPH_ROUND_YEARS.get(rnd) != year:
+        msg = f"{where}: survey round {text!r} is not one of {GRAPH_ROUND_YEARS}"
+        raise ValueError(msg)
+    if suffix and rnd != 16:
+        msg = f"{where}: survey round {text!r} has a period suffix outside the 16th round"
+        raise ValueError(msg)
+    return rnd, year, GRAPH_PERIODS[suffix] if suffix else ""
+
+
+def graph_rows(payload: bytes, figure: str) -> list[dict[str, object]]:
+    """One 報告書グラフデータ CSV -> long rows with the common attitude columns. Row 1 is the figure
+    title (must name *figure*), row 2 the header (must equal ``GRAPH_HEADERS[figure]``), the rest
+    tidy data. 調査回 is mapped to (survey_round, survey_year, period) with the fixed round → year
+    table, 性別 through the closed ``GRAPH_SEX``; the question column (``GRAPH_CATEGORIES``)
+    becomes category / item and the second split (``GRAPH_SUBS``) ``sub``. Numbers drop the
+    leading blanks, '-' / '' / 'NA' are ``None``. Any deviation and a duplicate key raise
+    ``ValueError`` (fail closed)."""
+    if figure not in GRAPH_HEADERS:
+        msg = f"unknown figure {figure!r}"
+        raise ValueError(msg)
+    where = f"houkokuFigure{figure}"
+    try:
+        text = payload.decode("cp932")
+    except UnicodeDecodeError as e:
+        msg = f"{where}: not a cp932 file ({e.reason})"
+        raise ValueError(msg) from None
+    records = [r for r in csv.reader(io.StringIO(text)) if any(c.strip() for c in r)]
+    if len(records) < 2:
+        msg = f"{where}: expected a title row and a header row"
+        raise ValueError(msg)
+    prefix = "報告書図表" + figure.replace("_", "-")
+    if not _norm(records[0][0]).startswith(prefix):
+        msg = f"{where}: unexpected title {records[0][0]!r} (expected {prefix!r}…)"
+        raise ValueError(msg)
+    header = tuple(_norm(c) for c in records[1])
+    want = tuple(_norm(c) for c in GRAPH_HEADERS[figure])
+    if header != want:
+        msg = f"{where}: unexpected header {records[1]} (expected {GRAPH_HEADERS[figure]})"
+        raise ValueError(msg)
+    body = records[2:]
+    if not body:
+        msg = f"{where}: empty (no data rows)"
+        raise ValueError(msg)
+    out: list[dict[str, object]] = []
+    seen: set[tuple[object, ...]] = set()
+    for i, rec in enumerate(body, start=3):
+        if len(rec) != len(want):
+            msg = f"{where} line {i}: expected {len(want)} columns, got {len(rec)}"
+            raise ValueError(msg)
+        row: dict[str, object] = {
+            "figure": figure,
+            "survey_round": None,
+            "survey_year": None,
+            "period": "",
+            "marriage_year": "",
+            "sex": "",
+            "age": "",
+            "category": "",
+            "item": "",
+            "sub": "",
+            "count": None,
+            "share_pct": None,
+            "se": None,
+            "ci_low": None,
+            "ci_high": None,
+            "denominator": None,
+            "source": GRAPH_SOURCE,
+        }
+        at = f"{where} line {i}"
+        for name, cell in zip(GRAPH_HEADERS[figure], rec, strict=True):
+            if name == "調査回":
+                row["survey_round"], row["survey_year"], row["period"] = _graph_round(cell, at)
+            elif name == "性別":
+                if cell.strip() not in GRAPH_SEX:
+                    msg = f"{at}: unexpected sex label {cell!r}"
+                    raise ValueError(msg)
+                row["sex"] = GRAPH_SEX[cell.strip()]
+            elif name in _GRAPH_DIMS:
+                row[_GRAPH_DIMS[name]] = cell.strip()
+            elif name in GRAPH_CATEGORIES:
+                row["category"] = name
+                row["item"] = cell.strip()
+            elif name in GRAPH_SUBS:
+                row["sub"] = cell.strip()
+            else:
+                row[_GRAPH_NUMERIC[name]] = _graph_num(cell, f"{at} {name}")
+        key = tuple(row[c] for c in ATTITUDES_KEY)
+        if key in seen:
+            msg = f"{where}: duplicate key {ATTITUDES_KEY} = {key}"
+            raise ValueError(msg)
+        seen.add(key)
+        out.append(row)
+    return out
+
+
+def build_attitudes_mart(parts: dict[str, Sequence[dict[str, object]]]) -> list[dict[str, object]]:
+    """``marts/jp_marriage_attitudes``: every staged figure combined, sorted by figure (file
+    order), survey_round, period, marriage_year, sex, age, category, item, sub; duplicate keys
+    raise ``ValueError``."""
+
+    def key(r: dict[str, object]) -> tuple[object, ...]:
+        rnd = r["survey_round"]
+        return (
+            GRAPH_FILES.index(str(r["figure"])),
+            -1 if rnd is None else int(str(rnd)),
+            *(str(r[c]) for c in ATTITUDES_KEY[2:]),
+        )
+
+    return _combine(parts, key, str(ATTITUDES_KEY))

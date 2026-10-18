@@ -21,6 +21,7 @@ from theme_growth_fertility import (
     ipss,
     kostat,
     moekr,
+    nhk,
     oecd,
     oecd_family,
     oecd_labour,
@@ -164,6 +165,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h10_eu(ctx, written, skipped)
     written, skipped = _fetch_h10_jp(ctx, written, skipped)
     written, skipped = _fetch_h11_oecd(ctx, written, skipped)
+    written, skipped = _fetch_h12_jp(ctx, written, skipped)
+    written, skipped = _fetch_h12_nhk(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -257,6 +260,8 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h10_eu(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h10_jp(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h11_oecd(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h12_jp(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h12_nhk(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -528,6 +533,8 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h10_eu(ctx, written, skipped)
     written, skipped = _mart_h10_jp(ctx, written, skipped)
     written, skipped = _mart_h11_oecd(ctx, written, skipped)
+    written, skipped = _mart_h12_jp(ctx, written, skipped)
+    written, skipped = _mart_h12_nhk(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -1915,4 +1922,127 @@ def _mart_h11_oecd(
         OECD_BOM_MART, oecd_family.build_births_outside_marriage_mart(staged_rows)
     )
     written.append(OECD_BOM_MART)
+    return written, skipped
+
+
+# ---- H12-JP: 第16回出生動向基本調査 報告書グラフデータ CSV (12 figures, one long mart) -----------
+# Twelve small CP932 CSVs (PDL1.0, same `ipss` source directory as the workbooks; raw is not
+# committed as usual). Each figure is staged on its own (`staged/ipss/graph_<figure>`); a layout
+# mismatch is reported in skipped and that figure is not written. The mart combines whatever is
+# staged. T06-01★ (the marriage counts used with 5_2_2 in K4) rides on the H9-JP loop via
+# `ipss.TABLES` and lands in `marts/jp_marriage_series`. Independent of every other source.
+
+H12_JP_TABLES: dict[str, str] = {f: f"staged/ipss/graph_{f}" for f in ipss.GRAPH_FILES}
+H12_JP_MART = "marts/jp_marriage_attitudes"
+
+
+def _fetch_h12_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for figure in ipss.GRAPH_FILES:
+        url, raw_name = ipss.graph_url(figure), ipss.graph_raw_name(figure)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=ipss.SOURCE,
+            name=raw_name,
+            url=url,
+            license=ipss.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h12_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for figure in ipss.GRAPH_FILES:
+        raw_name = ipss.graph_raw_name(figure)
+        payload = ctx.raw.get(theme=THEME, source=ipss.SOURCE, name=raw_name)
+        if payload is None:
+            skipped.append(f"{raw_name}: raw missing (run fetch)")
+            continue
+        try:
+            rows = ipss.graph_rows(payload, figure)
+        except ValueError as e:
+            skipped.append(f"{raw_name}: layout not recognised ({e})")
+            continue
+        ctx.tables.write_table(H12_JP_TABLES[figure], rows)
+        written.append(H12_JP_TABLES[figure])
+    return written, skipped
+
+
+def _mart_h12_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    parts = _read_parts(ctx, list(H12_JP_TABLES.values()), skipped)
+    if not parts:
+        skipped.append(f"{H12_JP_MART}: no staged graph table (run stage)")
+        return written, skipped
+    ctx.tables.write_table(H12_JP_MART, ipss.build_attitudes_mart(parts))
+    written.append(H12_JP_MART)
+    return written, skipped
+
+
+# ---- H12-NHK: NHK 放送文化研究所「日本人の意識」調査 Q49 結婚観 (one JSON, one long mart) ------
+# Non-commercial, attribution-only terms -> the raw is not committed (manifest only); staged /
+# mart rows carry the source. Stage parses fail-closed; an unrecognised shape is reported in
+# skipped and nothing is written. Independent of the rest.
+
+NHK_TABLE = "staged/nhk/q49"
+NHK_MART = "marts/jp_norms_nhk"
+
+
+def _fetch_h12_nhk(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        payload = ctx.fetcher.fetch(nhk.URL)
+    except FetchError as e:
+        skipped.append(f"{nhk.RAW_NAME}: {e}")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=nhk.SOURCE,
+        name=nhk.RAW_NAME,
+        url=nhk.URL,
+        license=nhk.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h12_nhk(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    payload = ctx.raw.get(theme=THEME, source=nhk.SOURCE, name=nhk.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{nhk.RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows = nhk.parse(payload)
+    except ValueError as e:
+        skipped.append(f"{nhk.RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(NHK_TABLE, rows)
+    written.append(NHK_TABLE)
+    return written, skipped
+
+
+def _mart_h12_nhk(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged_rows = ctx.tables.read_table(NHK_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{NHK_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(NHK_MART, nhk.build_mart(staged_rows))
+    written.append(NHK_MART)
     return written, skipped

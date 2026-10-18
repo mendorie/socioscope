@@ -57,6 +57,7 @@ def test_h10_tables_are_appended_after_the_h9_tables_with_their_sheets_and_marts
         "T12-37",
         "T12-52",
         "T12-53",
+        "T06-01",  # H12 (appended)
     ]
     assert table("T06-24").sheet == "T06-24(1)" and table("T06-24").mart == "marriage"
     assert table("T06-12").key == "t06_12" and table("T06-12").mart == "marriage"
@@ -67,7 +68,7 @@ def test_h10_tables_are_appended_after_the_h9_tables_with_their_sheets_and_marts
         "https://www.ipss.go.jp/syoushika/tohkei/Data/Popular2026/T12-53.xlsx"
     )
     assert {t.mart for t in ipss.TABLES} == {"survey", "births", "marriage", "prefecture"}
-    assert ipss.MARRIAGE_METRICS == (
+    assert ipss.MARRIAGE_METRICS[:7] == (
         "never_married_share",
         "mean_age_marriage_all",
         "mean_age_first_marriage",
@@ -418,6 +419,6 @@ def test_build_marriage_mart_combines_sorts_and_rejects_duplicates() -> None:
         ),
     )
     assert mart[0]["year"] == 1899 and mart[0]["metric"] == "mean_age_marriage_all"
-    assert {r["metric"] for r in mart} == set(ipss.MARRIAGE_METRICS)
+    assert {r["metric"] for r in mart} == set(ipss.MARRIAGE_METRICS[:7])
     with pytest.raises(ValueError, match="duplicate"):
         ipss.build_marriage_mart({"a": parts["t06_23"], "b": parts["t06_23"][:1]})
