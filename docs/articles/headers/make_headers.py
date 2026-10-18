@@ -770,6 +770,110 @@ def growth_fertility_h10_part6() -> Path:
     return out
 
 
+def growth_fertility_h12_part7() -> Path:
+    """Part7（補遺）: 交際相手なしの推移（左）と夫婦の出会い経路の構成比（右）。
+
+    数値は reports/2026-10-18-h12-why-marriage-left.md（mart jp_marriage_attitudes）から。
+    """
+    att = pl.read_parquet(MARTS / "jp_marriage_attitudes.parquet")
+    nop = att.filter(
+        (pl.col("figure") == "2_1_2")
+        & (pl.col("age") == "18～34歳（総数）")
+        & (pl.col("sex").is_in(["male", "female"]))
+    )
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "結婚が減った背景で最も動いたのは「交際相手がいない」こと",
+        "未婚者の 4 割から 7 割へ。見合い・職場で失われた結婚のうち、ネットが補ったのは 4 分の 1",
+        size=30,
+    )
+
+    ax1 = fig.add_axes([0.07, 0.13, 0.40, 0.52])
+    for sex, color, lab in (("male", BLUE, "男性"), ("female", ORANGE, "女性")):
+        d = (
+            nop.filter(pl.col("sex") == sex)
+            .group_by("survey_year")
+            .agg(pl.col("share_pct").sum())
+            .sort("survey_year")
+        )
+        xs = d["survey_year"].to_list()
+        ys = d["share_pct"].to_list()
+        ax1.plot(xs, ys, color=color, lw=4, marker="o", ms=7)
+        ax1.text(
+            xs[-1] + 0.8,
+            ys[-1],
+            f"{lab} {ys[-1]:.0f}%",
+            color=color,
+            fontsize=12,
+            va="center",
+            fontweight="bold",
+        )
+    ax1.set_xlim(1980, 2031)
+    ax1.set_ylim(20, 85)
+    ax1.set_yticks([30, 50, 70])
+    ax1.set_yticklabels(["30%", "50%", "70%"], fontsize=11, color=MUTED)
+    ax1.set_xticks([1982, 1992, 2002, 2010, 2021])
+    ax1.tick_params(colors=MUTED, labelsize=11, length=0)
+    for sp in ax1.spines.values():
+        sp.set_visible(False)
+    ax1.set_facecolor(PAPER)
+    tag(bg, 92, 470, "交際相手のいない未婚者（18〜34 歳）", BLUE)
+
+    ax2 = fig.add_axes([0.58, 0.18, 0.37, 0.42])
+    meet = att.filter(pl.col("figure") == "5_2_2")
+    r8 = meet.filter(pl.col("survey_round") == 8)
+    r16 = meet.filter((pl.col("survey_round") == 16) & (pl.col("period") == "2018/7-2021/6"))
+
+    def pick(df: pl.DataFrame, key: str) -> float:
+        rows = df.filter(pl.col("item").str.contains(key))["share_pct"].to_list()
+        return float(rows[0]) if rows else 0.0
+
+    labels = ["見合い", "職場", "ネット"]
+    keys = ["見合い", "職場", "ネット"]
+    v82 = [pick(r8, k) for k in keys]
+    v21 = [pick(r16, k) for k in keys]
+    x = np.arange(len(labels))
+    ax2.bar(x - 0.2, v82, width=0.38, color=MUTED, lw=0, label="1982 年調査")
+    ax2.bar(x + 0.2, v21, width=0.38, color=ORANGE, lw=0, label="2018〜21 年結婚")
+    for i in range(len(labels)):
+        ax2.text(x[i] - 0.2, v82[i] + 1, f"{v82[i]:.0f}%", ha="center", fontsize=11, color=MUTED)
+        ax2.text(
+            x[i] + 0.2,
+            v21[i] + 1,
+            f"{v21[i]:.0f}%",
+            ha="center",
+            fontsize=11,
+            color=ORANGE,
+            fontweight="bold",
+        )
+    ax2.set_xticks(list(x))
+    ax2.set_xticklabels(labels, fontsize=12, color=INK)
+    ax2.set_ylim(0, 36)
+    ax2.set_yticks([])
+    ax2.tick_params(length=0)
+    for sp in ax2.spines.values():
+        sp.set_visible(False)
+    ax2.set_facecolor(PAPER)
+    ax2.legend(frameon=False, fontsize=10, loc="upper right", labelcolor=MUTED)
+    tag(bg, 745, 470, "夫婦の出会いのきっかけ（結婚 5 年未満）", ORANGE)
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: 国立社会保障・人口問題研究所『第 16 回出生動向基本調査 報告書』"
+        "グラフデータを加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-18-note-why-people-left-marriage.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     for p in (
         growth_fertility(),
@@ -779,5 +883,6 @@ if __name__ == "__main__":
         growth_fertility_h8_part4(),
         growth_fertility_h9_part5(),
         growth_fertility_h10_part6(),
+        growth_fertility_h12_part7(),
     ):
         print(p)
