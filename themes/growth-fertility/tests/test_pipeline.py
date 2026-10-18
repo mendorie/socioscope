@@ -65,6 +65,8 @@ H9_ITEMS = 1 + len(es.ORDER_GEOS)
 H10_PREF_ITEMS = 3
 # H10 items: three OECD SDMX CSVs + one SF3.1 xlsx + four Eurostat datasets x H10_GEOS
 H10_ITEMS = len(oecd_labour.DATASETS) + 1 + len(es.family_formation_requests())
+# H11 items: one OECD SF2.4 births-outside-marriage xlsx
+H11_ITEMS = 1
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -118,6 +120,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H9_EB_OECD_ITEMS
         + H10_PREF_ITEMS
         + H10_ITEMS
+        + H11_ITEMS  # H11: one SF2.4 xlsx missing
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -168,6 +171,7 @@ def test_fetch_also_stores_country_metadata() -> None:
                 cao.RAW_NAME,
                 "eb_EBS",
                 oecd_family.RAW_NAME,
+                oecd_family.BOM_RAW_NAME,
                 kostat.BIRTHS_RAW_NAME,
                 *(d.raw_name for d in oecd_labour.DATASETS),
                 oecd_labour.MARRIAGE_RAW_NAME,
@@ -261,6 +265,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H9_ITEMS  # H9: one births PDF + 13 demo_frate raws missing
         + H10_PREF_ITEMS
         + H10_ITEMS  # H10: 4 OECD raws + 64 Eurostat raws missing
+        + H11_ITEMS  # H11: one SF2.4 xlsx missing
     )
 
 
@@ -307,6 +312,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H9_EB_OECD_ITEMS
         + H10_PREF_ITEMS
         + H10_ITEMS
+        + H11_ITEMS  # H11: one SF2.4 xlsx missing
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -673,6 +679,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H9_EB_OECD_ITEMS
         + H10_PREF_ITEMS
         + H10_ITEMS
+        + H11_ITEMS  # H11: one SF2.4 xlsx missing
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -774,6 +781,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H9_EB_OECD_ITEMS
         + H10_PREF_ITEMS
         + H10_ITEMS
+        + H11_ITEMS  # H11: one SF2.4 xlsx missing
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -2172,7 +2180,7 @@ def test_mart_h10_pref_builds_marriage_series_and_prefecture_panel_from_staged()
     assert "marts/jp_marriage_series" in result.written
     assert "marts/jp_prefecture_panel" in result.written
     series = ctx.tables.read_table("marts/jp_marriage_series")
-    assert len(series) == 352 + 270 + 24
+    assert len(series) == (4 * 352 - 6) + 270 + 24  # T06-24 four sheets (H11)
     assert {r["table"] for r in series} == {"T06-24", "T06-12", "T06-23"}
     panel = ctx.tables.read_table("marts/jp_prefecture_panel")
     staged_n = sum(
@@ -2504,3 +2512,65 @@ def test_mart_h10_jp_sorts_the_staged_rows_and_is_skipped_without_them() -> None
     result = PIPELINE.run(Stage.MART, make_ctx({}))
     assert pipeline.H10_JP_MART not in result.written
     assert f"{pipeline.H10_JP_TABLE}: staged table missing (run stage)" in result.skipped
+
+
+# ---------------------------------------------------------------- H11-OECD: Family Database SF2.4
+
+OECD_SF24 = (FIXTURES / "oecd_sf2_4_births_outside_marriage.xlsx").read_bytes()
+
+
+def test_fetch_h11_oecd_stores_the_sf2_4_xlsx_with_oecd_license() -> None:
+    ctx = make_ctx({oecd_family.BOM_URL: OECD_SF24})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert "growth-fertility/oecd_family/sf2_4_births_outside_marriage.xlsx" in result.written
+    (rec,) = [r for r in ctx.raw.records() if r.name == oecd_family.BOM_RAW_NAME]
+    assert rec.source == "oecd_family"
+    assert rec.url == oecd_family.BOM_URL and rec.license == oecd_family.BOM_LICENSE
+    assert (
+        ctx.raw.get(theme="growth-fertility", source="oecd_family", name=oecd_family.BOM_RAW_NAME)
+        == OECD_SF24
+    )
+    result = PIPELINE.run(Stage.FETCH, make_ctx({}))
+    assert any(s.startswith("sf2_4_births_outside_marriage.xlsx:") for s in result.skipped)
+
+
+def test_stage_and_mart_h11_oecd_long_table_independent_of_other_sources() -> None:
+    ctx = make_ctx({oecd_family.BOM_URL: OECD_SF24})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert pipeline.OECD_BOM_TABLE == "staged/oecd_family/births_outside_marriage"
+    assert result.written == (pipeline.OECD_BOM_TABLE,)
+    assert (
+        "sf2_4_births_outside_marriage.xlsx: Births_outside_marriage: Bulgaria (BGR) dropped: "
+        "not an OECD member"
+    ) in result.skipped
+    assert any(s.startswith("sf2_5_childlessness.xlsx: raw missing") for s in result.skipped)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert pipeline.OECD_BOM_MART == "marts/oecd_births_outside_marriage"
+    assert result.written == (pipeline.OECD_BOM_MART,)
+    rows = ctx.tables.read_table(pipeline.OECD_BOM_MART)
+    assert set(rows[0]) == {"iso3", "year", "metric", "value", "chart", "source"}
+    keyed = {(r["iso3"], r["year"]): r["value"] for r in rows}
+    assert len(keyed) == len(rows) == 543
+    assert keyed[("JPN", 2023)] == 2.4
+    assert keyed[("SWE", 1970)] == 18.6
+    assert ("BGR", 2023) not in keyed
+    assert rows[0]["iso3"] == "CZE" and rows[0]["year"] == 1960
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert pipeline.OECD_BOM_MART not in result.written
+    assert f"{pipeline.OECD_BOM_TABLE}: staged table missing (run stage)" in result.skipped
+
+
+def test_stage_h11_oecd_unrecognised_layout_is_skipped_not_fatal() -> None:
+    ctx = make_ctx({oecd_family.BOM_URL: b"<html>maintenance</html>"})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert pipeline.OECD_BOM_TABLE not in result.written
+    assert any(
+        s.startswith("sf2_4_births_outside_marriage.xlsx: layout not recognised")
+        for s in result.skipped
+    )
+    result = PIPELINE.run(Stage.STAGE, make_ctx({}))
+    assert any(
+        s.startswith("sf2_4_births_outside_marriage.xlsx: raw missing") for s in result.skipped
+    )

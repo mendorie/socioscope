@@ -49,8 +49,26 @@ NAME_TO_ISO3: dict[str, str] = {
     "Korea": "KOR", "Lithuania": "LTU", "Mexico": "MEX", "Netherlands": "NLD", "Norway": "NOR",
     "Poland": "POL", "Portugal": "PRT", "Slovakia": "SVK", "Slovenia": "SVN", "Spain": "ESP",
     "Sweden": "SWE", "United States": "USA",
+    # names that appear only in SF2.4 (H11; "Czech Republic" / "Slovak Republic" are the older
+    # spellings of CZE / SVK, HRV / CYP / MLT / ROU are non-members and get dropped)
+    "Australia": "AUS", "Belgium": "BEL", "Chile": "CHL", "Colombia": "COL", "Costa Rica": "CRI",
+    "Czech Republic": "CZE", "Greece": "GRC", "Israel": "ISR", "Latvia": "LVA",
+    "Luxembourg": "LUX", "New Zealand": "NZL", "Slovak Republic": "SVK", "Switzerland": "CHE",
+    "Türkiye": "TUR", "United Kingdom": "GBR", "Croatia": "HRV", "Cyprus": "CYP", "Malta": "MLT",
+    "Romania": "ROU",
 }  # fmt: skip
 NOT_COUNTRIES: frozenset[str] = frozenset({"England and Wales"})
+# ---- H11: SF2.4 Share of births outside of marriage (annual sheet, country x year 1960–) -----
+BOM_URL = "https://webfs.oecd.org/Els-com/Family_Database/SF_2_4_Share_births_outside_marriage.xlsx"
+BOM_RAW_NAME = "sf2_4_births_outside_marriage.xlsx"
+BOM_LICENSE = (
+    f"{oecd.LICENSE}. Cite: OECD Family Database, SF2.4 Share of births outside of marriage "
+    "(https://www.oecd.org/en/data/datasets/oecd-family-database.html, accessed 2026-10-18)."
+)
+BOM_SHEET = "Births_outside_marriage"
+BOM_METRIC = "births_outside_marriage_pct"
+BOM_NOT_AVAILABLE = ".."
+_BOM_HEADER = ("Country", "Note")
 _COHORT_YEAR = re.compile(r"women born in (\d{4})", re.I)
 _HEADER_B = ("Permanent childles", "Completed fertility")
 
@@ -73,7 +91,7 @@ def _number(cell: object, *, where: str) -> float:
     raise ValueError(msg)
 
 
-def _sheets(payload: bytes) -> dict[str, Grid]:
+def _sheets(payload: bytes, required: tuple[str, ...] = (SHEET_A, SHEET_B)) -> dict[str, Grid]:
     try:
         wb = openpyxl.load_workbook(io.BytesIO(payload), read_only=True, data_only=True)
     except Exception:  # openpyxl raises several unrelated types for non-xlsx bytes
@@ -85,7 +103,7 @@ def _sheets(payload: bytes) -> dict[str, Grid]:
         }
     finally:
         wb.close()
-    for name in (SHEET_A, SHEET_B):
+    for name in required:
         if name not in grids:
             msg = f"sheet {name!r} not found (sheets: {sorted(grids)})"
             raise ValueError(msg)
@@ -214,4 +232,87 @@ def build_mart(rows: Iterable[Row]) -> list[Row]:
             msg = f"duplicate key {key}"
             raise ValueError(msg)
         seen.add(key)
+    return out
+
+
+# ---- H11: SF2.4 "Share of births outside of marriage", sheet Births_outside_marriage ----------
+# Header row = 'Country' | 'Note' | consecutive integer years (1960 … in the 2026-10-18 file);
+# one row per country, '..' = not available (no row). The two chart sheets (latest year, three
+# points in time) are derived from this table and are not read. Rows below the data (the '..'
+# legend, notes, sources) have nothing in the year columns and are ignored.
+
+
+def _bom_row(iso3: str, year: int, value: float) -> Row:
+    return {
+        "iso3": iso3,
+        "year": year,
+        "metric": BOM_METRIC,
+        "value": value,
+        "chart": BOM_SHEET,
+        "source": SOURCE,
+    }
+
+
+def _bom_header(grid: Grid) -> tuple[int, dict[int, int]]:
+    """(header row index, {column: year}); fails closed on a missing or gappy header."""
+    for i, row in enumerate(grid):
+        if tuple(_text(c) for c in row[:2]) == _BOM_HEADER:
+            years = {col: int(str(c)) for col, c in enumerate(row) if col >= 2 and _is_year(c)}
+            cols = sorted(years)
+            ys = [years[c] for c in cols]
+            if len(ys) < 5:
+                msg = f"{BOM_SHEET}: header row has {len(ys)} year columns (need 5 or more)"
+                raise ValueError(msg)
+            if cols != list(range(2, 2 + len(cols))) or ys != list(range(ys[0], ys[0] + len(ys))):
+                msg = f"{BOM_SHEET}: year columns must be consecutive from column C, got {ys}"
+                raise ValueError(msg)
+            return i, years
+    msg = f"{BOM_SHEET}: header row ({' | '.join(_BOM_HEADER)} | years) not found"
+    raise ValueError(msg)
+
+
+def parse_births_outside_marriage(payload: bytes) -> tuple[list[Row], list[str]]:
+    """SF2.4 xlsx bytes -> (country x year long rows, dropped notes). Fails closed on a missing
+    sheet or header, non-consecutive years, an unknown country name, a text where a number is
+    expected, or a country listed twice. Non-member rows are dropped and reported."""
+    grid = _sheets(payload, required=(BOM_SHEET,))[BOM_SHEET]
+    header_idx, years = _bom_header(grid)
+    out: list[Row] = []
+    dropped: list[str] = []
+    seen: set[str] = set()
+    for row in grid[header_idx + 1 :]:
+        name = _text(row[0] if row else None)
+        if not name or all(c is None for c in row[2:]):
+            continue  # blank line, the '..' legend, notes and sources
+        iso3, reason = _resolve(name, where=BOM_SHEET)
+        if iso3 is None:
+            dropped.append(str(reason))
+            continue
+        if iso3 in seen:
+            msg = f"{BOM_SHEET}: duplicate country row {name!r} ({iso3})"
+            raise ValueError(msg)
+        seen.add(iso3)
+        for col, year in years.items():
+            cell = row[col] if col < len(row) else None
+            if cell is None or _text(cell) in ("", BOM_NOT_AVAILABLE):
+                continue
+            out.append(_bom_row(iso3, year, _number(cell, where=f"{BOM_SHEET}: {name} {year}")))
+    return out, dropped
+
+
+def build_births_outside_marriage_mart(rows: Iterable[Row]) -> list[Row]:
+    """Sorted by (iso3, year, chart, metric); a duplicate key is an error. Pure."""
+    out = [dict(r) for r in rows]
+
+    def key(r: Row) -> tuple[str, int, str, str]:
+        return (str(r["iso3"]), int(str(r["year"])), str(r["chart"]), str(r["metric"]))
+
+    out.sort(key=key)
+    seen: set[tuple[str, int, str, str]] = set()
+    for r in out:
+        k = key(r)
+        if k in seen:
+            msg = f"duplicate key {k}"
+            raise ValueError(msg)
+        seen.add(k)
     return out

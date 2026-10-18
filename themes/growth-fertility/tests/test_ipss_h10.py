@@ -3,8 +3,10 @@
 fail-closed), plus the two marts. Fixtures are the real workbooks re-saved with only the sheets
 the parsers read (every row kept; the tables are 54 rows at most)."""
 
+import io
 from pathlib import Path
 
+import openpyxl
 import pytest
 
 from theme_growth_fertility import ipss, prefecture
@@ -70,6 +72,9 @@ def test_h10_tables_are_appended_after_the_h9_tables_with_their_sheets_and_marts
         "mean_age_marriage_all",
         "mean_age_first_marriage",
         "never_married_at_50",
+        "married_share",
+        "widowed_share",
+        "divorced_share",
     )
 
 
@@ -132,6 +137,81 @@ def test_never_married_share_rows_fail_closed_on_title_sheet_or_age_order() -> N
         ipss.never_married_share_rows(broken)
     with pytest.raises(ValueError, match="year"):
         ipss.never_married_share_rows([*rows[:2], {**rows[2], 12: "2021年"}, *rows[3:]])
+
+
+# ---- T06-24(1)–(4): 未婚 / 有配偶 / 死別 / 離別 (H11) -------------------------------------------
+
+
+def _edited_t06_24(mutate) -> bytes:  # type: ignore[no-untyped-def]
+    wb = openpyxl.load_workbook(io.BytesIO(payload("T06-24")))
+    mutate(wb)
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def test_marital_status_share_rows_read_the_four_sheets_as_four_metrics() -> None:
+    rows = ipss.marital_status_share_rows(payload("T06-24"))
+    # 1950 85歳以上 is '#DIV/0!' on sheets (2)–(4) (sheet (1) prints 0): 3 metrics x 2 sexes
+    assert len(rows) == 4 * 352 - 6
+    assert set(rows[0]) == {"year", "metric", "sex", "age_class", "value", "table", "source"}
+    assert all(r["table"] == "T06-24" and r["source"] == "ipss" for r in rows)
+    k = marriage_keyed(rows)
+    by_metric = {m: sum(1 for r in rows if r["metric"] == m) for m in ipss.MARITAL_STATUS_METRICS}
+    assert by_metric == {
+        "never_married_share": 352,
+        "married_share": 350,
+        "widowed_share": 350,
+        "divorced_share": 350,
+    }
+    # the never_married_share rows are the ones never_married_share_rows gives (unchanged)
+    old = marriage_keyed(ipss.never_married_share_rows(sheet("T06-24")))
+    assert {key: v for key, v in k.items() if key[1] == "never_married_share"} == old
+    assert k[(1970, "married_share", "F", "25-29")] == 80.3
+    assert k[(1990, "married_share", "F", "25-29")] == 57.8
+    assert k[(2020, "married_share", "F", "25-29")] == 32.3
+    assert k[(1970, "married_share", "F", "30-34")] == 89.9
+    assert k[(1990, "married_share", "F", "30-34")] == 82.9
+    assert k[(2020, "married_share", "F", "30-34")] == 57.4
+    assert k[(1920, "widowed_share", "M", "total")] == 6.0
+    assert k[(2020, "widowed_share", "F", "85-")] == 76.9
+    assert k[(2020, "divorced_share", "F", "50-54")] == 11.4
+    assert k[(1920, "divorced_share", "M", "15-19")] == 0.2
+    assert (1950, "married_share", "M", "85-") not in k
+    assert (1950, "divorced_share", "F", "85-") not in k
+    assert k[(1950, "never_married_share", "F", "85-")] == 0.0
+    # the four shares add to 100 where all are published
+    assert k[(2020, "never_married_share", "F", "25-29")] + k[
+        (2020, "married_share", "F", "25-29")
+    ] + k[(2020, "widowed_share", "F", "25-29")] + k[
+        (2020, "divorced_share", "F", "25-29")
+    ] == pytest.approx(100, abs=0.3)
+
+
+def test_marital_status_share_rows_fail_closed_on_sheet_label_or_share_sum() -> None:
+    def wrong_label(wb: openpyxl.Workbook) -> None:
+        wb["T06-24(3)"]["A2"] = "(3) 有配偶 "
+
+    with pytest.raises(ValueError, match="死別"):
+        ipss.marital_status_share_rows(_edited_t06_24(wrong_label))
+
+    def sum_off(wb: openpyxl.Workbook) -> None:
+        wb["T06-24(2)"]["L25"] = 33.0  # 2020 女 25-29 有配偶 32.3 -> 33.0 (sum 100.8)
+
+    with pytest.raises(ValueError, match="sum"):
+        ipss.marital_status_share_rows(_edited_t06_24(sum_off))
+
+    def text_value(wb: openpyxl.Workbook) -> None:
+        wb["T06-24(4)"]["C9"] = "n.a."
+
+    with pytest.raises(ValueError, match="n.a."):
+        ipss.marital_status_share_rows(_edited_t06_24(text_value))
+
+    def missing_sheet(wb: openpyxl.Workbook) -> None:
+        wb.remove(wb["T06-24(4)"])
+
+    with pytest.raises(ValueError, match=r"T06-24\(4\)"):
+        ipss.marital_status_share_rows(_edited_t06_24(missing_sheet))
 
 
 # ---- T06-12: 全婚姻・初婚の平均婚姻年齢 (two column blocks) ----------------------------------
@@ -307,7 +387,7 @@ def test_pref_unemployment_rows_are_6_years_x_2_sexes_x_48() -> None:
 
 def test_parse_table_dispatches_every_h10_table_including_multi_sheet_ones() -> None:
     counts = {t.code: len(ipss.parse_table(payload(t.code), t)) for t in ipss.TABLES[7:]}
-    assert counts["T06-24"] == 352 and counts["T06-23"] == 24
+    assert counts["T06-24"] == 4 * 352 - 6 and counts["T06-23"] == 24
     assert counts["T12-35"] == 858 and counts["T12-36"] == 480
     assert counts["T12-52"] == 1920 and counts["T12-53"] == 576
     with pytest.raises(ValueError):
@@ -319,12 +399,12 @@ def test_parse_table_dispatches_every_h10_table_including_multi_sheet_ones() -> 
 
 def test_build_marriage_mart_combines_sorts_and_rejects_duplicates() -> None:
     parts = {
-        "t06_24": ipss.never_married_share_rows(sheet("T06-24")),
+        "t06_24": ipss.marital_status_share_rows(payload("T06-24")),
         "t06_12": ipss.mean_marriage_age_rows(sheet("T06-12")),
         "t06_23": ipss.never_married_at_50_rows(sheet("T06-23")),
     }
     mart = ipss.build_marriage_mart(parts)
-    assert len(mart) == 352 + 270 + 24
+    assert len(mart) == (4 * 352 - 6) + 270 + 24
     assert set(mart[0]) == {"year", "metric", "sex", "age_class", "value", "table", "source"}
     keys = [(r["year"], r["metric"], r["sex"], r["age_class"]) for r in mart]
     assert len(set(keys)) == len(keys)
