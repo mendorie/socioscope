@@ -2,7 +2,7 @@
   A: width 5 (1990-2025), endpoint window ±2, n>=10, G>=5
   A test per regressor = majority of the estimated outcomes pass
   B: cells age ('25-29', '30-34', '35-39') × ('regular', 'nonregular', 'other'); main (2012, 2022), lower (2007, 2022) with 4 sub-types both years
-  C: years (1990, 2010, 2015, 2020) (income (2010, 2015, 2020)), nearest ±5; signs {'nonreg': 1, 'ln_rent': 1, 'flfp': 1, 'unemp': 1, 'ln_inc': -1, 'nonreg_t': 1, 'flfp3044': 1, 'ln_rent_priv': 1}
+  C: years (1990, 2010, 2015, 2020) (income (2010, 2015, 2020)), nearest ±5; signs {'nonreg': 1, 'ln_rent': 1, 'ln_rent_nw': 1, 'flfp': 1, 'unemp': 1, 'ln_inc': -1, 'nonreg_t': 1, 'flfp3044': 1, 'ln_rent_priv': 1}
   Lead tie-break: passes, then B-passed, then pass ratio, then E,H,Y,W
 
 == Data ==
@@ -112,17 +112,21 @@ figure: h10_b_kitagawa.png
 
 == C: prefecture panel (prefecture + year FE) ==
 [nm3034 main] n=141 G=47 years=(2010, 2015, 2020)
-    nonreg: -0.338 [-0.838, +0.163]  ln_rent: -0.133 [-1.278, +1.011]  flfp: -0.522 [-0.848, -0.196]  unemp: +0.196 [-0.864, +1.256]
+    nonreg: -0.301 [-0.803, +0.201]  ln_rent: -0.596 [-1.835, +0.642]  flfp: -0.499 [-0.831, -0.168]  unemp: +0.149 [-0.871, +1.169]
 [nm3034 + income (2010-2020)] n=141 G=47 years=(2010, 2015, 2020)
-    nonreg: -0.281 [-0.798, +0.235]  ln_rent: -0.144 [-1.347, +1.059]  flfp: -0.402 [-0.729, -0.074]  unemp: +0.181 [-0.872, +1.234]  ln_inc: +0.943 [-0.423, +2.308]
+    nonreg: -0.257 [-0.769, +0.255]  ln_rent: -0.438 [-1.802, +0.926]  flfp: -0.392 [-0.725, -0.060]  unemp: +0.153 [-0.874, +1.179]  ln_inc: +0.900 [-0.474, +2.273]
 [never married at 50 (M)] n=235 G=47 years=(2000, 2005, 2010, 2015, 2020)
-    nonreg: -0.135 [-0.611, +0.341]  ln_rent: -0.349 [-1.031, +0.333]  flfp: +0.146 [-0.186, +0.478]  unemp: +0.867 [+0.177, +1.557]+
+    nonreg: -0.120 [-0.621, +0.381]  ln_rent: -0.223 [-1.063, +0.618]  flfp: +0.138 [-0.203, +0.479]  unemp: +0.902 [+0.160, +1.643]+
 [never married at 50 + income] n=141 G=47 years=(2010, 2015, 2020)
-    nonreg: +0.049 [-0.277, +0.375]  ln_rent: -0.710 [-1.536, +0.116]  flfp: +0.114 [-0.253, +0.481]  unemp: +0.598 [-0.218, +1.413]  ln_inc: -0.236 [-0.789, +0.317]
+    nonreg: +0.081 [-0.261, +0.422]  ln_rent: -0.558 [-1.507, +0.392]  flfp: +0.105 [-0.267, +0.477]  unemp: +0.624 [-0.180, +1.428]  ln_inc: -0.295 [-0.858, +0.269]
 [TFR] n=141 G=47 years=(2010, 2015, 2020)
-    nonreg: +0.005 [-0.011, +0.022]  ln_rent: +0.006 [-0.039, +0.051]  flfp: +0.005 [-0.007, +0.017]  unemp: -0.021 [-0.052, +0.009]
+    nonreg: +0.005 [-0.012, +0.022]  ln_rent: +0.004 [-0.045, +0.053]  flfp: +0.005 [-0.007, +0.018]  unemp: -0.022 [-0.051, +0.008]
 [TFR + income] n=141 G=47 years=(2010, 2015, 2020)
-    nonreg: +0.006 [-0.010, +0.022]  ln_rent: +0.006 [-0.038, +0.050]  flfp: +0.006 [-0.008, +0.020]  unemp: -0.021 [-0.052, +0.009]  ln_inc: +0.009 [-0.034, +0.052]
+    nonreg: +0.006 [-0.011, +0.022]  ln_rent: +0.005 [-0.047, +0.057]  flfp: +0.006 [-0.008, +0.020]  unemp: -0.022 [-0.051, +0.008]  ln_inc: +0.010 [-0.036, +0.055]
+[nm3034, non-wooden private rent] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg: -0.338 [-0.838, +0.163]  ln_rent_nw: -0.133 [-1.278, +1.011]  flfp: -0.522 [-0.848, -0.196]  unemp: +0.196 [-0.864, +1.256]
+[nm3034, non-wooden private rent + income] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg: -0.281 [-0.798, +0.235]  ln_rent_nw: -0.144 [-1.347, +1.059]  flfp: -0.402 [-0.729, -0.074]  unemp: +0.181 [-0.872, +1.234]  ln_inc: +0.943 [-0.423, +2.308]
 [nm3034, private rent (2018-)] not estimable (too few rows, or a regressor has no within variation)
 [nm3034, private rent + income] not estimable (too few rows, or a regressor has no within variation)
 figure: h10_c_prefecture_panel.png
@@ -134,7 +138,7 @@ figure: h10_c_prefecture_panel.png
   W 女性の就業: 0/1 passed [] -> not supported
   lead constraint: None
   final_stance: 測れた制約では確かめられず、未婚化の大半は同じ雇用形態・同じ地域条件の中で進んだ。
-  framed_stance: 測れた制約では確かめられず、未婚化の大半は同じ雇用形態・同じ地域条件の中で進んだ。男性 25–39 歳では雇用形態の構成はむしろ正規に寄り、構成の変化は未婚率の上昇の -17%（2007 年からの定義をそろえた比較では -5%）と逆向きで、同じ雇用形態の中での上昇が 95% である。2022 年の 30–34 歳男性では非正規の未婚率が正規より 36.1 ポイント高いが、この差は逆の因果（未婚だから非正規）を含む。通った検定は Y（A 若年失業）。頑健性の仕様では判定が変わるものがある（C outcome nm50 で Y が支持・主要 Y）。すべて関連で、因果効果ではない。
+  framed_stance: 測れた制約では確かめられず、未婚化の大半は同じ雇用形態・同じ地域条件の中で進んだ。男性 25–39 歳では雇用形態の構成はむしろ正規に寄り、構成の変化は未婚率の上昇の -17%（2007 年からの定義をそろえた比較では -5%）と逆向きで、同じ雇用形態の中での上昇が 95% である。2022 年の 30–34 歳男性では非正規の未婚率が正規より 36.1 ポイント高いが、この差は逆の因果（未婚だから非正規）と自己選択を含む。この「大半」は男性 25–39 歳の分解（主）に基づく。女性（補助）では上昇の 54% が正規化という構成の変化で、逆の因果（未婚だから正規を続ける）とも読める。女性の仕様では E が 1/3。都道府県パネルは検出力が低く（47 県 × 3 時点、CI は 1 SD あたり ±1 ポイント超）、関連が無いことを示したのではない。「同じ条件の中で」進んだ分は測れた制約で説明できなかった残差であり、選好の証拠ではない。通った検定は Y（A 若年失業）。頑健性の仕様では判定が変わるものがある（C outcome nm50 で Y が支持・主要 Y）。すべて関連で、因果効果ではない。
 
 -- verdict under each robustness spec --
   main                         E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
@@ -150,15 +154,16 @@ figure: h10_c_prefecture_panel.png
   C outcome nm50               E: 0/3  H: 0/2  Y: 2/2*  W: 0/1  -> lead=Y  B comp share=-0.170
   C outcome TFR                E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
   C private rent               E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
+  C non-wooden private rent (first-run main) E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
 
 == Exploratory (not pre-registered, outside the verdict) ==
 [E1 men 25-39 2012->2022, 4 groups (other split into employed / not employed)] r0=0.4984 r1=0.5488 Δ=+0.0503  within=+0.0461 (91.6%)  emp-comp=-0.0068 (-13.6%)  age-comp=+0.0111
 [E2 C main without female LFP (keeps 1990)] n=188 G=47 years=(1990, 2010, 2015, 2020)
-    nonreg: -1.290 [-4.638, +2.058]  ln_rent: -0.606 [-1.987, +0.775]  unemp: +0.614 [-1.247, +2.475]
+    nonreg: -1.431 [-4.879, +2.017]  ln_rent: +0.465 [-1.870, +2.799]  unemp: +0.874 [-1.264, +3.011]
 [E3 C, non-regular share both sexes] n=141 G=47 years=(2010, 2015, 2020)
-    nonreg_t: -0.711 [-1.368, -0.053]  ln_rent: -0.082 [-1.268, +1.104]  flfp: -0.599 [-0.961, -0.237]  unemp: +0.293 [-0.767, +1.354]
+    nonreg_t: -0.673 [-1.337, -0.009]  ln_rent: -0.393 [-1.635, +0.849]  flfp: -0.581 [-0.950, -0.213]  unemp: +0.262 [-0.781, +1.305]
 [E4 C, female LFP 30-44] n=141 G=47 years=(2010, 2015, 2020)
-    nonreg: -0.213 [-0.702, +0.276]  ln_rent: -0.312 [-1.482, +0.858]  flfp3044: -1.633 [-3.040, -0.226]  unemp: +0.006 [-1.056, +1.068]
+    nonreg: -0.172 [-0.661, +0.317]  ln_rent: -0.757 [-2.007, +0.493]  flfp3044: -1.565 [-2.976, -0.154]  unemp: -0.029 [-1.058, +0.999]
   E5 men 30-34 regular    0.399 -> 0.438
   E5 men 30-34 nonregular 0.729 -> 0.800
   E5 men 30-34 other      0.620 -> 0.731
@@ -167,7 +172,7 @@ figure: h10_c_prefecture_panel.png
 [E7 C, nonreg alone] n=188 G=47 years=(1990, 2010, 2015, 2020)
     nonreg: -0.800 [-3.377, +1.778]
 [E7 C, ln_rent alone] n=188 G=47 years=(1990, 2010, 2015, 2020)
-    ln_rent: -0.734 [-2.347, +0.879]
+    ln_rent: +0.182 [-2.073, +2.436]
 [E7 C, flfp alone] n=141 G=47 years=(2010, 2015, 2020)
     flfp: -0.459 [-0.786, -0.132]
 [E7 C, unemp alone] n=188 G=47 years=(1990, 2010, 2015, 2020)

@@ -20,7 +20,9 @@ A・B・C、判定規則、
   A(失業)・C(所得・失業)、
      W = C(女性労働力率)。適用できる検定の過半で「予測符号かつ CI∌0」なら支持。
 
-運用の細則（design に書かれていない点。最初の実行より前にここで固定し、stdout の冒頭に出す）:
+運用の細則（design に書かれていない点。stdout の冒頭に要点を出す）。
+細則は mart の構造（欠落年・時点数）を見た後に書いたもので盲検ではない。
+実行前に固定したことは commit 履歴では確かめられない。
   - A の結果変数の出典は国ごとに 1 つ: 日本は IPSS T06-12（初婚年齢）、Eurostat の 16 か国は
       demo_nind
     （FAGEMAR1・GNUPRT）、それ以外（英・米・韓、日本の婚姻率）は OECD SF3.1（MAFM・CMR）。第 1 子
@@ -38,8 +40,10 @@ A・B・C、判定規則、
     細分類（パート・アルバイト・
     派遣・契約）の和に両年でそろえる（定義をそろえた下限）。
   - C の説明変数: 非正規比率 = 男性 非正規 /（正規 + 非正規）%（総数は探索的に併記）、家賃 = log
-      民営借家
-    （非木造）1 か月家賃、女性労働力率 = 女 15–29 歳（T12-52）、失業率 = 男（T12-53）、所得 = log 1
+      借家総数の
+      1 か月家賃（review 後に主仕様へ。最初の実行の主仕様は民営借家（非木造）で、それを選んだのは
+      事後の選択。非木造版は頑健性として併記）、女性労働力率 = 女 15–29 歳（T12-52）、失業率 =
+      男（T12-53）、所得 = log 1
     人当たり
     県民所得。最近傍年は ±5 年（同距離は前の年）。女性労働力率は 1980/2000/2010/2020 しか無いため、
     主仕様は事実上 2010/2015/2020 になる（1990 は女性労働力率なしの仕様を探索的に併記）。
@@ -118,7 +122,14 @@ A_X = ("temp", "une", "hpi")
 A_SIGN = {"fagem": 1, "cmr": -1, "tfr1": -1}  # sign of y-response to a rise in any A_X
 A_X_OF = {"E": "temp", "H": "hpi", "Y": "une"}
 C_X = ("nonreg", "ln_rent", "flfp", "unemp")
-C_SIGN = {"nonreg": 1, "ln_rent": 1, "flfp": 1, "unemp": 1, "ln_inc": -1}  # for never-married
+C_SIGN = {
+    "nonreg": 1,
+    "ln_rent": 1,
+    "ln_rent_nw": 1,
+    "flfp": 1,
+    "unemp": 1,
+    "ln_inc": -1,
+}  # for never-married
 CONSTRAINTS = ("E", "H", "Y", "W")
 CONSTRAINT_JA = {
     "E": "若年層の雇用の不安定さ（非正規化）",
@@ -134,7 +145,8 @@ LABEL = {
     "cmr": "crude marriage rate (per 1,000)",
     "tfr1": "1st-birth TFR",
     "nonreg": "non-regular share, men (%)",
-    "ln_rent": "log private rent (non-wooden)",
+    "ln_rent": "log rent, all rented housing",
+    "ln_rent_nw": "log private rent (non-wooden)",
     "flfp": "female LFP 15-29 (%)",
     "unemp": "unemployment rate, men (%)",
     "ln_inc": "log income per capita",
@@ -180,7 +192,9 @@ def fit_std(
     model = smf.ols(formula, data=pdf)
     exog = model.exog
     if int(np.linalg.matrix_rank(exog)) < exog.shape[1] or exog.shape[0] <= exog.shape[1]:
-        return None  # regressor collinear with the FE (no within variation) or no residual df
+        # Added after the first run (which showed a spurious +0.86 for private rent): a regressor
+        # collinear with the FE (no within variation) or no residual df is not estimated.
+        return None
     res = model.fit(cov_type="cluster", cov_kwds={"groups": pdf[unit]})
     ci = res.conf_int()
     coefs = {
@@ -276,6 +290,8 @@ def framed_stance(
     gap: float,
     passed: Mapping[str, Sequence[str]],
     robust_changes: Sequence[str],
+    women_comp: float,
+    women_e: str,
 ) -> str:
     """Reporting sentence: the pre-registered pattern plus the qualifications the results need."""
     head = final_stance(lead, comp_share)
@@ -290,7 +306,13 @@ def framed_stance(
         f"{head}"
         f"{comp_clause(comp_share, comp_lower)}、同じ雇用形態の中での上昇が "
         f"{rate_share:.0%} である。2022 年の 30–34 歳男性では非正規の未婚率が正規より "
-        f"{abs(gap):.1f} ポイント高いが、この差は逆の因果（未婚だから非正規）を含む。"
+        f"{abs(gap):.1f} ポイント高いが、この差は逆の因果（未婚だから非正規）と自己選択を含む。"
+        "この「大半」は男性 25–39 歳の分解（主）に基づく。女性（補助）では上昇の "
+        f"{women_comp:.0%} が正規化という構成の変化で、逆の因果（未婚だから正規を続ける）とも"
+        f"読める。女性の仕様では E が {women_e}。"
+        "都道府県パネルは検出力が低く（47 県 × 3 時点、CI は 1 SD あたり ±1 ポイント超）、"
+        "関連が無いことを示したのではない。"
+        "「同じ条件の中で」進んだ分は測れた制約で説明できなかった残差であり、選好の証拠ではない。"
         f"{tested}。{rob}。すべて関連で、因果効果ではない。"
     )
 
@@ -559,7 +581,8 @@ def pref_obs(pref: pl.DataFrame) -> dict[str, dict[str, dict[int, float]]]:
         "tfr": get("tfr", "T"),
         "nonreg": ratio("M"),
         "nonreg_t": ratio("T"),
-        "ln_rent": log(get("rent_private_nonwood", "T")),
+        "ln_rent": log(get("rent", "T")),
+        "ln_rent_nw": log(get("rent_private_nonwood", "T")),
         "ln_rent_priv": log(get("rent_private", "T")),
         "ln_inc": log(get("income_per_capita", "T")),
         "flfp": get("lfp", "F", "15-29"),
@@ -1006,6 +1029,9 @@ def compute(d: Mapping[str, pl.DataFrame]) -> H10Result:
         cfi, "nm3034", ("nonreg", "ln_rent_priv", "flfp", "unemp", "ln_inc")
     )
 
+    xs_nw = ("nonreg", "ln_rent_nw", "flfp", "unemp")
+    c_specs["rent_nw"] = run_c(cf, "nm3034", xs_nw)
+    c_specs["rent_nw_inc"] = run_c(cfi, "nm3034", (*xs_nw, "ln_inc"))
     robust: dict[str, Verdict] = {}
     for k, fits in a_for_judge.items():
         robust[f"A {k}"] = judge(Inputs(fits, b, c_main, c_inc))
@@ -1015,6 +1041,9 @@ def compute(d: Mapping[str, pl.DataFrame]) -> H10Result:
     robust["C outcome TFR"] = judge(Inputs(a, b, c_specs["tfr"], c_specs["tfr_inc"], c_flip=True))
     robust["C private rent"] = judge(
         Inputs(a, b, c_specs["rent_priv"], c_specs["rent_priv_inc"], c_rent="ln_rent_priv")
+    )
+    robust["C non-wooden private rent (first-run main)"] = judge(
+        Inputs(a, b, c_specs["rent_nw"], c_specs["rent_nw_inc"], c_rent="ln_rent_nw")
     )
     changes = [
         f"{k} で {'・'.join(r.supported) or 'なし'} が支持・主要 {r.lead or 'なし'}"
@@ -1031,6 +1060,8 @@ def compute(d: Mapping[str, pl.DataFrame]) -> H10Result:
         gap=gap,
         passed=v.names,
         robust_changes=changes,
+        women_comp=fdc.comp_share,
+        women_e=f"{sum(robust['B women 25-39'].tests['E'])}/3",
     )
     return H10Result(a, b, bl, gap, c_main, c_inc, v, final, framed, robust, b_rows, c_specs, a_alt)
 
@@ -1104,6 +1135,16 @@ def section_c(res: H10Result, fig_dir: Path) -> None:
         "nm50_inc": ("never married at 50 + income", (*C_X, "ln_inc"), False),
         "tfr": ("TFR", C_X, True),
         "tfr_inc": ("TFR + income", (*C_X, "ln_inc"), True),
+        "rent_nw": (
+            "nm3034, non-wooden private rent",
+            ("nonreg", "ln_rent_nw", "flfp", "unemp"),
+            False,
+        ),
+        "rent_nw_inc": (
+            "nm3034, non-wooden private rent + income",
+            ("nonreg", "ln_rent_nw", "flfp", "unemp", "ln_inc"),
+            False,
+        ),
         "rent_priv": (
             "nm3034, private rent (2018-)",
             ("nonreg", "ln_rent_priv", "flfp", "unemp"),

@@ -95,9 +95,12 @@ def test_framed_stance_lists_passes_and_changes() -> None:
         gap=-36.1,
         passed={"E": [], "Y": ["A 若年失業"]},
         robust_changes=["C outcome nm50 で Y が支持"],
+        women_comp=0.545,
+        women_e="1/3",
     )
     assert s.startswith("測れた制約では確かめられず")
     assert "Y（A 若年失業）" in s and "36.1 ポイント" in s and "C outcome nm50" in s
+    assert "女性の仕様では E が 1/3" in s and "選好の証拠ではない" in s and "検出力が低く" in s
 
 
 # ---------------------------------------------------------------- decomposition

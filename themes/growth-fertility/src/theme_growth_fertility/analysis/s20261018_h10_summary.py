@@ -46,7 +46,7 @@ EMP_JA = {"total_pop": "男性 30〜34 歳 全体", "regular": "正社員（正�
 EMP_COLOR = {"total_pop": INK, "regular": BLUE_RAMP[4], "nonregular": ORANGE}
 X_JA = {
     "nonreg": "非正規の割合（男性）",
-    "ln_rent": "家賃（民営借家）",
+    "ln_rent": "家賃（借家全体）",
     "flfp": "若い女性の労働力率",
     "unemp": "失業率（男性）",
     "ln_inc": "1 人当たり県民所得",
