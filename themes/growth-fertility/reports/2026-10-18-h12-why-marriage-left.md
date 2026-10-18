@@ -42,7 +42,7 @@
 
 mart: `data/marts/jp_marriage_attitudes.parquet`（2,365 行、12 figure）、`jp_marriage_series.parquet`（2,650 行）、`jp_norms_nhk.parquet`（180 行）。LLM 構造化は使っていない。
 
-出典表記: 「国立社会保障・人口問題研究所『第 16 回出生動向基本調査 報告書』グラフデータ（PDL1.0）」「国立社会保障・人口問題研究所『人口統計資料集 2026』（PDL1.0）」「NHK放送文化研究所「日本人の意識」調査（https://www.nhk.or.jp/bunken/yoron-isiki/nihonzin/）を加工して作成」（非営利利用に限る）。
+出典表記: 「国立社会保障・人口問題研究所『第 16 回出生動向基本調査 報告書』グラフデータ（PDL1.0）」「国立社会保障・人口問題研究所『人口統計資料集 2026』（PDL1.0）」「NHK放送文化研究所「日本人の意識」調査（<https://www.nhk.or.jp/bunken/yoron-isiki/nihonzin/>）を加工して作成」（非営利利用に限る）。
 
 ## 方法
 - 記述統計の比較。K1 は報告書の 95% CI の重なり、K2・K3 は点推定の差（報告書に CI が無い figure）。K4 は 構成比 × 妻初婚件数（年平均）で経路別の件数を作り、補填率 = ネット経由（2021b）÷（見合い＋職場の 1982 年件数 − 同 2021b 件数）。

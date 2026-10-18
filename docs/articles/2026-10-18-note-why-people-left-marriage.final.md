@@ -131,7 +131,7 @@
 ### 出典とライセンス
 
 - 国立社会保障・人口問題研究所『第 16 回出生動向基本調査 報告書』グラフデータ、『人口統計資料集 2026』表 6-1（公共データ利用規約 PDL1.0）。
-- NHK放送文化研究所「日本人の意識」調査（https://www.nhk.or.jp/bunken/yoron-isiki/nihonzin/）を加工して作成。
+- NHK放送文化研究所「日本人の意識」調査（<https://www.nhk.or.jp/bunken/yoron-isiki/nihonzin/>）を加工して作成。
 - こども家庭庁「若者のライフデザインや出会いに関する意識調査」（2024）、リクルートブライダル総研「婚活実態調査 2024」、明治安田生命「いい夫婦の日」に関するアンケート調査（2025）から数値を引用。
 - 分析コードと詳細レポート（数値の出所、判定基準、全頑健性チェック、再現手順つき）は GitHub の socioscope リポジトリで公開しています（コードは MIT ライセンス）: https://github.com/mendorie/socioscope/blob/main/themes/growth-fertility/reports/2026-10-18-h12-why-marriage-left.md
 - 図を転載する場合は上記の出典表記を付けてください。
