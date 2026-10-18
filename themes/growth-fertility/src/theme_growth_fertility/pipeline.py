@@ -11,7 +11,18 @@ from collections.abc import Callable, Sequence
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_growth_fertility import dhs, estat, hdr, kostat, moekr, oecd, surveys, unsdg
+from theme_growth_fertility import (
+    dhs,
+    eb_ideals,
+    estat,
+    hdr,
+    kostat,
+    moekr,
+    oecd,
+    oecd_family,
+    surveys,
+    unsdg,
+)
 from theme_growth_fertility import eurobarometer as ebm
 from theme_growth_fertility import eurostat as es
 from theme_growth_fertility import oecd_eag as eag
@@ -138,6 +149,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h8c(ctx, written, skipped)
     written, skipped = _fetch_h8d(ctx, written, skipped)
     written, skipped = _fetch_h8d_k(ctx, written, skipped)
+    written, skipped = _fetch_h9_eb(ctx, written, skipped)
+    written, skipped = _fetch_h9_oecd(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -221,6 +234,8 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h8c(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8d(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8d_k(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h9_eb(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h9_oecd(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -483,6 +498,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h8c(ctx, written, skipped)
     written, skipped = _mart_h8d(ctx, written, skipped)
     written, skipped = _mart_h8d_k(ctx, written, skipped)
+    written, skipped = _mart_h9_oecd(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -808,14 +824,16 @@ def _mart_h6(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list
     """``eu_fertility_ideals`` from whichever survey tables exist; ``eu_expectations`` from the
     Standard Eurobarometer table."""
     ideals: dict[str, list[dict[str, object]]] = {}
-    for table in (SURVEYS_EB_TABLE, SURVEYS_GGS_TABLE):
+    for table in (SURVEYS_EB_TABLE, SURVEYS_GGS_TABLE, SURVEYS_EB2006_TABLE):
         try:
             ideals[table] = ctx.tables.read_table(table)
         except FileNotFoundError:
             skipped.append(f"{table}: staged table missing (run stage)")
     if ideals:
         mart_rows = surveys.build_ideals_mart(
-            ideals.get(SURVEYS_EB_TABLE, []), ideals.get(SURVEYS_GGS_TABLE, [])
+            ideals.get(SURVEYS_EB_TABLE, []),
+            ideals.get(SURVEYS_GGS_TABLE, []),
+            ideals.get(SURVEYS_EB2006_TABLE, []),
         )
         ctx.tables.write_table(IDEALS_MART, mart_rows)
         written.append(IDEALS_MART)
@@ -1105,4 +1123,153 @@ def _mart_h8d_k(
         return written, skipped
     ctx.tables.write_table(MOEKR_MART, moekr.build_mart(staged_rows))
     written.append(MOEKR_MART)
+    return written, skipped
+
+
+# ---- H9-EB: Special Eurobarometer 253 (2006) ideal number of children ------------------------
+# One data.europa.eu record (``ebm.SPECIAL_WAVES``): JSON-LD first (raw ``eb_<code>_meta.json``),
+# then the volumes it resolves to (``eb_<code>_vol_c.zip`` = EB65.1 Volume C per-country
+# workbooks, ``eb_<code>_vol_a.zip`` = EB65.3 Volume A candidates). Stage parses every volume
+# into one staged table; a volume whose layout is not recognised is skipped and the others
+# continue. The mart side is ``_mart_h6``: ``eu_fertility_ideals`` takes the 2006 table as a
+# third source (``source = eb2006``), so there is no separate H9-EB mart step.
+
+SURVEYS_EB2006_TABLE = "staged/surveys/eb2006_ideals"
+
+
+def _fetch_h9_eb(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for wave in ebm.SPECIAL_WAVES:
+        try:
+            meta = ctx.fetcher.fetch(wave.jsonld_url)
+        except FetchError as e:
+            skipped.append(f"{wave.meta_raw_name}: {e}; volumes not attempted")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=ebm.SPECIAL_SOURCE,
+            name=wave.meta_raw_name,
+            url=wave.jsonld_url,
+            license=ebm.SPECIAL_LICENSE,
+            payload=meta,
+        )
+        written.append(rec.relative_path)
+        try:
+            volumes = ebm.special_volumes(meta)
+        except ValueError as e:
+            skipped.append(f"eb_{wave.code}_vol_*: volumes not resolved ({e})")
+            continue
+        for volume in wave.volumes:
+            dist = volumes[volume]
+            name = wave.raw_name(volume, dist.extension)
+            try:
+                payload = ctx.fetcher.fetch(dist.url)
+            except FetchError as e:
+                skipped.append(f"{name}: {e}")
+                continue
+            rec = ctx.raw.put(
+                theme=THEME,
+                source=ebm.SPECIAL_SOURCE,
+                name=name,
+                url=dist.url,
+                license=ebm.SPECIAL_LICENSE,
+                payload=payload,
+            )
+            written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h9_eb(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    rows: list[dict[str, object]] = []
+    for wave in ebm.SPECIAL_WAVES:
+        meta = ctx.raw.get(theme=THEME, source=ebm.SPECIAL_SOURCE, name=wave.meta_raw_name)
+        if meta is None:
+            skipped.append(f"{wave.meta_raw_name}: raw missing (run fetch)")
+            continue
+        try:
+            volumes = ebm.special_volumes(meta)
+        except ValueError as e:
+            skipped.append(f"eb_{wave.code}_vol_*: volumes not resolved ({e})")
+            continue
+        for volume in wave.volumes:
+            name = wave.raw_name(volume, volumes[volume].extension)
+            payload = ctx.raw.get(theme=THEME, source=ebm.SPECIAL_SOURCE, name=name)
+            if payload is None:
+                skipped.append(f"{name}: raw missing (run fetch)")
+                continue
+            try:
+                volume_rows, issues = eb_ideals.ideal_rows(payload, wave)
+            except ValueError as e:
+                skipped.append(f"{name}: layout not recognised ({e})")
+                continue
+            if not volume_rows:
+                skipped.append(f"{name}: no ideal-number-of-children sheet")
+                continue
+            rows.extend(volume_rows)
+            skipped.extend(f"{name}: {issue}" for issue in issues)
+    if rows:
+        ctx.tables.write_table(SURVEYS_EB2006_TABLE, rows)
+        written.append(SURVEYS_EB2006_TABLE)
+    return written, skipped
+
+
+# ---- H9-OECD: OECD Family Database SF2.5 childlessness (one xlsx, one long mart) ------------
+# Single raw (OECD terms, attribution). Stage parses the two chart sheets fail-closed; an
+# unrecognised layout is reported in skipped and nothing is written. Independent of the rest.
+
+OECD_FAMILY_TABLE = "staged/oecd_family/childlessness"
+OECD_FAMILY_MART = "marts/oecd_childlessness"
+
+
+def _fetch_h9_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        payload = ctx.fetcher.fetch(oecd_family.URL)
+    except FetchError as e:
+        skipped.append(f"{oecd_family.RAW_NAME}: {e}")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=oecd_family.SOURCE,
+        name=oecd_family.RAW_NAME,
+        url=oecd_family.URL,
+        license=oecd_family.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h9_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    payload = ctx.raw.get(theme=THEME, source=oecd_family.SOURCE, name=oecd_family.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{oecd_family.RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows, dropped = oecd_family.parse(payload)
+    except ValueError as e:
+        skipped.append(f"{oecd_family.RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(OECD_FAMILY_TABLE, rows)
+    written.append(OECD_FAMILY_TABLE)
+    skipped.extend(f"{oecd_family.RAW_NAME}: {note}" for note in dropped)
+    return written, skipped
+
+
+def _mart_h9_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged_rows = ctx.tables.read_table(OECD_FAMILY_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{OECD_FAMILY_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(OECD_FAMILY_MART, oecd_family.build_mart(staged_rows))
+    written.append(OECD_FAMILY_MART)
     return written, skipped
