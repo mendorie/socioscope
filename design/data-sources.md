@@ -29,6 +29,8 @@
 | Testa (2012) *Family sizes in Europe* 付表（VID/ÖAW EDRP 2、データ＝Eurobarometer 75.4, 2011）＋ BiB (2025) *Intended, ideal and actual fertility in 11 European countries* Table 1（GGS-II 2020–23） | 理想・意図・実際の子ども数の国別平均と分布（EB: EU-27 × 性 × 年齢 15–24/25–39/40–54/55+/計、2011。GGS: 11 か国 × 女性 18–29/30–39/40–49/計、2020–23） | 静的 PDF（`oeaw.ac.at/.../edrp_2012_02.pdf`、`bib.bund.de/Publikation/2025/pdf/...`、キー不要。pypdf でテキスト抽出し付表をパース） | Testa 2012: **ライセンス未明示 → 出典明記で事実の転記のみ、PDF は再配布しない**（EB 75.4 自体は欧州委員会 CC BY 4.0）。BiB 2025: **CC BY-SA 4.0**（本文表記、確認 2026-10-06） | **採用**（growth-fertility H6） |
 | Standard Eurobarometer（data.europa.eu）Volume A | 「今後 12 か月の期待（生活全般・家計・国の経済・国の雇用）」の国別 Better/Worse/Same/DK 割合、STD91（2019 春）〜STD105（2026 春）15 波 | hub API の JSON-LD（`data.europa.eu/api/hub/repo/datasets/<id>.jsonld`）から Volume A の静的 URL（`webgate.ec.europa.eu/ebsm/api/public/odp/download?key=…`、キー不要）を解決して xlsx/xls を取得 | **欧州委員会 再利用方針（Decision 2011/833/EU）＝CC BY 4.0 相当**（JSON-LD も `licence/CC_BY_4_0`。`commission.europa.eu/legal-notice_en`、確認 2026-10-06） | **採用**（growth-fertility H6） |
 | 国立社会保障・人口問題研究所（IPSS） | 『人口統計資料集 2026』表 4-25 妻の年齢別 予定子ども数・4-24 平均出生児数（1977–2021）・4-23 妻の生まれ年別 完結出生児数（1890–1976 生まれ）・4-15 出生順位別出生数・4-16 出生順位別 TFR／平均出生年齢（1950–2024）・4-09 年齢各歳別出生率（1925–2024）・4-11 コーホート別累積出生率；『第 16 回出生動向基本調査 結果の概要』図表 7-1（夫婦の平均理想・予定子ども数 1977–2021）・図表 3-3（未婚者の平均希望子ども数 1982–2021） | 静的 xlsx（`ipss.go.jp/syoushika/tohkei/Data/Popular2026/T04-NN.xlsx`、標準ライブラリで解析）＋ 静的 PDF（AES 暗号化、pypdf ＋ `cryptography`）。キー不要 | **PDL1.0（公共データ利用規約 第 1.0 版）＝出典表示で商用含め利用可**（確認 2026-10-18） | **採用**（growth-fertility H9） |
+| Special Eurobarometer 253（data.europa.eu、dataset `s406_65_1_ebs253`）EB65.1 Volume C ＋ EB65.3 Volume A | 2006 年の理想子ども数（一般理想・個人理想）の国別分布と平均、EU-25 × 性・年齢 ＋ 候補 4 か国 | hub の JSON-LD から 2 配布物（zip 内 xls）を解決して取得、xlrd で解析 | 欧州委員会 再利用方針（CC BY 4.0 相当、確認 2026-10-18） | **採用**（growth-fertility H9） |
+| OECD Family Database SF2.5 Childlessness（xlsx） | 出生コーホート（1935–1975）別 定義的無子率 %、1975 コーホートの完結出生率 | 静的 xlsx（`webfs.oecd.org`、鍵不要）、openpyxl | OECD Terms（CC BY 4.0、確認 2026-10-18） | **採用**（growth-fertility H9） |
 | 国税庁 統計年報 / 民間給与実態統計 | 所得分布 | Excel | 政府標準利用規約 | 候補（日本） |
 | 野村総研 富裕層レポート等 | 資産階層別世帯数（推計） | PDF（公開レポート） | 引用のみ | 候補（LLM 構造化対象） |
 
@@ -328,6 +330,52 @@
   - T04-23 は 1950 年調査に 3 コーホート（妻 55–59・50–54・45–49 歳）が並ぶ。1970 年以前（国勢調査の既婚女性）と 1977 年以降（初婚どうし夫婦）で母集団が違う。
   - PDF の図表 3-3 は「いずれ結婚するつもり」の 18–34 歳未婚者のみ（未婚者全体の値は注にあるが未取込）。希望子ども数は 5 人以上を 5 として平均。
   - 解析は fail-closed: 表題・ヘッダ・年／年齢／調査回の範囲・列数・合計の照合、PDF はラベル点数と第 7 回・第 16 回（図表 3-3 は第 8 回・第 16 回）の公表値による端点照合。違えば `ValueError` → stage の skipped に「`<raw>: layout not recognised (<reason>)`」として残し、その表だけ書かない。
+### Special Eurobarometer 253（data.europa.eu）— 2006 年の理想子ども数（growth-fertility H9）
+- URL / API: データセット記録（JSON-LD）`https://data.europa.eu/api/hub/repo/datasets/s406_65_1_ebs253.jsonld`（dataset_id は `theme_growth_fertility.eurobarometer.SPECIAL_WAVES` に固定、2026-10-18 確認）。配布物 5 件のうち使うのは 2 件（`special_volumes` が英語タイトルの正規表現で各 1 件に解決、`dcat:accessURL` = `https://webgate.ec.europa.eu/eurobarometer/api/public/odp/download?key=<32 hex>`）:
+  | raw（`data/raw/growth-fertility/eurobarometer_special/`） | 配布物 | 内容 |
+  |---|---|---|
+  | `eb_EBS253_meta.json`（128 KB） | JSON-LD | 記録そのもの |
+  | `eb_EBS253_vol_c.zip`（3.1 MB、key `1DDE…2467`） | `OP_VolumesCEB651EMPLageingandfertilityxls_v1.zip` = **EB65.1 Volume C**、国別 29 xls（EU-25 ＋ D-E/D-W、GB/NI） | QC2 一般理想・QC3 個人理想 × 国計／性／年齢 4 階級ほか（フィールドワーク 2006-02〜03） |
+  | `eb_EBS253_vol_a.zip`（98 KB、key `2ED5…B58E`） | `OP_VolumeAEB653EMPLfertility20060627.zip` = **EB65.3 Volume A**（xls 1 件） | QE2/QE3 × 候補国 BG/RO/HR/TR（2006-05〜06） |
+  - 使わない配布物: EB65.1 **Volume A'**（`OP_VolumeAPEB651…`、QC4〜QC9a のトレンド表のみで理想数は無い。記録に EU-25 の Volume A 本体は存在しない）、EB65.3 Volume AA（キプロス北部）、Volume B（社会人口属性別、国別なし）。
+- 対象指標・粒度: `staged/surveys/eb2006_ideals` → `marts/eu_fertility_ideals` の `source=eb2006`（2,864 行、29 か国 × (T/total, M/total, F/total, T/15-24, T/25-39, T/40-54, T/55+) × 16 metric。候補 4 か国は T/total のみ）。metric は `ideal_personal_mean` / `ideal_general_mean`（「理想なし」「DK」を除いた加重平均。回答は 0〜6 と「6 より多い」で、5・6 は額面、「6 より多い」= 7。設計 H9 の「4+ を 4」は表が 4+ で打ち切られている前提だったが実表は 6 まで分かれている）と分布 `ideal_{zero,one,two,three,four_plus,no_ideal,dk}_share`（全回答者比 %、計数から再計算）、一般理想は `ideal_general_` 接頭。`n` は加重 TOTAL。**性 × 年齢の交差（女性 25–39）は Volume C に無い**（H9 V1 は T/25-39 と F/total で代替し限界に書く）。
+- ライセンス・利用規約（確認日 2026-10-18）: 欧州委員会 再利用方針（Decision 2011/833/EU、CC BY 4.0 相当）。出典表記: 「European Commission, Special Eurobarometer 253 (EB65.1/65.3, 2006), Volume A/C (data.europa.eu)」。raw はコミットしない（manifest のみ）。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.eurobarometer`（`SPECIAL_WAVES`、`special_volumes`、`zip_workbooks`）＋ `eb_ideals.ideal_rows` ＋ `pipeline._fetch_h9_eb / _stage_h9_eb`（mart は `_mart_h6` が第 3 のソースとして結合）。**3 リクエスト（計 ~3.3 MB）**。
+- 既知の欠損・断絶・定義変更:
+  - 準国家ファイル D-E / D-W（ドイツ東西）、GB / NI（英国）は落として skipped に出し、DE / UK の国別ファイルを使う。
+  - 回答行は仏語（加重計数）→英語（割合）の順序対で読む。「Six」は両言語同形なので順序で対応付ける。計数は四捨五入済みで Σ ≠ TOTAL（差 ±2 % ＋ 2 まで許容、それ以上は ValueError）。
+  - 2006（EB253、15 歳以上）・2011（EB75.4、Testa 2012 転記）・2020–23（GGS-II、女性 18–49）は質問文・母集団・集計者が異なる（H9 の限界）。
+
+### OECD Family Database SF2.5 — コーホート別 定義的無子率（growth-fertility H9）
+- URL / API: 静的 xlsx `https://webfs.oecd.org/Els-com/Family_Database/SF_2-5-Childlessness.xlsx`（66 KB、`oecd_family.URL` に固定。source-scout が 2026-10-18 に httpx で 200 を確認）。
+- 対象指標・粒度: `marts/oecd_childlessness`（long: iso3, cohort, metric, value, chart, source。199 行、25 か国）。Chart SF2.5.A = 国 × 出生コーホート（1935/1940/1945/1950/1955/1960/1963/1964/1965/1970/1975）の定義的無子率 %（159 行）。Chart SF2.5.B = 1975 年生まれコーホートの無子率と完結出生率（20 か国 × 2）。
+- ライセンス・利用規約（確認日 2026-10-18）: OECD Terms & Conditions（`oecd.LICENSE`、CC BY 4.0）。出典表記: 「OECD Family Database, SF2.5 Childlessness (accessed 2026-10-18)」。raw はコミットしない。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.oecd_family`（`parse`・`build_mart`、openpyxl）＋ `pipeline._fetch_h9_oecd / _stage_h9_oecd / _mart_h9_oecd`。**1 リクエスト**。
+- 既知の欠損・断絶・定義変更:
+  - 非加盟国 China・Bulgaria と "England and Wales"（国ではない）は落として skipped に出す。Chart B の Poland 重複行（同値）は 1 回だけ保持。
+  - 表の注記どおり一部セルは隣接コーホートの値: 1975 列は KOR・SVK = 1970 コーホート、DEU = 1975–77 年生まれ、ITA = 1978、FRA = 推計; 1955 列は ITA = 1950、FRA = 1951–55、DEU = 1954–56、POL = 1956、ESP = 1960、FIN = 1967、SVN = 1968、AUT = 1969; 1935 列は FRA = 1931–35、HUN = 1937、EST = 1944、NOR = 1952、DNK = 1953、JPN = 1953。KOR はセンサスが既婚・離別・死別女性にしか子ども数を尋ねていない。MEX は 45 歳時点。値はそのまま保持し、分析側で注記する。
+  - ITA は Chart A に 1950 と 1975 しか無い（設計 V2 補助の 1955→1975 幅は 1950 起点で代替）。
+### 国家データ処（韓国）— 2025년 출생 통계 報道資料 PDF（growth-fertility H9-KR: 出生順位別出生数・母の年齢別出生率）
+- URL / API: 掲示板 `https://mods.go.kr/board.es?mid=a10301010000&bid=204`（보도자료）。PDF（固定 URL、`theme_growth_fertility.kostat.BIRTHS_URL`）: `https://mods.go.kr/boardDownload.es?bid=204&list_no=446625&seq=1`（2026-10-18 確認: 200、3.47 MB、`%PDF`、50 ページ）。KOSIS OpenAPI はキー必須のため使わない。robots.txt は 신혼부부통계 の節と同じ（`boardDownload.es` 許可）。
+- 表の位置（pypdf の `extract_text`、0 始まりのページ index）: index 37（資料の p.33）統計表 2「모(母)의 연령별 출산율, 1981-2025」（列 = 연도 / 합계출산율 / 15-19세 / … / 45-49세。単位: 가임 여자 1명당 명、해당 연령 여자인구 1천 명당 명）、index 38（p.34）統計表 3「출산 순위별 출생아 수, 1981-2025」（列 = 연도 / 계* / 첫째아 / 둘째아 / 셋째아 / 넷째아 이상。単位 명、`* 출산 순위 미상 포함`）。index 34 の統計表目次は見出しが行末アンカーで一致しない。2022–2024 行は空白が不規則だが正規化で吸収。
+- 対象指標・粒度: `marts/kr_births_order_asfr`（long）: year(1981–2025) × metric(births / births_share / asfr / tfr) × group(계 / 첫째아 / 둘째아 / 셋째아 / 넷째아 이상 / 15-19 … 45-49)。births_share = 順位別出生数 ÷ 계（계 は順位未詳を含むので 4 順位の和は 1 をわずかに下回る）。母集団: 가족관계등록법 により申告された全出生（인구동향조사、承認番号 101003）。
+- ライセンス・利用規約（確認日 2026-10-18）: 국가데이터처 報道資料は **공공누리（KOGL）제1유형（출처표시）**。出典表記: 「국가데이터처, 2025년 출생 통계 보도자료, mods.go.kr（KOGL 제1유형）」。`kostat.BIRTHS_LICENSE` に記載し manifest に残す。raw（PDF）はコミットしない。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.kostat`（`births_rows_from_pages` / `build_births_mart` の純粋変換、`pdf_text` 再利用）＋ `pipeline._fetch_h9_kr` / `_stage_h9_kr` / `_mart_h9_kr`（`HttpxFetcher`）。**1 リクエスト（3.5 MB）**。raw は `data/raw/growth-fertility/kostat_births/births_2025.pdf`、staged は `staged/kostat/births_order_asfr`、mart は `marts/kr_births_order_asfr`（765 行）。公開レート制限なし。再取得は年 1 回（翌年 8 月頃の確定公表後、`list_no`/`seq` を掲示板で確認）。
+- 既知の欠損・断絶・定義変更:
+  - **1997–2000 年**は旧資料と再集計差（出生申告の遅れ分の補正）があるため、全期間を再掲する**最新資料を正**とする。年ごとの資料を積まない。
+  - 計 は 출산 순위 미상 を含む（2025 年: 254,341 − 4 順位の和 254,213 = 128）。順位別の比は 계 を分母にする。女性人口は未取込なので順位別 TFR ではなく出生数の比で近似する（設計 H9 V2 の韓国の扱い）。
+  - 解析は fail-closed: 見出し不一致・年の連番外（1981 から）・列数不一致・順位合計が 계 の 99% 未満または超過・両表の年不一致は `ValueError` → stage の skipped に「`births_2025.pdf: layout not recognised (<reason>)`」。
+  - 統計表 1（出生数・粗出生率・合計特殊出生率 1970–）、表 4（母の年齢別出生数）、시도별・結婚持続期間別などは資料にあるが未取込（任意項目）。
+
+### Eurostat `demo_frate`（年齢各歳別出生率）— 欧州のコーホート累積・完結出生率（growth-fertility H9-EU）
+- URL / API: 上の Eurostat 節と同じ dissemination API。`https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/demo_frate?format=JSON&lang=EN&geo=<GEO>&sinceTimePeriod=1960&agedef=COMPLET&age=Y15&…&age=Y49`（`theme_growth_fertility.eurostat.frate_requests`、ORDER_GEOS 13 か国 × 1 リクエスト、raw `eurostat_demo_frate_<geo>.json`、各 18–39 KB）。次元（`id` 順、2026-10-18 に実レスポンスで確認）: freq.unit.age.agedef.geo.time、unit=NR（女性 1 人当たり、例 0.00106）、agedef=COMPLET（満年齢。`REACH` = 到達年齢は使わない）。
+- 対象指標・粒度: `staged/eurostat/asfr_single_age`（iso3 × year × age 15–49、rate）、`marts/eu_cohort_fertility`（long）: asfr（期間）、cohort_cum（cohort = year − age の 15 歳から age までの累積）、completed（45 歳時点。未到達は 40 歳以上の最終観測で打ち切り `censored_at`）。
+- ライセンス・利用規約: 上の Eurostat 節と同じ（出典明記で再利用可、確認日 2026-10-06）。出典表記: 「Source: Eurostat, demo_frate（accessed 2026-10-18）」。raw はコミットしない。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.eurostat`（`frate_requests` / `frate_rows` / `cohort_cumulative` / `build_cohort_mart` の純粋関数）＋ `pipeline._fetch_h9_eu` / `_stage_h9_eu` / `_mart_h9_eu`（`HttpxFetcher`、H5 の `_fetch_h5` とは別ブロック）。**13 リクエスト（計 ~430 KB）**。公開レート制限なし。再取得は年 1 回。
+- 既知の欠損・断絶・定義変更:
+  - 開始年が国で異なる: DE 2000（統一後の系列のみ、completed 行なし）、FR 1998（completed は 1983 コーホート 41 歳打ち切りのみ）、PL 1990、ES 1971、SE 1968、IS 1963、NO 1961、CZ/DK/FI/HU/IT/NL 1960。CZ は 1960–1986 に 45–49 歳が無い（1945 コーホート以降の累積には影響しない）。NO は 1971/1973/1978/1979/1987 に 47–49 歳の 1 セルが欠ける（同上）。`status` フラグ（b 断絶、p 暫定、e 推計）は保持しない。
+  - 15 歳の観測が無いコーホート（1960 年開始の国では 1944 以前）は累積を出さない。途中で欠けた歳があるコーホートは落として mart の skipped に出す（2026-10-18 時点 0 件）。完結（45 歳）は 1979 コーホートまで、1980–1984 は 40–44 歳打ち切り。
+  - cohort = year − age は満年齢ベースなので、誕生年は 2 暦年にまたがる（通常のコーホート出生率の近似）。
 
 ## 記録テンプレート（ソース採用時）
 ```

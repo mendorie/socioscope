@@ -368,3 +368,20 @@ def test_build_tfr_by_education_drops_group_when_births_have_no_denominator() ->
     assert (
         es.build_tfr_by_education(births, [*women[1:], w(ages[0], 0.0)]) == []
     )  # zero denominator
+
+
+# ---------------------------------------------------------------- H9: demo_frate requests
+
+
+def test_frate_requests_cover_order_geos_from_1960_with_complete_age_definition() -> None:
+    reqs = es.frate_requests()
+    assert [r.geo for r in reqs] == list(es.ORDER_GEOS)
+    assert all(r.dataset == "demo_frate" for r in reqs)
+    fi = reqs[0]
+    assert fi.raw_name == "eurostat_demo_frate_FI.json"
+    assert fi.url == (
+        "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/demo_frate"
+        "?format=JSON&lang=EN&geo=FI&sinceTimePeriod=1960&agedef=COMPLET"
+        + "".join(f"&age=Y{a}" for a in range(15, 50))
+    )
+    assert fi.url not in {r.url for r in es.requests()}  # not part of the H5 request list

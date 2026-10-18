@@ -472,3 +472,79 @@ def test_cy_tcc_only_sheets_and_the_std100_economy_wording() -> None:
     got = eb.expectation_rows(xlsx_from_sheets({"QA2b.1": tcc, "QA2_3": economy}), std101())
     assert {r["item"] for r in got} == {"national_economy"}
     assert next(r for r in got if r["iso3"] == "FIN")["worse_share"] == 41.0
+
+
+# ---------------------------------------------------------------- Special Eurobarometer 253 (H9)
+
+
+def ebs253_jsonld(*titles: str) -> bytes:
+    graph: list[dict[str, object]] = [{"@id": "ds", "@type": "dcat:Dataset"}]
+    for i, title in enumerate(titles):
+        graph.append(
+            {
+                "@id": f"d{i}",
+                "@type": "dcat:Distribution",
+                "dct:title": [
+                    {"@language": "en", "@value": f"Link to {title}"},
+                    {"@language": "fr-t-en-t0-mtec", "@value": f"Lien vers {title}"},
+                ],
+                "dcat:accessURL": {"@id": f"https://webgate.ec.europa.eu/odp/download?key={i}"},
+            }
+        )
+    return json.dumps({"@graph": graph, "@context": {}}).encode()
+
+
+REAL_EBS253_TITLES = (
+    "OP_VolumeAPEB651EMPLageingandfertility20060404.zip",
+    "OP_VolumeAAEB653EMPLfertility20060627.zip",
+    "OP_VolumeAEB653EMPLfertility20060627.zip",
+    "OP_VolumesCEB651EMPLageingandfertilityxls_v1.zip",
+    "OP_VolumeBEB653EMPLfertility20060627.zip",
+)
+
+
+def test_special_waves_are_fixed_and_separate_from_standard_waves() -> None:
+    (w,) = eb.SPECIAL_WAVES
+    assert w.code == "EBS253" and w.dataset_id == "s406_65_1_ebs253" and w.survey_year == 2006
+    assert w.jsonld_url == "https://data.europa.eu/api/hub/repo/datasets/s406_65_1_ebs253.jsonld"
+    assert w.meta_raw_name == "eb_EBS253_meta.json"
+    assert w.volumes == ("vol_c", "vol_a")
+    assert w.raw_name("vol_c", "zip") == "eb_EBS253_vol_c.zip"
+    assert eb.SPECIAL_SOURCE == "eurobarometer_special" and eb.SPECIAL_SOURCE != eb.SOURCE
+    assert "Special Eurobarometer 253" in eb.SPECIAL_LICENSE
+    assert "data.europa.eu" in eb.SPECIAL_LICENSE
+    assert not {w.code for w in eb.SPECIAL_WAVES} & {w.code for w in eb.WAVES}
+
+
+def test_special_volumes_picks_eb651_volume_c_and_eb653_volume_a_only() -> None:
+    got = eb.special_volumes(ebs253_jsonld(*REAL_EBS253_TITLES))
+    assert set(got) == {"vol_c", "vol_a"}
+    assert got["vol_c"].filename == "OP_VolumesCEB651EMPLageingandfertilityxls_v1.zip"
+    assert got["vol_c"].url == "https://webgate.ec.europa.eu/odp/download?key=3"
+    assert got["vol_a"].filename == "OP_VolumeAEB653EMPLfertility20060627.zip"
+    assert got["vol_a"].url == "https://webgate.ec.europa.eu/odp/download?key=2"
+    assert got["vol_a"].extension == "zip"
+
+
+def test_special_volumes_fails_closed_when_a_volume_is_missing_or_ambiguous() -> None:
+    with pytest.raises(ValueError, match="vol_c"):
+        eb.special_volumes(ebs253_jsonld(*REAL_EBS253_TITLES[:3]))
+    with pytest.raises(ValueError, match="vol_a"):
+        eb.special_volumes(ebs253_jsonld(*REAL_EBS253_TITLES, REAL_EBS253_TITLES[2]))
+    with pytest.raises(ValueError, match="JSON-LD"):
+        eb.special_volumes(b"<html>maintenance</html>")
+
+
+def test_zip_workbooks_lists_every_workbook_member(xls_from_sheets) -> None:  # type: ignore[no-untyped-def]
+    a = xls_from_sheets({"S1": [["a", 1.0]]})
+    b = xlsx_from_sheets({"S2": [["b", 2.0]]})
+    got = eb.zip_workbooks(zip_of("one.xls", a, {"two.xlsx": b, "readme.txt": b"hi"}))
+    assert [(m, [s for s, _ in sheets]) for m, sheets in got] == [
+        ("one.xls", ["S1"]),
+        ("two.xlsx", ["S2"]),
+    ]
+    assert got[0][1][0][1][0] == ["a", 1.0]
+    with pytest.raises(ValueError, match="zip"):
+        eb.zip_workbooks(a)
+    with pytest.raises(ValueError, match="workbook"):
+        eb.zip_workbooks(zip_of("readme.txt", b"hi"))
