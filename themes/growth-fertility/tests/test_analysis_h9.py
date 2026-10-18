@@ -185,3 +185,31 @@ def test_v1_rows_selects_low_tfr_countries_with_two_points() -> None:
     assert r.first_gap == pytest.approx(0.6)
     assert r.last_gap == pytest.approx(0.8)
     assert r.kind == "C"
+
+
+def test_framed_stance_fills_brackets_with_results() -> None:
+    s = h9.framed_stance(
+        n_none=18,
+        n_total=25,
+        jp_kinds=["N", "mixed", "mixed"],
+        median_share=0.498,
+        first_names=["スペイン"],
+        later_names=["韓国"],
+        recovered_names=["スウェーデン"],
+        not_recovered_names=["日本"],
+        alt_note="窓 A で 9/12",
+    )
+    assert s.startswith("2 人未満への低下は国で異なる（25 か国中 18 か国はどちらの型でもない）。")
+    assert "日本は予定の取り方で規範型かどちらでもないかが変わり" in s
+    assert "ほぼ半々（第 1 子寄与率の中央値 49.8%）" in s
+    assert "（スペインは第 1 子、韓国は第 2 子以降）" in s
+    assert s.endswith("打ち切り年齢に左右される（窓 A で 9/12）。")
+
+
+def test_framed_stance_names_lead_when_not_close_to_half() -> None:
+    s = h9.framed_stance(
+        n_none=1, n_total=3, jp_kinds=["N"], median_share=0.7, first_names=["A"],
+        later_names=["B"], recovered_names=["C"], not_recovered_names=["D"], alt_note="x",
+    )  # fmt: skip
+    assert "日本は予定の取り方で規範型で、" in s
+    assert "第 1 子が中心（第 1 子寄与率の中央値 70.0%）だが" in s

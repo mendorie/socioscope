@@ -1,4 +1,4 @@
-== Operational choices fixed before the first run ==
+== Operational choices fixed before the first run (also in the module docstring) ==
   JP main V1 series: ('planned_children', '総数') (xlsx T04-25 total); PDF ('planned_children_pdf', '夫婦') = robustness
   JP ideal ('ideal_children', '夫婦'): shown, not the main verdict
   EU waves (personal ideal): (('eb2006', 'T', '25-39'), ('eb2011', 'F', '25-39'), ('ggs2020', 'F', '30-39')); 2006 alt = ('eb2006', 'F', 'total')
@@ -274,7 +274,7 @@ shape: (21, 4)
   JPN all cohorts: 1955=11.9, 1960=16.6, 1963=20.1, 1964=19.8, 1965=22.1, 1970=26.9, 1975=28.3
 
 == V3: cohort recovery (completed at 45) ==
-  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr) 1980-2005  CF1975-min  CF1960-CF1975  type
+  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  CF1960-CF1975  type
   CZE  2.090  2.034  1.793  1.290        1.130 (1999)          +0.663      +0.242      recovery
   DNK  1.912  1.883  1.957  1.800        1.380 (1983)          +0.577      -0.074      recovery
   ESP    n/a  1.775  1.373  1.330        1.130 (1998)          +0.243      +0.402      quantitative
@@ -289,7 +289,7 @@ shape: (21, 4)
   JPN  2.027  1.845  1.455  1.260        1.260 (2005)          +0.195      +0.391      quantitative
   types: {'recovery': 9, 'quantitative': 2, 'both': 0, 'neither': 1} -> recovered (majority recovery/both): True (9/12)
 -- V3 robustness: truncation age 40 (and Japan 49) --
-  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr) 1980-2005  CF1975-min  CF1960-CF1975  type
+  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  CF1960-CF1975  type
   CZE  2.085  2.026  1.765  1.290        1.130 (1999)          +0.635      +0.260      recovery
   DNK  1.899  1.863  1.919  1.800        1.380 (1983)          +0.539      -0.056      recovery
   ESP    n/a  1.752  1.319  1.330        1.130 (1998)          +0.189      +0.433      quantitative
@@ -303,7 +303,7 @@ shape: (21, 4)
   SWE    n/a  2.025  1.914  1.770        1.500 (1998)          +0.414      +0.110      recovery
   JPN  2.021  1.834  1.420  1.260        1.260 (2005)          +0.160      +0.414      quantitative
   age 40: recovered=(False, 6)
-  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr) 1980-2005  CF1975-min  CF1960-CF1975  type
+  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  CF1960-CF1975  type
   JPN  2.028  1.846  1.456  1.260        1.260 (2005)          +0.196      +0.390      quantitative
 -- V3 robustness (not pre-registered, reported for transparency): vs TFR at age 30 only --
   CZE: CF1975 − TFR(2005) = +0.503
@@ -319,11 +319,27 @@ shape: (21, 4)
   SWE: CF1975 − TFR(2005) = +0.193
   JPN: CF1975 − TFR(2005) = +0.195
   >= 0.3: 3/12
+-- V3 robustness (post hoc, reviewer): period min over 1995-2020 (1975 cohort aged 20-45) --
+  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  CF1960-CF1975  type
+  CZE  2.090  2.034  1.793  1.290        1.130 (1999)          +0.663      +0.242      recovery
+  DNK  1.912  1.883  1.957  1.800        1.670 (2013)          +0.287      -0.074      neither
+  ESP    n/a  1.775  1.373  1.330        1.130 (1998)          +0.243      +0.402      quantitative
+  FIN  1.856  1.942  1.895  1.800        1.350 (2019)          +0.545      +0.047      recovery
+  HUN  1.972  2.019  1.737  1.310        1.230 (2011)          +0.507      +0.282      recovery
+  ISL  2.671  2.455  2.221  2.050        1.710 (2017)          +0.511      +0.235      recovery
+  ITA  1.858  1.691  1.434  1.330        1.190 (1995)          +0.244      +0.257      neither
+  NLD  1.897  1.861  1.782  1.710        1.530 (1995)          +0.252      +0.079      neither
+  NOR  2.104  2.088  2.013  1.840        1.480 (2020)          +0.533      +0.075      recovery
+  POL    n/a    n/a  1.623  1.240        1.220 (2003)          +0.403        n/a      recovery
+  SWE    n/a  2.053  1.963  1.770        1.500 (1998)          +0.463      +0.090      recovery
+  JPN  2.027  1.845  1.455  1.260        1.260 (2005)          +0.195      +0.391      quantitative
+  1995-2020 window: recovered=(True, 7)
 
 == V4: overall ==
   V1 majority: differs; V2 majority: differs; V3 recovered: True
   verdict on part4's final hypothesis (norm collapse + postponement): differs
-  FINAL STANCE: 2 人未満への低下は国で異なり、日本は規範型・オーストリア・キプロス・デンマーク・英国・ルクセンブルク・ラトビアは阻害型であり、低下の主役は第 2 子以降の減少である。コーホートで見ると回復している。
+  FINAL STANCE (pre-registered pattern, literal): 2 人未満への低下は国で異なり、日本は規範型・オーストリア・キプロス・デンマーク・英国・ルクセンブルク・ラトビアは阻害型であり、低下の主役は第 2 子以降の減少である。コーホートで見ると回復している。
+  FRAMED STANCE (pattern with brackets filled by the results): 2 人未満への低下は国で異なる（25 か国中 18 か国はどちらの型でもない）。日本は予定の取り方で規範型かどちらでもないかが変わり、予定の低下は諦めと区別できない。低下の主役は第 1 子と第 2 子以降がほぼ半々（第 1 子寄与率の中央値 49.8%）で、地域で逆になる（チェコ・スペイン・イタリア・ポーランド・日本（2010 年以降）は第 1 子、フィンランド・アイスランド・オランダ・ノルウェー・スウェーデン・韓国は第 2 子以降）。コーホートで見るとチェコ・デンマーク・フィンランド・ハンガリー・アイスランド・オランダ・ノルウェー・ポーランド・スウェーデンは回復、スペイン・イタリア・日本は回復しておらず、「回復している」かどうかは比べる窓と打ち切り年齢に左右される（回復型は 45 歳・1980–2005 年の最小値で 9/12、1995–2020 年の最小値で 7/12、2005 年の値だけと比べると 3/12、40 歳打ち切りで 6/12）。
 -- V4 cross-tab: V1 type x V2 type (2010 window; JPN/KOR long window in brackets) --
   AUT: V1 C; V2 n/a
   BEL: V1 mixed; V2 n/a

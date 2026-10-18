@@ -80,6 +80,7 @@ V3_RECOVERY, V3_DROP, V3_FLOOR = 0.3, 0.3, 1.7
 V3_FIRST_COHORT, V3_REF_COHORT, V3_COHORT = 1950, 1960, 1975
 V3_PERIOD_AGE, V3_AGE = 30, 45
 OECD_FROM, OECD_TO = 1955, 1975
+V3_ALT_WINDOW = (1995, 2020)  # 1975 cohort aged 20-45 (reviewer request, post hoc)
 
 # ---------------------------------------------------------------- operational (fixed pre-run)
 JP_PLANNED = ("planned_children", "総数")  # xlsx T04-25 (main)
@@ -270,6 +271,43 @@ def final_stance(
     b = "第 1 子の減少" if lead == "first" else "第 2 子以降の減少"
     r = "回復している" if recovered else "回復していない"
     return f"2 人未満への低下は{a}であり、低下の主役は{b}である。コーホートで見ると{r}。"
+
+
+def framed_stance(
+    *,
+    n_none: int,
+    n_total: int,
+    jp_kinds: Sequence[str],
+    median_share: float,
+    first_names: Sequence[str],
+    later_names: Sequence[str],
+    recovered_names: Sequence[str],
+    not_recovered_names: Sequence[str],
+    alt_note: str,
+) -> str:
+    """Reporting sentence: the pre-registered pattern with its brackets filled by the results.
+
+    Added after methodology review (BLOCKING 1); `final_stance` keeps the literal pattern."""
+    ja = {"N": "規範型", "C": "阻害型", "mixed": "どちらでもない"}
+    kinds = [ja[k] for k in dict.fromkeys(jp_kinds)]
+    jp = "か".join(kinds) + ("かが変わり" if len(kinds) > 1 else "で")
+    if abs(median_share - 0.5) < 0.05:
+        lead = (
+            f"第 1 子と第 2 子以降がほぼ半々（第 1 子寄与率の中央値 {median_share:.1%}）"
+            "で、地域で逆になる"
+        )
+    else:
+        main = "第 1 子" if median_share >= 0.5 else "第 2 子以降"
+        lead = f"{main}が中心（第 1 子寄与率の中央値 {median_share:.1%}）だが、地域で逆になる"
+    return (
+        f"2 人未満への低下は国で異なる（{n_total} か国中 {n_none} か国はどちらの型でもない）。"
+        f"日本は予定の取り方で{jp}、予定の低下は諦めと区別できない。"
+        f"低下の主役は{lead}（{'・'.join(first_names)}は第 1 子、"
+        f"{'・'.join(later_names)}は第 2 子以降）。"
+        f"コーホートで見ると{'・'.join(recovered_names)}は回復、"
+        f"{'・'.join(not_recovered_names)}は回復しておらず、「回復している」かどうかは比べる窓と"
+        f"打ち切り年齢に左右される（{alt_note}）。"
+    )
 
 
 # ---------------------------------------------------------------- frames
@@ -557,11 +595,17 @@ def eu_cohort_cum(coh: pl.DataFrame, iso3: str, age: int) -> dict[int, float]:
 
 
 def v3_row(
-    iso3: str, cum: Mapping[int, float], tfr: Mapping[tuple[str, int], float], age: int
+    iso3: str,
+    cum: Mapping[int, float],
+    tfr: Mapping[tuple[str, int], float],
+    age: int,
+    window: tuple[int, int] | None = None,
 ) -> V3Row | None:
+    """V3 for one country; `window` (first, last year) overrides the 1980-2005 period window."""
     if V3_COHORT not in cum:
         return None
-    years = list(range(V3_FIRST_COHORT + V3_PERIOD_AGE, V3_COHORT + V3_PERIOD_AGE + 1))
+    lo, hi = window or (V3_FIRST_COHORT + V3_PERIOD_AGE, V3_COHORT + V3_PERIOD_AGE)
+    years = list(range(lo, hi + 1))
     by_year = {y: v for (i, y), v in tfr.items() if i == iso3}
     pm = period_min(by_year, years)
     if pm is None:
@@ -581,14 +625,19 @@ def v3_row(
 
 
 def v3_rows(
-    age: int, *, jp: pl.DataFrame, coh: pl.DataFrame, tfr: Mapping[tuple[str, int], float]
+    age: int,
+    *,
+    jp: pl.DataFrame,
+    coh: pl.DataFrame,
+    tfr: Mapping[tuple[str, int], float],
+    window: tuple[int, int] | None = None,
 ) -> list[V3Row]:
     rows: list[V3Row] = []
     for iso3 in sorted(coh["iso3"].unique().to_list()):
-        r = v3_row(iso3, eu_cohort_cum(coh, iso3, age), tfr, age)
+        r = v3_row(iso3, eu_cohort_cum(coh, iso3, age), tfr, age, window)
         if r:
             rows.append(r)
-    r = v3_row("JPN", jp_cohort_cum(jp, age), tfr, age)
+    r = v3_row("JPN", jp_cohort_cum(jp, age), tfr, age, window)
     if r:
         rows.append(r)
     return rows
@@ -605,7 +654,7 @@ def _f(x: float | None, fmt: str = ".3f") -> str:
 
 def print_v3(rows: Sequence[V3Row]) -> None:
     print(
-        "  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr) 1980-2005  CF1975-min  "
+        "  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  "
         "CF1960-CF1975  type"
     )
     for r in rows:
@@ -857,6 +906,7 @@ class H9Result:
     recovered: bool
     verdict: str
     stance: str
+    framed: str
 
 
 def load(data_dir: Path) -> dict[str, pl.DataFrame]:
@@ -894,7 +944,49 @@ def compute(d: Mapping[str, pl.DataFrame]) -> H9Result:
         lead=lead_order(shares),
         recovered=recovered,
     )
-    return H9Result(v1, v1_major, v2, v2_long, v2_major, shares, v3, recovered, verdict, stance)
+    framed = framed_stance(
+        n_none=sum(r.kind == "mixed" for r in v1),
+        n_total=len(v1),
+        jp_kinds=[
+            r.kind
+            for key in (JP_PLANNED, JP_PLANNED_PDF, JP_PLANNED_U35)
+            for r in v1_rows({"JPN": jp_points(d["survey"], key)}, tfr, latest)
+        ],
+        median_share=statistics.median(shares),
+        first_names=[
+            COUNTRY_JA[r.iso3] + ("（2010 年以降）" if r.iso3 == "JPN" else "")
+            for r in v2
+            if r.share is not None and _ge(r.share, V2_FIRST_MIN)
+        ],
+        later_names=[
+            COUNTRY_JA[r.iso3] for r in v2 if r.share is not None and not _ge(r.share, V2_FIRST_MIN)
+        ],
+        recovered_names=[COUNTRY_JA[r.iso3] for r in v3 if r.kind in ("recovery", "both")],
+        not_recovered_names=[COUNTRY_JA[r.iso3] for r in v3 if r.kind not in ("recovery", "both")],
+        alt_note=v3_alt_note(
+            v3,
+            v3_rows(V3_AGE, jp=d["jp"], coh=d["coh"], tfr=tfr, window=V3_ALT_WINDOW),
+            v3_rows(40, jp=d["jp"], coh=d["coh"], tfr=tfr),
+        ),
+    )
+    return H9Result(
+        v1, v1_major, v2, v2_long, v2_major, shares, v3, recovered, verdict, stance, framed
+    )
+
+
+def v3_alt_note(main: Sequence[V3Row], alt_window: Sequence[V3Row], age40: Sequence[V3Row]) -> str:
+    """Recovery counts: main, 1995-2020 minimum, 2005 value only, truncation at 40."""
+
+    def rec(rows: Sequence[V3Row]) -> int:
+        return sum(r.kind in ("recovery", "both") for r in rows)
+
+    n30 = sum(r.tfr_at30 is not None and _ge(r.c_last - r.tfr_at30, V3_RECOVERY) for r in main)
+    lo, hi = V3_ALT_WINDOW
+    return (
+        f"回復型は 45 歳・1980–2005 年の最小値で {rec(main)}/{len(main)}、{lo}–{hi} 年の最小値で "
+        f"{rec(alt_window)}/{len(alt_window)}、2005 年の値だけと比べると {n30}/{len(main)}、"
+        f"40 歳打ち切りで {rec(age40)}/{len(age40)}"
+    )
 
 
 def japan_series(d: Mapping[str, pl.DataFrame]) -> dict[str, list[tuple[int, float]]]:
@@ -1103,6 +1195,14 @@ def section_v3(d: Mapping[str, pl.DataFrame], res: H9Result, fig_dir: Path) -> N
             print(f"  {r.iso3}: CF1975 − TFR(2005) = {r.c_last - r.tfr_at30:+.3f}")
     n30 = sum(r.tfr_at30 is not None and _ge(r.c_last - r.tfr_at30, V3_RECOVERY) for r in res.v3)
     print(f"  >= {V3_RECOVERY}: {n30}/{len(res.v3)}")
+    lo, hi = V3_ALT_WINDOW
+    print(
+        f"-- V3 robustness (post hoc, reviewer): period min over {lo}-{hi} "
+        "(1975 cohort aged 20-45) --"
+    )
+    alt = v3_rows(V3_AGE, jp=d["jp"], coh=d["coh"], tfr=tfr, window=V3_ALT_WINDOW)
+    print_v3(alt)
+    print(f"  {lo}-{hi} window: recovered={v3_recovered(alt)}")
     fig_v3(res.v3, fig_dir / "h9_04_v3_cohort.png")
     fig_japan(japan_series(d), fig_dir / "h9_02_japan_series.png")
 
@@ -1119,7 +1219,8 @@ def section_v4(
         f"  V1 majority: {res.v1_major}; V2 majority: {res.v2_major}; V3 recovered: {res.recovered}"
     )
     print(f"  verdict on part4's final hypothesis (norm collapse + postponement): {res.verdict}")
-    print(f"  FINAL STANCE: {res.stance}")
+    print(f"  FINAL STANCE (pre-registered pattern, literal): {res.stance}")
+    print(f"  FRAMED STANCE (pattern with brackets filled by the results): {res.framed}")
     print("-- V4 cross-tab: V1 type x V2 type (2010 window; JPN/KOR long window in brackets) --")
     v2k = {r.iso3: r.kind for r in res.v2}
     v2l = {r.iso3: r.kind for r in res.v2_long}
@@ -1197,7 +1298,7 @@ def run(data_dir: Path, fig_dir: Path) -> H9Result:
     pl.Config.set_tbl_width_chars(200)
     fig_dir.mkdir(parents=True, exist_ok=True)
     d = load(data_dir)
-    print("== Operational choices fixed before the first run ==")
+    print("== Operational choices fixed before the first run (also in the module docstring) ==")
     print(
         f"  JP main V1 series: {JP_PLANNED} (xlsx T04-25 total); PDF {JP_PLANNED_PDF} = robustness"
     )
