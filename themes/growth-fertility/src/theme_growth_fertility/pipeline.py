@@ -162,6 +162,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h10_pref(ctx, written, skipped)
     written, skipped = _fetch_h10_oecd(ctx, written, skipped)
     written, skipped = _fetch_h10_eu(ctx, written, skipped)
+    written, skipped = _fetch_h10_jp(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -253,6 +254,7 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h10_pref(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h10_oecd(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h10_eu(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h10_jp(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -522,6 +524,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h10_pref(ctx, written, skipped)
     written, skipped = _mart_h10_oecd(ctx, written, skipped)
     written, skipped = _mart_h10_eu(ctx, written, skipped)
+    written, skipped = _mart_h10_jp(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -1764,4 +1767,87 @@ def _mart_h10_pref(
         written.append(H10_PREF_MART)
     else:
         skipped.append(f"{H10_PREF_MART}: no staged prefecture table (run stage)")
+    return written, skipped
+
+
+# ---- H10-JP: 就業構造基本調査 雇用形態×配偶関係×年齢×性, four waves (有業者 + 無業者) --------
+# Raw: eight e-Stat workbooks (estat.MARITAL_EMPLOYMENT_TABLES, source estat_shugyo). Stage: one
+# long table; a wave is staged only when both of its raws exist and pass the layout and
+# consistency checks (estat.marital_wave_rows), otherwise that wave alone is skipped. Mart: the
+# staged rows sorted with a unique key. Independent of every other source.
+
+H10_JP_TABLE = "staged/estat/shugyo_marital_by_employment"
+H10_JP_MART = "marts/jp_marital_by_employment"
+
+
+def _h10_jp_waves() -> list[tuple[int, estat.Table, estat.Table]]:
+    """(survey year, 有業者 table, 無業者 table) per wave, oldest first."""
+    by_year: dict[int, dict[estat.TableKind, estat.Table]] = defaultdict(dict)
+    for t in estat.MARITAL_EMPLOYMENT_TABLES:
+        by_year[t.survey_year][t.kind] = t
+    return [
+        (
+            year,
+            kinds[estat.TableKind.MARITAL_EMPLOYMENT],
+            kinds[estat.TableKind.MARITAL_NOT_EMPLOYED],
+        )
+        for year, kinds in sorted(by_year.items())
+    ]
+
+
+def _fetch_h10_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for table in estat.MARITAL_EMPLOYMENT_TABLES:
+        try:
+            payload = ctx.fetcher.fetch(table.url)
+        except FetchError as e:
+            skipped.append(f"{table.raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=table.source,
+            name=table.raw_name,
+            url=table.url,
+            license=estat.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h10_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    rows: list[dict[str, object]] = []
+    for year, emp, ne in _h10_jp_waves():
+        payloads: dict[str, bytes] = {}
+        for t in (emp, ne):
+            payload = ctx.raw.get(theme=THEME, source=t.source, name=t.raw_name)
+            if payload is None:
+                skipped.append(f"{t.raw_name}: raw missing (run fetch); wave {year} not staged")
+            else:
+                payloads[t.key] = payload
+        if len(payloads) < 2:
+            continue
+        try:
+            rows.extend(estat.marital_wave_rows(payloads[emp.key], emp, payloads[ne.key], ne))
+        except ValueError as e:
+            skipped.append(f"wave {year}: layout not recognised ({e})")
+    if rows:
+        ctx.tables.write_table(H10_JP_TABLE, rows)
+        written.append(H10_JP_TABLE)
+    return written, skipped
+
+
+def _mart_h10_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(H10_JP_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{H10_JP_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(H10_JP_MART, estat.build_marital_employment_mart(staged))
+    written.append(H10_JP_MART)
     return written, skipped
