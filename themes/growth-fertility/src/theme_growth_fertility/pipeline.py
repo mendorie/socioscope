@@ -16,6 +16,7 @@ from theme_growth_fertility import (
     eb_ideals,
     estat,
     hdr,
+    ipss,
     kostat,
     moekr,
     oecd,
@@ -149,6 +150,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h8c(ctx, written, skipped)
     written, skipped = _fetch_h8d(ctx, written, skipped)
     written, skipped = _fetch_h8d_k(ctx, written, skipped)
+    written, skipped = _fetch_h9_jp(ctx, written, skipped)
     written, skipped = _fetch_h9_eb(ctx, written, skipped)
     written, skipped = _fetch_h9_oecd(ctx, written, skipped)
     written, skipped = _fetch_h9_kr(ctx, written, skipped)
@@ -236,6 +238,7 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h8c(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8d(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8d_k(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h9_jp(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h9_eb(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h9_oecd(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h9_kr(ctx, dhs_written, dhs_skipped)
@@ -502,6 +505,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h8c(ctx, written, skipped)
     written, skipped = _mart_h8d(ctx, written, skipped)
     written, skipped = _mart_h8d_k(ctx, written, skipped)
+    written, skipped = _mart_h9_jp(ctx, written, skipped)
     written, skipped = _mart_h9_oecd(ctx, written, skipped)
     written, skipped = _mart_h9_kr(ctx, written, skipped)
     written, skipped = _mart_h9_eu(ctx, written, skipped)
@@ -1399,4 +1403,90 @@ def _mart_h9_oecd(
         return written, skipped
     ctx.tables.write_table(OECD_FAMILY_MART, oecd_family.build_mart(staged_rows))
     written.append(OECD_FAMILY_MART)
+    return written, skipped
+
+
+# ---- H9-JP: IPSS 人口統計資料集 2026 (7 xlsx) + 第16回出生動向基本調査 結果の概要 (1 PDF) ----
+# Each raw is staged on its own (`staged/ipss/<key>`); a layout mismatch is reported in skipped
+# and that table is not written. The two marts combine whatever is staged on their side
+# (survey: t04_25 / t04_24 / t04_23 / jnfs16, births: t04_15 / t04_16 / t04_09 / t04_11).
+# Independent of every other source.
+
+IPSS_TABLES: dict[str, str] = {t.key: f"staged/ipss/{t.key}" for t in ipss.TABLES}
+IPSS_TABLES[ipss.PDF_KEY] = f"staged/ipss/{ipss.PDF_KEY}"
+IPSS_SURVEY_MART = "marts/jp_fertility_survey"
+IPSS_BIRTHS_MART = "marts/jp_births_order_cohort"
+_IPSS_MART_KEYS: dict[str, tuple[str, ...]] = {
+    IPSS_SURVEY_MART: (*(t.key for t in ipss.TABLES if t.mart == "survey"), ipss.PDF_KEY),
+    IPSS_BIRTHS_MART: tuple(t.key for t in ipss.TABLES if t.mart == "births"),
+}
+
+
+def _ipss_items() -> list[tuple[str, str, str]]:
+    """(key, raw name, URL) for the seven workbooks and the PDF."""
+    items = [(t.key, t.raw_name, t.url) for t in ipss.TABLES]
+    items.append((ipss.PDF_KEY, ipss.PDF_RAW_NAME, ipss.PDF_URL))
+    return items
+
+
+def _fetch_h9_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for _key, raw_name, url in _ipss_items():
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=ipss.SOURCE,
+            name=raw_name,
+            url=url,
+            license=ipss.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h9_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    tables = {t.key: t for t in ipss.TABLES}
+    for key, raw_name, _url in _ipss_items():
+        payload = ctx.raw.get(theme=THEME, source=ipss.SOURCE, name=raw_name)
+        if payload is None:
+            skipped.append(f"{raw_name}: raw missing (run fetch)")
+            continue
+        try:
+            rows = (
+                ipss.survey_pdf_rows(payload)
+                if key == ipss.PDF_KEY
+                else ipss.parse_table(payload, tables[key])
+            )
+        except ValueError as e:
+            skipped.append(f"{raw_name}: layout not recognised ({e})")
+            continue
+        ctx.tables.write_table(IPSS_TABLES[key], rows)
+        written.append(IPSS_TABLES[key])
+    return written, skipped
+
+
+def _mart_h9_jp(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    builders = {IPSS_SURVEY_MART: ipss.build_survey_mart, IPSS_BIRTHS_MART: ipss.build_births_mart}
+    for mart_name, keys in _IPSS_MART_KEYS.items():
+        parts: dict[str, Sequence[dict[str, object]]] = {}
+        for key in keys:
+            try:
+                parts[key] = ctx.tables.read_table(IPSS_TABLES[key])
+            except FileNotFoundError:
+                skipped.append(f"{IPSS_TABLES[key]}: staged table missing (run stage)")
+        if not parts:
+            skipped.append(f"{mart_name}: no staged ipss table (run stage)")
+            continue
+        ctx.tables.write_table(mart_name, builders[mart_name](parts))
+        written.append(mart_name)
     return written, skipped

@@ -468,29 +468,67 @@ def _col_index(ref: str) -> int:
     return n
 
 
-def xlsx_rows(payload: bytes) -> list[dict[int, str]]:
-    """First worksheet of an xlsx as a list of {1-based column: text}. Standard library only.
+_WORKBOOK = "xl/workbook.xml"
+_WORKBOOK_RELS = "xl/_rels/workbook.xml.rels"
+_XML_REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+_XML_PKG_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
 
-    Handles shared strings (``t="s"``), inline strings (``t="inlineStr"``) and plain values.
-    Empty cells are absent from the dict. Raises ``ValueError`` when *payload* is not an xlsx.
+
+def _sheet_path(z: zipfile.ZipFile, name: str) -> str:
+    """Zip member of the worksheet titled *name* (workbook.xml -> rels); ``ValueError`` if none."""
+    wb = ET.fromstring(z.read(_WORKBOOK))  # noqa: S314 - trusted public file, stdlib
+    rels = {
+        r.get("Id"): r.get("Target") or ""
+        for r in ET.fromstring(z.read(_WORKBOOK_RELS)).iter(f"{_XML_PKG_REL}Relationship")  # noqa: S314
+    }
+    for s in wb.iter(f"{_XML_MAIN}sheet"):
+        if s.get("name") == name:
+            target = rels.get(s.get(f"{_XML_REL}id"), "")
+            if target.startswith("/"):
+                return target[1:]
+            return target if target.startswith("xl/") else "xl/" + target
+    msg = f"xlsx has no worksheet named {name!r}"
+    raise ValueError(msg)
+
+
+def _shared_text(si: ET.Element) -> str:
+    """Text of one shared string: plain <t> and rich runs <r><t>, without phonetic <rPh> runs."""
+    out: list[str] = []
+    for child in si:
+        if child.tag == f"{_XML_MAIN}t":
+            out.append(child.text or "")
+        elif child.tag == f"{_XML_MAIN}r":
+            out.extend(t.text or "" for t in child.iter(f"{_XML_MAIN}t"))
+    return "".join(out)
+
+
+def xlsx_rows(payload: bytes, sheet: str | None = None) -> list[dict[int, str]]:
+    """One worksheet of an xlsx as a list of {1-based column: text}. Standard library only.
+
+    *sheet* is the worksheet title (``None`` = the first worksheet). Handles shared strings
+    (``t="s"``), inline strings (``t="inlineStr"``) and plain values. Empty cells are absent
+    from the dict. Raises ``ValueError`` when *payload* is not an xlsx or the sheet is missing.
     """
     try:
         z = zipfile.ZipFile(io.BytesIO(payload))
         names = set(z.namelist())
-        if _SHEET not in names:
-            msg = "xlsx has no first worksheet"
+        path = _SHEET if sheet is None else _sheet_path(z, sheet)
+        if path not in names:
+            msg = (
+                "xlsx has no first worksheet" if sheet is None else f"xlsx sheet {sheet!r} missing"
+            )
             raise ValueError(msg)
         shared: list[str] = []
         if _SHARED in names:
             shared = [
-                "".join(t.text or "" for t in si.iter(f"{_XML_MAIN}t"))
+                _shared_text(si)
                 for si in ET.fromstring(z.read(_SHARED))  # noqa: S314 - trusted public file, stdlib
             ]
-        sheet = ET.fromstring(z.read(_SHEET))  # noqa: S314
+        sheet_xml = ET.fromstring(z.read(path))  # noqa: S314
     except (zipfile.BadZipFile, ET.ParseError, KeyError) as e:
         msg = "payload is not an xlsx workbook"
         raise ValueError(msg) from e
-    data = sheet.find(f"{_XML_MAIN}sheetData")
+    data = sheet_xml.find(f"{_XML_MAIN}sheetData")
     if data is None:
         msg = "xlsx worksheet has no sheetData"
         raise ValueError(msg)
