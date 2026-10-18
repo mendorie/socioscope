@@ -1,0 +1,177 @@
+== Operational choices fixed before the first run (also in the module docstring) ==
+  A: width 5 (1990-2025), endpoint window ±2, n>=10, G>=5
+  A test per regressor = majority of the estimated outcomes pass
+  B: cells age ('25-29', '30-34', '35-39') × ('regular', 'nonregular', 'other'); main (2012, 2022), lower (2007, 2022) with 4 sub-types both years
+  C: years (1990, 2010, 2015, 2020) (income (2010, 2015, 2020)), nearest ±5; signs {'nonreg': 1, 'ln_rent': 1, 'flfp': 1, 'unemp': 1, 'ln_inc': -1, 'nonreg_t': 1, 'flfp3044': 1, 'ln_rent_priv': 1}
+  Lead tie-break: passes, then B-passed, then pass ratio, then E,H,Y,W
+
+== Data ==
+  oecd: 16062 rows
+  eu: 10434 rows
+  emp: 3744 rows
+  mar: 646 rows
+  pref: 14884 rows
+  eu_order: 1433 rows
+  jp_order: 5917 rows
+  kr: 765 rows
+  A country-year coverage (non-null years per variable):
+shape: (19, 9)
+┌──────┬───────┬─────┬──────┬──────┬─────┬─────────┬─────┬─────┐
+│ iso3 ┆ fagem ┆ cmr ┆ tfr1 ┆ temp ┆ une ┆ une2534 ┆ hpi ┆ rhp │
+│ ---  ┆ ---   ┆ --- ┆ ---  ┆ ---  ┆ --- ┆ ---     ┆ --- ┆ --- │
+│ str  ┆ u32   ┆ u32 ┆ u32  ┆ u32  ┆ u32 ┆ u32     ┆ u32 ┆ u32 │
+╞══════╪═══════╪═════╪══════╪══════╪═════╪═════════╪═════╪═════╡
+│ AUT  ┆ 31    ┆ 63  ┆ 0    ┆ 31   ┆ 32  ┆ 32      ┆ 26  ┆ 26  │
+│ CZE  ┆ 35    ┆ 65  ┆ 20   ┆ 33   ┆ 33  ┆ 33      ┆ 18  ┆ 18  │
+│ DEU  ┆ 24    ┆ 65  ┆ 11   ┆ 42   ┆ 56  ┆ 56      ┆ 46  ┆ 56  │
+│ DNK  ┆ 32    ┆ 62  ┆ 14   ┆ 42   ┆ 43  ┆ 43      ┆ 45  ┆ 56  │
+│ ESP  ┆ 34    ┆ 65  ┆ 20   ┆ 39   ┆ 54  ┆ 54      ┆ 55  ┆ 55  │
+│ FIN  ┆ 33    ┆ 64  ┆ 20   ┆ 29   ┆ 63  ┆ 63      ┆ 51  ┆ 56  │
+│ FRA  ┆ 23    ┆ 30  ┆ 14   ┆ 43   ┆ 51  ┆ 51      ┆ 48  ┆ 56  │
+│ GBR  ┆ 30    ┆ 58  ┆ 0    ┆ 43   ┆ 42  ┆ 42      ┆ 39  ┆ 57  │
+│ GRC  ┆ 35    ┆ 65  ┆ 0    ┆ 43   ┆ 43  ┆ 43      ┆ 29  ┆ 29  │
+│ HUN  ┆ 34    ┆ 65  ┆ 20   ┆ 29   ┆ 34  ┆ 34      ┆ 19  ┆ 19  │
+│ ITA  ┆ 33    ┆ 65  ┆ 20   ┆ 43   ┆ 56  ┆ 56      ┆ 56  ┆ 56  │
+│ JPN  ┆ 67    ┆ 61  ┆ 72   ┆ 41   ┆ 58  ┆ 58      ┆ 66  ┆ 66  │
+│ KOR  ┆ 31    ┆ 53  ┆ 45   ┆ 22   ┆ 46  ┆ 46      ┆ 40  ┆ 40  │
+│ NLD  ┆ 32    ┆ 65  ┆ 20   ┆ 41   ┆ 55  ┆ 39      ┆ 46  ┆ 56  │
+│ NOR  ┆ 28    ┆ 61  ┆ 20   ┆ 27   ┆ 54  ┆ 52      ┆ 48  ┆ 56  │
+│ POL  ┆ 32    ┆ 65  ┆ 20   ┆ 25   ┆ 34  ┆ 34      ┆ 21  ┆ 21  │
+│ PRT  ┆ 33    ┆ 65  ┆ 0    ┆ 40   ┆ 52  ┆ 51      ┆ 31  ┆ 38  │
+│ SWE  ┆ 33    ┆ 63  ┆ 20   ┆ 29   ┆ 63  ┆ 61      ┆ 56  ┆ 56  │
+│ USA  ┆ 32    ┆ 34  ┆ 0    ┆ 7    ┆ 66  ┆ 66      ┆ 56  ┆ 56  │
+└──────┴───────┴─────┴──────┴──────┴─────┴─────────┴─────┴─────┘
+  A outcome source (fagem / cmr): {'AUT': 'Eurostat / Eurostat', 'CZE': 'Eurostat / Eurostat', 'DEU': 'Eurostat / Eurostat', 'DNK': 'Eurostat / Eurostat', 'ESP': 'Eurostat / Eurostat', 'FIN': 'Eurostat / Eurostat', 'FRA': 'Eurostat / Eurostat', 'GBR': 'OECD SF3.1 / OECD SF3.1', 'GRC': 'Eurostat / Eurostat', 'HUN': 'Eurostat / Eurostat', 'ITA': 'Eurostat / Eurostat', 'JPN': 'T06-12 / OECD SF3.1', 'KOR': 'OECD SF3.1 / OECD SF3.1', 'NLD': 'Eurostat / Eurostat', 'NOR': 'Eurostat / Eurostat', 'POL': 'Eurostat / Eurostat', 'PRT': 'Eurostat / Eurostat', 'SWE': 'Eurostat / Eurostat', 'USA': 'OECD SF3.1 / OECD SF3.1'}
+
+== A: country × period panel (5-year differences, country + period FE) ==
+  sample fagem: n=96 countries=['AUT', 'CZE', 'DEU', 'DNK', 'ESP', 'FIN', 'FRA', 'GBR', 'GRC', 'HUN', 'ITA', 'JPN', 'KOR', 'NLD', 'NOR', 'POL', 'PRT', 'SWE', 'USA']
+  sample cmr: n=99 countries=['AUT', 'CZE', 'DEU', 'DNK', 'ESP', 'FIN', 'FRA', 'GBR', 'GRC', 'HUN', 'ITA', 'JPN', 'KOR', 'NLD', 'NOR', 'POL', 'PRT', 'SWE', 'USA']
+  sample tfr1: n=52 countries=['CZE', 'DEU', 'DNK', 'ESP', 'FIN', 'FRA', 'HUN', 'ITA', 'JPN', 'KOR', 'NLD', 'NOR', 'POL', 'SWE']
+[A main] female mean age at 1st marriage    n= 96 G=19  temp: +0.114 [+0.017, +0.212]+  une: +0.020 [-0.090, +0.130]  hpi: +0.035 [-0.092, +0.162]
+[A main] crude marriage rate (per 1,000)    n= 99 G=19  temp: -0.205 [-0.479, +0.069]  une: -0.175 [-0.304, -0.047]+  hpi: +0.032 [-0.169, +0.233]
+[A main] 1st-birth TFR                      n= 52 G=14  temp: -0.012 [-0.035, +0.010]  une: -0.027 [-0.050, -0.005]+  hpi: -0.014 [-0.040, +0.012]
+  A test temp: False
+  A test une: True
+  A test hpi: False
+
+-- A robustness --
+[A width 10] female mean age at 1st marriage    n= 38 G=18  temp: +0.089 [-0.355, +0.534]  une: -0.117 [-0.526, +0.292]  hpi: +0.005 [-0.398, +0.409]
+[A width 10] crude marriage rate (per 1,000)    n= 39 G=18  temp: -0.097 [-0.859, +0.665]  une: -0.299 [-1.021, +0.423]  hpi: +0.104 [-0.392, +0.600]
+[A width 10] 1st-birth TFR                      not estimable (too few rows / collinear with FE)
+[A unemployment 25-34] female mean age at 1st marriage    n= 96 G=19  temp: +0.121 [+0.034, +0.207]+  une2534: +0.001 [-0.080, +0.081]  hpi: +0.030 [-0.090, +0.150]
+[A unemployment 25-34] crude marriage rate (per 1,000)    n= 99 G=19  temp: -0.213 [-0.488, +0.063]  une2534: -0.185 [-0.341, -0.029]+  hpi: +0.017 [-0.183, +0.218]
+[A unemployment 25-34] 1st-birth TFR                      n= 52 G=14  temp: -0.013 [-0.037, +0.010]  une2534: -0.028 [-0.052, -0.005]+  hpi: -0.014 [-0.038, +0.010]
+[A real house prices] female mean age at 1st marriage    n= 97 G=19  temp: +0.139 [+0.074, +0.205]+  une: -0.002 [-0.127, +0.123]  rhp: -0.002 [-0.165, +0.160]
+[A real house prices] crude marriage rate (per 1,000)    n=100 G=19  temp: -0.181 [-0.423, +0.061]  une: -0.166 [-0.315, -0.018]+  rhp: +0.070 [-0.154, +0.294]
+[A real house prices] 1st-birth TFR                      n= 52 G=14  temp: -0.014 [-0.038, +0.010]  une: -0.027 [-0.048, -0.005]+  rhp: -0.012 [-0.037, +0.013]
+[A South 4] female mean age at 1st marriage    n= 26 G= 4  temp: +0.259 [+0.007, +0.511]+  une: +0.116 [-0.055, +0.287]  hpi: +0.177 [-0.159, +0.514]
+[A South 4] crude marriage rate (per 1,000)    n= 26 G= 4  temp: -0.359 [-0.934, +0.217]  une: -0.415 [-0.698, -0.133]+  hpi: -0.060 [-0.628, +0.507]
+[A South 4] 1st-birth TFR                      not estimable (too few rows / collinear with FE)
+[A Nordic 4] female mean age at 1st marriage    n= 22 G= 4  temp: +0.112 [-0.018, +0.242]  une: -0.031 [-0.281, +0.220]  hpi: -0.217 [-0.511, +0.076]
+[A Nordic 4] crude marriage rate (per 1,000)    n= 22 G= 4  temp: +0.210 [-0.171, +0.591]  une: -0.247 [-0.731, +0.238]  hpi: +0.058 [-0.214, +0.330]
+[A Nordic 4] 1st-birth TFR                      n= 16 G= 4  temp: +0.020 [-0.011, +0.052]  une: -0.011 [-0.070, +0.048]  hpi: -0.012 [-0.104, +0.081]
+figure: h10_a_country_panel.png
+
+== B: Kitagawa decomposition (Employment Status Survey, employed + not employed) ==
+  male   2007 25-29  N=   3937500  regular: share 0.695 nm 0.669  nonregular: share 0.140 nm 0.865  other: share 0.165 nm 0.830  (nonreg = 4 sub-types)
+  male   2007 30-34  N=   4726500  regular: share 0.755 nm 0.407  nonregular: share 0.084 nm 0.733  other: share 0.161 nm 0.577  (nonreg = 4 sub-types)
+  male   2007 35-39  N=   4745800  regular: share 0.741 nm 0.275  nonregular: share 0.065 nm 0.622  other: share 0.194 nm 0.422  (nonreg = 4 sub-types)
+  male   2012 25-29  N=   3563100  regular: share 0.678 nm 0.666  nonregular: share 0.174 nm 0.855  other: share 0.148 nm 0.858
+  male   2012 30-34  N=   3954100  regular: share 0.727 nm 0.399  nonregular: share 0.126 nm 0.729  other: share 0.147 nm 0.620
+  male   2012 35-39  N=   4760300  regular: share 0.741 nm 0.283  nonregular: share 0.091 nm 0.665  other: share 0.168 nm 0.468
+  male   2017 25-29  N=   3197200  regular: share 0.719 nm 0.695  nonregular: share 0.147 nm 0.875  other: share 0.133 nm 0.850
+  male   2017 30-34  N=   3601800  regular: share 0.755 nm 0.410  nonregular: share 0.110 nm 0.777  other: share 0.135 nm 0.652
+  male   2017 35-39  N=   3985500  regular: share 0.747 nm 0.276  nonregular: share 0.089 nm 0.701  other: share 0.164 nm 0.491
+  male   2022 25-29  N=   3248500  regular: share 0.735 nm 0.726  nonregular: share 0.128 nm 0.904  other: share 0.138 nm 0.873
+  male   2022 30-34  N=   3273100  regular: share 0.763 nm 0.438  nonregular: share 0.100 nm 0.800  other: share 0.137 nm 0.731
+  male   2022 35-39  N=   3653300  regular: share 0.753 nm 0.310  nonregular: share 0.080 nm 0.747  other: share 0.167 nm 0.543
+  female 2007 25-29  N=   3826400  regular: share 0.428 nm 0.793  nonregular: share 0.266 nm 0.626  other: share 0.306 nm 0.333  (nonreg = 4 sub-types)
+  female 2007 30-34  N=   4613800  regular: share 0.313 nm 0.526  nonregular: share 0.263 nm 0.354  other: share 0.424 nm 0.149  (nonreg = 4 sub-types)
+  female 2007 35-39  N=   4662400  regular: share 0.267 nm 0.377  nonregular: share 0.301 nm 0.168  other: share 0.433 nm 0.111  (nonreg = 4 sub-types)
+  female 2012 25-29  N=   3455400  regular: share 0.446 nm 0.782  nonregular: share 0.289 nm 0.641  other: share 0.265 nm 0.348
+  female 2012 30-34  N=   3859800  regular: share 0.341 nm 0.520  nonregular: share 0.310 nm 0.381  other: share 0.349 nm 0.161
+  female 2012 35-39  N=   4643000  regular: share 0.290 nm 0.370  nonregular: share 0.337 nm 0.220  other: share 0.373 nm 0.126
+  female 2017 25-29  N=   3066600  regular: share 0.526 nm 0.750  nonregular: share 0.266 nm 0.638  other: share 0.208 nm 0.421
+  female 2017 30-34  N=   3495400  regular: share 0.398 nm 0.481  nonregular: share 0.305 nm 0.345  other: share 0.297 nm 0.206
+  female 2017 35-39  N=   3887700  regular: share 0.336 nm 0.360  nonregular: share 0.345 nm 0.201  other: share 0.319 nm 0.140
+  female 2022 25-29  N=   3100300  regular: share 0.607 nm 0.728  nonregular: share 0.221 nm 0.632  other: share 0.172 nm 0.550
+  female 2022 30-34  N=   3137600  regular: share 0.494 nm 0.450  nonregular: share 0.277 nm 0.369  other: share 0.229 nm 0.290
+  female 2022 35-39  N=   3540600  regular: share 0.401 nm 0.351  nonregular: share 0.329 nm 0.229  other: share 0.270 nm 0.210
+[men 25-39, 2012->2022 (main)] r0=0.4984 r1=0.5488 Δ=+0.0503  within=+0.0478 (95.0%)  emp-comp=-0.0085 (-17.0%)  age-comp=+0.0111
+[men 25-39, 2007->2022 (4 sub-types)] r0=0.4902 r1=0.5488 Δ=+0.0586  within=+0.0555 (94.8%)  emp-comp=-0.0029 (-4.9%)  age-comp=+0.0059
+[men 25-34, 2012->2022] r0=0.5935 r1=0.6414 Δ=+0.0479  within=+0.0526 (109.8%)  emp-comp=-0.0108 (-22.7%)  age-comp=+0.0061
+[men 30-39, 2012->2022] r0=0.4050 r1=0.4454 Δ=+0.0404  within=+0.0458 (113.4%)  emp-comp=-0.0078 (-19.3%)  age-comp=+0.0024
+[women 25-39, 2012->2022] r0=0.3832 r1=0.4385 Δ=+0.0553  within=+0.0141 (25.6%)  emp-comp=+0.0301 (54.5%)  age-comp=+0.0110
+  2022 men 30-34 never-married: regular − non-regular = -36.1 pt
+  2012 men 30-34 regular − non-regular = -33.0 pt
+  2017 men 30-34 regular − non-regular = -36.7 pt
+  2022 men 30-34 regular − non-regular = -36.1 pt
+  B test (comp share >= 30%): False
+figure: h10_b_rates_by_employment.png
+figure: h10_b_kitagawa.png
+
+== C: prefecture panel (prefecture + year FE) ==
+[nm3034 main] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg: -0.338 [-0.838, +0.163]  ln_rent: -0.133 [-1.278, +1.011]  flfp: -0.522 [-0.848, -0.196]  unemp: +0.196 [-0.864, +1.256]
+[nm3034 + income (2010-2020)] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg: -0.281 [-0.798, +0.235]  ln_rent: -0.144 [-1.347, +1.059]  flfp: -0.402 [-0.729, -0.074]  unemp: +0.181 [-0.872, +1.234]  ln_inc: +0.943 [-0.423, +2.308]
+[never married at 50 (M)] n=235 G=47 years=(2000, 2005, 2010, 2015, 2020)
+    nonreg: -0.135 [-0.611, +0.341]  ln_rent: -0.349 [-1.031, +0.333]  flfp: +0.146 [-0.186, +0.478]  unemp: +0.867 [+0.177, +1.557]+
+[never married at 50 + income] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg: +0.049 [-0.277, +0.375]  ln_rent: -0.710 [-1.536, +0.116]  flfp: +0.114 [-0.253, +0.481]  unemp: +0.598 [-0.218, +1.413]  ln_inc: -0.236 [-0.789, +0.317]
+[TFR] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg: +0.005 [-0.011, +0.022]  ln_rent: +0.006 [-0.039, +0.051]  flfp: +0.005 [-0.007, +0.017]  unemp: -0.021 [-0.052, +0.009]
+[TFR + income] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg: +0.006 [-0.010, +0.022]  ln_rent: +0.006 [-0.038, +0.050]  flfp: +0.006 [-0.008, +0.020]  unemp: -0.021 [-0.052, +0.009]  ln_inc: +0.009 [-0.034, +0.052]
+[nm3034, private rent (2018-)] not estimable (too few rows, or a regressor has no within variation)
+[nm3034, private rent + income] not estimable (too few rows, or a regressor has no within variation)
+figure: h10_c_prefecture_panel.png
+
+== Verdict (pre-registered) ==
+  E 若年層の雇用の不安定さ（非正規化）: 0/3 passed [] -> not supported
+  H 住宅費: 0/2 passed [] -> not supported
+  Y 所得・失業: 1/2 passed ['A 若年失業'] -> not supported
+  W 女性の就業: 0/1 passed [] -> not supported
+  lead constraint: None
+  final_stance: 測れた制約では確かめられず、未婚化の大半は同じ雇用形態・同じ地域条件の中で進んだ。
+  framed_stance: 測れた制約では確かめられず、未婚化の大半は同じ雇用形態・同じ地域条件の中で進んだ。男性 25–39 歳では雇用形態の構成はむしろ正規に寄り、構成の変化は未婚率の上昇の -17%（2007 年からの定義をそろえた比較では -5%）と逆向きで、同じ雇用形態の中での上昇が 95% である。2022 年の 30–34 歳男性では非正規の未婚率が正規より 36.1 ポイント高いが、この差は逆の因果（未婚だから非正規）を含む。通った検定は Y（A 若年失業）。頑健性の仕様では判定が変わるものがある（C outcome nm50 で Y が支持・主要 Y）。すべて関連で、因果効果ではない。
+
+-- verdict under each robustness spec --
+  main                         E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
+  A width 10                   E: 0/3  H: 0/2  Y: 0/2  W: 0/1  -> lead=None  B comp share=-0.170
+  A unemployment 25-34         E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
+  A real house prices          E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
+  A South 4                    E: 0/3  H: 0/2  Y: 0/2  W: 0/1  -> lead=None  B comp share=-0.170
+  A Nordic 4                   E: 0/3  H: 0/2  Y: 0/2  W: 0/1  -> lead=None  B comp share=-0.170
+  B 2007->2022                 E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.049
+  B men 25-34                  E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.227
+  B men 30-39                  E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.193
+  B women 25-39                E: 1/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=0.545
+  C outcome nm50               E: 0/3  H: 0/2  Y: 2/2*  W: 0/1  -> lead=Y  B comp share=-0.170
+  C outcome TFR                E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
+  C private rent               E: 0/3  H: 0/2  Y: 1/2  W: 0/1  -> lead=None  B comp share=-0.170
+
+== Exploratory (not pre-registered, outside the verdict) ==
+[E1 men 25-39 2012->2022, 4 groups (other split into employed / not employed)] r0=0.4984 r1=0.5488 Δ=+0.0503  within=+0.0461 (91.6%)  emp-comp=-0.0068 (-13.6%)  age-comp=+0.0111
+[E2 C main without female LFP (keeps 1990)] n=188 G=47 years=(1990, 2010, 2015, 2020)
+    nonreg: -1.290 [-4.638, +2.058]  ln_rent: -0.606 [-1.987, +0.775]  unemp: +0.614 [-1.247, +2.475]
+[E3 C, non-regular share both sexes] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg_t: -0.711 [-1.368, -0.053]  ln_rent: -0.082 [-1.268, +1.104]  flfp: -0.599 [-0.961, -0.237]  unemp: +0.293 [-0.767, +1.354]
+[E4 C, female LFP 30-44] n=141 G=47 years=(2010, 2015, 2020)
+    nonreg: -0.213 [-0.702, +0.276]  ln_rent: -0.312 [-1.482, +0.858]  flfp3044: -1.633 [-3.040, -0.226]  unemp: +0.006 [-1.056, +1.068]
+  E5 men 30-34 regular    0.399 -> 0.438
+  E5 men 30-34 nonregular 0.729 -> 0.800
+  E5 men 30-34 other      0.620 -> 0.731
+[E6 C, private rent matched to next survey (2015, 2020)] n=94 G=47 years=(2015, 2020)
+    nonreg: -0.380 [-0.930, +0.170]  ln_rent_priv: +1.114 [-1.926, +4.155]  flfp: -0.615 [-0.941, -0.289]  unemp: -0.029 [-0.751, +0.693]
+[E7 C, nonreg alone] n=188 G=47 years=(1990, 2010, 2015, 2020)
+    nonreg: -0.800 [-3.377, +1.778]
+[E7 C, ln_rent alone] n=188 G=47 years=(1990, 2010, 2015, 2020)
+    ln_rent: -0.734 [-2.347, +0.879]
+[E7 C, flfp alone] n=141 G=47 years=(2010, 2015, 2020)
+    flfp: -0.459 [-0.786, -0.132]
+[E7 C, unemp alone] n=188 G=47 years=(1990, 2010, 2015, 2020)
+    unemp: +0.582 [-1.194, +2.357]
+[E7 C, ln_inc alone] n=141 G=47 years=(2010, 2015, 2020)
+    ln_inc: +1.321 [+0.115, +2.526]
+figure: h10_japan_long_run.png
