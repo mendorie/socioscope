@@ -16,7 +16,7 @@ Datasets (dimension codes verified against live responses on 2026-10-06):
 
 import json
 import re
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from itertools import product
 
@@ -586,3 +586,157 @@ def build_cohort_mart(
         msg = f"duplicate key (iso3, metric, year, cohort, age) = {dup}"
         raise ValueError(msg)
     return out, skipped
+
+
+# ---------------------------------------------------------------- H10: family formation
+
+H10_GEOS: tuple[str, ...] = (*ORDER_GEOS, "PT", "EL", "AT")
+FAMILY_FORMATION_DATASETS: tuple[str, ...] = (
+    "demo_nind",
+    "lfsa_etpgan",
+    "une_rt_a",
+    "ilc_lvho07a",
+)
+NIND_INDICATORS: tuple[str, ...] = (
+    "FAGEMAR1", "FMAR1CUM", "FMAR1PC", "GNUPRT", "MAGEMAR1", "MARRIAGE", "MMAR1CUM", "MMAR1PC",
+)  # fmt: skip
+FAMILY_FORMATION_KEY = ("iso3", "year", "dataset", "indicator", "sex", "age", "unit")
+
+
+@dataclass(frozen=True)
+class _FamilyFormationSpec:
+    """One H10 dataset: request parameters, the closed code sets of every non-geo/time
+    dimension (``None`` = the dimension is absent and the output column is ``""``) and how
+    the output ``indicator`` is derived."""
+
+    params: tuple[tuple[str, str], ...]
+    indicator: str | None  # fixed name, or None = take ``indic_de``
+    sex: tuple[str, ...] | None
+    age: tuple[str, ...] | None
+    unit: tuple[str, ...] | None
+    other: tuple[tuple[str, tuple[str, ...]], ...] = ()
+
+
+_FAMILY_FORMATION: dict[str, _FamilyFormationSpec] = {
+    "demo_nind": _FamilyFormationSpec(
+        params=(("sinceTimePeriod", "1960"),),
+        indicator=None,
+        sex=None,
+        age=None,
+        unit=None,
+        other=(("indic_de", NIND_INDICATORS),),
+    ),
+    "lfsa_etpgan": _FamilyFormationSpec(
+        params=(
+            ("sinceTimePeriod", "1995"),
+            *_many("sex", ("T", "M", "F")),
+            *_many("age", ("Y15-24", "Y25-34")),
+            ("citizen", "TOTAL"),
+        ),
+        indicator="temp_share",
+        sex=("T", "M", "F"),
+        age=("Y15-24", "Y25-34"),
+        unit=("PC",),
+        other=(("citizen", ("TOTAL",)),),
+    ),
+    "une_rt_a": _FamilyFormationSpec(
+        params=(
+            ("sinceTimePeriod", "1990"),
+            *_many("sex", ("T", "M", "F")),
+            *_many("age", ("Y15-24", "Y25-29")),
+            ("unit", "PC_ACT"),
+        ),
+        indicator="unemployment_rate",
+        sex=("T", "M", "F"),
+        age=("Y15-24", "Y25-29"),
+        unit=("PC_ACT",),
+    ),
+    "ilc_lvho07a": _FamilyFormationSpec(
+        params=(
+            ("sinceTimePeriod", "2003"),
+            *_many("age", ("Y20-29", "Y25-29", "Y16-29")),
+            ("sex", "T"),
+            ("rskpovth", "TOTAL"),
+        ),
+        indicator="housing_cost_overburden",
+        sex=("T",),
+        age=("Y20-29", "Y25-29", "Y16-29"),
+        unit=("PC",),
+        other=(("rskpovth", ("TOTAL",)),),
+    ),
+}
+
+
+def family_formation_requests() -> tuple[Request, ...]:
+    """H10: four datasets x H10_GEOS (16 countries), one request each. Not part of
+    ``requests()`` (fetched in its own block)."""
+    return tuple(
+        Request(ds, g, _FAMILY_FORMATION[ds].params)
+        for ds in FAMILY_FORMATION_DATASETS
+        for g in H10_GEOS
+    )
+
+
+def _checked(cell: dict[str, object], dim: str, allowed: tuple[str, ...] | None, ds: str) -> str:
+    if allowed is None:
+        return ""
+    code = str(cell.get(dim, ""))
+    if code not in allowed:
+        msg = f"{ds} {dim} {code!r} outside the request ({list(allowed)})"
+        raise ValueError(msg)
+    return code
+
+
+def family_formation_rows(payload: bytes, dataset: str) -> list[dict[str, object]]:
+    """Staged rows (iso3, year, dataset, indicator, sex, age, unit, value, source) from one
+    H10 response. Codes outside the closed sets -> ``ValueError`` (fail closed). Combinations
+    the API does not return (e.g. ``une_rt_a`` Y25-29) simply have no row."""
+    spec = _FAMILY_FORMATION.get(dataset)
+    if spec is None:
+        msg = f"unknown H10 dataset {dataset!r} (expected one of {FAMILY_FORMATION_DATASETS})"
+        raise ValueError(msg)
+    rows: list[dict[str, object]] = []
+    for iso3, year, c in _country_cells(payload):
+        for dim, allowed in spec.other:
+            _checked(c, dim, allowed, dataset)
+        indicator = spec.indicator if spec.indicator is not None else str(c["indic_de"])
+        rows.append(
+            {
+                "iso3": iso3,
+                "year": year,
+                "dataset": dataset,
+                "indicator": indicator,
+                "sex": _checked(c, "sex", spec.sex, dataset),
+                "age": _checked(c, "age", spec.age, dataset),
+                "unit": _checked(c, "unit", spec.unit, dataset),
+                "value": c["value"],
+                "source": SOURCE,
+            }
+        )
+    rows.sort(key=_family_formation_key)
+    return rows
+
+
+def _family_formation_key(r: dict[str, object]) -> tuple[str, int, str, str, str, str, str]:
+    return (
+        str(r["iso3"]),
+        int(str(r["year"])),
+        *(str(r[k]) for k in FAMILY_FORMATION_KEY[2:]),
+    )  # type: ignore[return-value]
+
+
+def build_family_formation_mart(
+    staged: Mapping[str, Sequence[dict[str, object]]],
+) -> list[dict[str, object]]:
+    """``marts/eu_family_formation``: the staged datasets concatenated and sorted by
+    :data:`FAMILY_FORMATION_KEY`; a duplicate key raises ``ValueError``."""
+    out = [dict(r) for ds in sorted(staged) for r in staged[ds]]
+    out.sort(key=_family_formation_key)
+    seen: set[tuple[object, ...]] = set()
+    for r in out:
+        k = _family_formation_key(r)
+        if k in seen:
+            msg = f"duplicate key {FAMILY_FORMATION_KEY} = {k}"
+            raise ValueError(msg)
+        seen.add(k)
+    return out

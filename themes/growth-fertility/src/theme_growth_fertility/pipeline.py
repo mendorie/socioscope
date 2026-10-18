@@ -23,6 +23,7 @@ from theme_growth_fertility import (
     moekr,
     oecd,
     oecd_family,
+    oecd_labour,
     prefecture,
     surveys,
     unsdg,
@@ -159,6 +160,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h9_kr(ctx, written, skipped)
     written, skipped = _fetch_h9_eu(ctx, written, skipped)
     written, skipped = _fetch_h10_pref(ctx, written, skipped)
+    written, skipped = _fetch_h10_oecd(ctx, written, skipped)
+    written, skipped = _fetch_h10_eu(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -248,6 +251,8 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h9_kr(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h9_eu(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h10_pref(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h10_oecd(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h10_eu(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -515,6 +520,8 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h9_kr(ctx, written, skipped)
     written, skipped = _mart_h9_eu(ctx, written, skipped)
     written, skipped = _mart_h10_pref(ctx, written, skipped)
+    written, skipped = _mart_h10_oecd(ctx, written, skipped)
+    written, skipped = _mart_h10_eu(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -1495,6 +1502,150 @@ def _mart_h9_jp(
             continue
         ctx.tables.write_table(mart_name, builders[mart_name](parts))
         written.append(mart_name)
+    return written, skipped
+
+
+# ---- H10-OECD: house prices / temporary employment / youth unemployment (3 SDMX CSVs) + Family
+# Database SF3.1 marriage workbook (1 xlsx) -> one long mart. Each raw is staged on its own;
+# a missing raw or an unrecognised workbook layout is reported in skipped and the others are
+# staged. The mart concatenates whichever staged tables exist (key uniqueness enforced there).
+
+OECD_LABOUR_TABLES: dict[str, str] = {
+    **{d.key: f"staged/oecd_labour/{d.key}" for d in oecd_labour.DATASETS},
+    "marriage": "staged/oecd_labour/marriage",
+}
+OECD_LABOUR_MART = "marts/oecd_family_formation"
+
+
+def _fetch_h10_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    items = [(d.raw_name, d.url) for d in oecd_labour.DATASETS]
+    items.append((oecd_labour.MARRIAGE_RAW_NAME, oecd_labour.MARRIAGE_URL))
+    for name, url in items:
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=oecd_labour.SOURCE,
+            name=name,
+            url=url,
+            license=oecd_labour.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h10_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for ds in oecd_labour.DATASETS:
+        payload = ctx.raw.get(theme=THEME, source=oecd_labour.SOURCE, name=ds.raw_name)
+        if payload is None:
+            skipped.append(f"{ds.raw_name}: raw missing (run fetch)")
+            continue
+        parsed = oecd_labour.parse(payload, ds)
+        ctx.tables.write_table(OECD_LABOUR_TABLES[ds.key], parsed.rows)
+        written.append(OECD_LABOUR_TABLES[ds.key])
+        if parsed.dropped_ref_areas:
+            dropped = ", ".join(parsed.dropped_ref_areas)
+            skipped.append(f"{ds.raw_name}: non-H10 REF_AREA dropped: {dropped}")
+    name = oecd_labour.MARRIAGE_RAW_NAME
+    payload = ctx.raw.get(theme=THEME, source=oecd_labour.SOURCE, name=name)
+    if payload is None:
+        skipped.append(f"{name}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows, notes = oecd_labour.parse_marriage(payload)
+    except ValueError as e:
+        skipped.append(f"{name}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(OECD_LABOUR_TABLES["marriage"], rows)
+    written.append(OECD_LABOUR_TABLES["marriage"])
+    skipped.extend(f"{name}: {note}" for note in notes)
+    return written, skipped
+
+
+def _mart_h10_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    staged: dict[str, list[dict[str, object]]] = {}
+    for key, table in OECD_LABOUR_TABLES.items():
+        try:
+            staged[key] = ctx.tables.read_table(table)
+        except FileNotFoundError:
+            skipped.append(f"{table}: staged table missing (run stage)")
+    if staged:
+        ctx.tables.write_table(OECD_LABOUR_MART, oecd_labour.build_mart(staged))
+        written.append(OECD_LABOUR_MART)
+    return written, skipped
+
+
+# ---- H10-EU: Eurostat demo_nind / lfsa_etpgan / une_rt_a / ilc_lvho07a (one request per
+# dataset x H10_GEOS country, raw ``eurostat_<dataset>_<geo>.json``). Each dataset is staged as
+# the concatenation of the countries whose raw exists (none -> not written); the mart
+# concatenates whichever staged datasets exist. Kept apart from the H5 / H9-EU blocks.
+
+EU_FAMILY_FORMATION_TABLES: dict[str, str] = {
+    ds: f"staged/eurostat/{ds}" for ds in es.FAMILY_FORMATION_DATASETS
+}
+EU_FAMILY_FORMATION_MART = "marts/eu_family_formation"
+
+
+def _fetch_h10_eu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for req in es.family_formation_requests():
+        try:
+            payload = ctx.fetcher.fetch(req.url)
+        except FetchError as e:
+            skipped.append(f"{req.raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=es.SOURCE,
+            name=req.raw_name,
+            url=req.url,
+            license=es.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h10_eu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    rows: dict[str, list[dict[str, object]]] = defaultdict(list)
+    for req in es.family_formation_requests():
+        payload = ctx.raw.get(theme=THEME, source=es.SOURCE, name=req.raw_name)
+        if payload is None:
+            skipped.append(f"{req.raw_name}: raw missing (run fetch)")
+            continue
+        rows[req.dataset].extend(es.family_formation_rows(payload, req.dataset))
+    for ds, table in EU_FAMILY_FORMATION_TABLES.items():
+        if rows.get(ds):
+            ctx.tables.write_table(table, rows[ds])
+            written.append(table)
+    return written, skipped
+
+
+def _mart_h10_eu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    staged: dict[str, list[dict[str, object]]] = {}
+    for ds, table in EU_FAMILY_FORMATION_TABLES.items():
+        try:
+            staged[ds] = ctx.tables.read_table(table)
+        except FileNotFoundError:
+            skipped.append(f"{table}: staged table missing (run stage)")
+    if staged:
+        ctx.tables.write_table(EU_FAMILY_FORMATION_MART, es.build_family_formation_mart(staged))
+        written.append(EU_FAMILY_FORMATION_MART)
     return written, skipped
 
 
