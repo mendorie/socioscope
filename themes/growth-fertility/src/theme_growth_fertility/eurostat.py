@@ -57,6 +57,7 @@ CENSUS_ISCED_GROUPS: dict[str, str] = {
 }
 ORDERS: tuple[str, ...] = ("1", "2", "3", "GE4", "TOTAL", "UNK")
 ORDER_START, EDUCATION_START = 2005, 2007
+FRATE_START = 1960  # H9: demo_frate single-age fertility rates (cohort cumulation)
 
 
 @dataclass(frozen=True)
@@ -116,6 +117,17 @@ def lfs_requests() -> tuple[Request, ...]:
         *_many("isced11", EDUCATION_GROUPS),
     )
     return tuple(Request("lfsa_pgaed", g, params) for g in EDUCATION_GEOS)
+
+
+def frate_requests() -> tuple[Request, ...]:
+    """H9: ``demo_frate`` (fertility rate by single age of the mother, completed age) for the
+    ORDER_GEOS countries, 1960 onwards. Not part of ``requests()`` (fetched in its own block)."""
+    params = (
+        ("sinceTimePeriod", str(FRATE_START)),
+        ("agedef", "COMPLET"),
+        *_many("age", SINGLE_AGES),
+    )
+    return tuple(Request("demo_frate", g, params) for g in ORDER_GEOS)
 
 
 def requests() -> tuple[Request, ...]:
@@ -447,3 +459,130 @@ def build_tfr_by_education(
             }
         )
     return out
+
+
+# ---------------------------------------------------------------- H9: demo_frate -> cohorts
+
+COHORT_METRICS: tuple[str, ...] = ("asfr", "cohort_cum", "completed")
+FIRST_AGE, COMPLETED_AGE, CENSOR_MIN_AGE = 15, 45, 40
+
+
+def frate_rows(payload: bytes) -> list[dict[str, object]]:
+    """Staged rows (iso3, year, age(int), rate, source) from a ``demo_frate`` response.
+
+    The rate is births per woman of that completed age (Eurostat unit NR). Codes outside the
+    request (``agedef != COMPLET``, ``unit != NR``, ages other than Y15..Y49) mean the API
+    changed shape -> ``ValueError`` (fail closed; nothing is dropped silently).
+    """
+    rows: list[dict[str, object]] = []
+    for iso3, year, c in _country_cells(payload):
+        for dim, allowed in (("agedef", {"COMPLET"}), ("unit", {"NR"})):
+            if str(c[dim]) not in allowed:
+                msg = f"demo_frate {dim} {c[dim]!r} outside the request ({sorted(allowed)})"
+                raise ValueError(msg)
+        lo, hi = age_bounds(str(c["age"]))
+        if lo is None or hi != lo + 1 or lo not in range(FIRST_AGE, 50):
+            msg = f"demo_frate age {c['age']!r} outside the request (Y15..Y49)"
+            raise ValueError(msg)
+        rows.append({"iso3": iso3, "year": year, "age": lo, "rate": c["value"], "source": SOURCE})
+    rows.sort(key=lambda r: (str(r["iso3"]), int(str(r["year"])), int(str(r["age"]))))
+    return rows
+
+
+def _cohort_row(
+    iso3: str, metric: str, cohort: int, age: int, value: float, censored_at: int | None
+) -> dict[str, object]:
+    return {
+        "iso3": iso3,
+        "metric": metric,
+        "year": None,
+        "cohort": cohort,
+        "age": age,
+        "value": value,
+        "censored_at": censored_at,
+        "source": SOURCE,
+    }
+
+
+def cohort_cumulative(
+    rows: Sequence[dict[str, object]],
+    *,
+    first_age: int = FIRST_AGE,
+    completed_age: int = COMPLETED_AGE,
+    censor_min_age: int = CENSOR_MIN_AGE,
+) -> tuple[list[dict[str, object]], list[str]]:
+    """Cohort (= year − age) cumulative fertility from single-age period rates. Pure.
+
+    For every (iso3, cohort) observed at ``first_age`` the rates are summed age by age along
+    the diagonal; ``cohort_cum`` has one row per age reached. A cohort whose chain stops at an
+    age that is observed later again (a gap) is dropped entirely and reported in the second
+    return value. ``completed`` = the sum through ``completed_age`` (censored_at None) or, if
+    the chain ends earlier at an age >= ``censor_min_age``, the sum through that last age with
+    ``censored_at`` set. Cohorts never observed at ``first_age`` yield nothing.
+    """
+    rates: dict[tuple[str, int], dict[int, float]] = {}
+    for r in rows:
+        iso3, age = str(r["iso3"]), int(str(r["age"]))
+        rates.setdefault((iso3, int(str(r["year"])) - age), {})[age] = _f(r["rate"])
+    out: list[dict[str, object]] = []
+    skipped: list[str] = []
+    for (iso3, cohort), by_age in sorted(rates.items()):
+        if first_age not in by_age:
+            continue
+        chain: list[dict[str, object]] = []
+        total, age = 0.0, first_age
+        while age in by_age:
+            total += by_age[age]
+            chain.append(_cohort_row(iso3, "cohort_cum", cohort, age, total, None))
+            age += 1
+        if any(a > age for a in by_age):
+            skipped.append(f"{iso3} cohort {cohort}: rate missing at age {age} (gap)")
+            continue
+        last = age - 1
+        if last >= completed_age:
+            cum = sum(by_age[a] for a in range(first_age, completed_age + 1))
+            chain.append(_cohort_row(iso3, "completed", cohort, completed_age, cum, None))
+        elif last >= censor_min_age:
+            chain.append(_cohort_row(iso3, "completed", cohort, last, total, last))
+        out.extend(chain)
+    return out, skipped
+
+
+def build_cohort_mart(
+    staged: Sequence[dict[str, object]],
+) -> tuple[list[dict[str, object]], list[str]]:
+    """``marts/eu_cohort_fertility``: period ``asfr`` rows plus the cohort rows, sorted by
+    (iso3, metric, year, cohort, age); duplicate keys raise ``ValueError``."""
+    out: list[dict[str, object]] = [
+        {
+            "iso3": r["iso3"],
+            "metric": "asfr",
+            "year": int(str(r["year"])),
+            "cohort": None,
+            "age": int(str(r["age"])),
+            "value": _f(r["rate"]),
+            "censored_at": None,
+            "source": SOURCE,
+        }
+        for r in staged
+    ]
+    cohorts, skipped = cohort_cumulative(staged)
+    out.extend(cohorts)
+
+    def key(r: dict[str, object]) -> tuple[str, int, int, int, int]:
+        year, cohort = r["year"], r["cohort"]
+        return (
+            str(r["iso3"]),
+            COHORT_METRICS.index(str(r["metric"])),
+            -1 if year is None else int(str(year)),
+            -1 if cohort is None else int(str(cohort)),
+            int(str(r["age"])),
+        )
+
+    out.sort(key=key)
+    keys = [key(r) for r in out]
+    if len(keys) != len(set(keys)):
+        dup = next(k for i, k in enumerate(keys) if k in keys[:i])
+        msg = f"duplicate key (iso3, metric, year, cohort, age) = {dup}"
+        raise ValueError(msg)
+    return out, skipped

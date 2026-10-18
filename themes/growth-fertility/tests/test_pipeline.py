@@ -48,6 +48,8 @@ H8C_ITEMS = len(oecd_eag.DATASETS)
 H8D_ITEMS = len(unsdg.SERIES) + 1
 # H8d-K items: one 교육부 사교육비조사 press-release PDF
 H8D_K_ITEMS = 1
+# H9 items: one 국가데이터처 출생통계 PDF + one Eurostat demo_frate request per ORDER_GEOS country
+H9_ITEMS = 1 + len(es.ORDER_GEOS)
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -95,6 +97,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H8C_ITEMS
         + H8D_ITEMS
         + H8D_K_ITEMS
+        + H9_ITEMS
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -134,6 +137,7 @@ def test_fetch_also_stores_country_metadata() -> None:
                 "ic_gen_",
                 "hdr25_",
                 moekr.RAW_NAME,
+                kostat.BIRTHS_RAW_NAME,
             )
         )
         for s in result.skipped
@@ -218,6 +222,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H8C_ITEMS  # H8c: three raw missing
         + H8D_ITEMS  # H8d: two UN SDG + one HDR raw missing
         + H8D_K_ITEMS  # H8d-K: raw missing
+        + H9_ITEMS  # H9: one births PDF + 13 demo_frate raws missing
     )
 
 
@@ -258,6 +263,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H8C_ITEMS
         + H8D_ITEMS
         + H8D_K_ITEMS
+        + H9_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -618,6 +624,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H8C_ITEMS
         + H8D_ITEMS
         + H8D_K_ITEMS
+        + H9_ITEMS
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -713,6 +720,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H8C_ITEMS
         + H8D_ITEMS
         + H8D_K_ITEMS
+        + H9_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -742,9 +750,8 @@ def test_stage_eurostat_concatenates_countries_and_reports_missing() -> None:
     PIPELINE.run(Stage.FETCH, ctx)
     result = PIPELINE.run(Stage.STAGE, ctx)
     assert set(result.written) == {pipeline.OECD_TABLE, *pipeline.EU_TABLES.values()}
-    assert sum("raw missing" in s for s in result.skipped if s.startswith("eurostat_")) == (
-        len(es.requests()) - 5
-    )
+    h5 = [s for s in result.skipped if s.startswith("eurostat_") and "demo_frate" not in s]
+    assert sum("raw missing" in s for s in h5) == len(es.requests()) - 5
     census = ctx.tables.read_table(pipeline.EU_TABLES["cens_21me_r2"])
     assert len(census) == 60 and {r["iso3"] for r in census} == {"FIN"}
     assert {r["year"] for r in census} == {2021}
@@ -1593,4 +1600,106 @@ def test_mart_h8d_k_writes_sorted_long_mart(pdf_from_pages) -> None:  # type: ig
     assert pipeline.MOEKR_MART not in result.written
     assert any(
         s.startswith(f"{pipeline.MOEKR_TABLE}: staged table missing") for s in result.skipped
+    )
+
+
+# ---- H9-KR: 국가데이터처 2025년 출생 통계 (PDF) ------------------------------------------------
+
+
+def births_pages() -> list[str]:
+    return (FIXTURES / "kostat_births_2025.txt").read_text(encoding="utf-8").split("\f")
+
+
+def test_fetch_h9_kr_stores_the_births_pdf_with_kogl_license(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    pdf = pdf_from_pages(["- 1 -\n2025년 출생 통계"])
+    ctx = make_ctx({kostat.BIRTHS_URL: pdf})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert result.written == ("growth-fertility/kostat_births/births_2025.pdf",)
+    assert (
+        ctx.raw.get(theme="growth-fertility", source="kostat_births", name="births_2025.pdf") == pdf
+    )
+    recs = ctx.raw.records()
+    assert len(recs) == 1
+    assert recs[0].url == kostat.BIRTHS_URL
+    assert "KOGL" in recs[0].license and "출생 통계" in recs[0].license
+    assert not any(s.startswith("births_2025.pdf") for s in result.skipped)
+    result = PIPELINE.run(Stage.FETCH, make_ctx({}))
+    assert any(s.startswith("births_2025.pdf:") for s in result.skipped)
+
+
+# ---- H9-EU: Eurostat demo_frate (single-age fertility rates) -------------------------------
+
+
+def test_fetch_h9_eu_stores_one_demo_frate_raw_per_country() -> None:
+    reqs = es.frate_requests()
+    fi = next(r for r in reqs if r.geo == "FI")
+    ctx = make_ctx({fi.url: (FIXTURES / "eurostat_frate_fi.json").read_bytes()})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert result.written == ("growth-fertility/eurostat/eurostat_demo_frate_FI.json",)
+    assert sum(s.startswith("eurostat_demo_frate_") for s in result.skipped) == len(reqs) - 1
+    recs = ctx.raw.records()
+    assert len(recs) == 1 and recs[0].source == es.SOURCE and "copyright-notice" in recs[0].license
+    assert recs[0].url == fi.url
+
+
+def test_stage_and_mart_h9_kr_independent_of_other_sources(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx({kostat.BIRTHS_URL: pdf_from_pages(births_pages())})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.KR_BIRTHS_TABLE,)
+    rows = ctx.tables.read_table(pipeline.KR_BIRTHS_TABLE)
+    assert len(rows) == 45 * 17 and set(rows[0]) == {
+        "year", "metric", "group", "value", "release_year", "source",
+    }  # fmt: skip
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.KR_BIRTHS_MART,)
+    mart = ctx.tables.read_table(pipeline.KR_BIRTHS_MART)
+    assert len(mart) == 45 * 17
+    assert (mart[0]["year"], mart[0]["metric"], mart[0]["group"]) == (1981, "births", "계")
+    keyed = {(r["year"], r["metric"], r["group"]): r["value"] for r in mart}
+    assert keyed[(2025, "births", "첫째아")] == 158684 and keyed[(2025, "tfr", "계")] == 0.8
+
+
+def test_stage_h9_kr_skips_unrecognised_layout_and_missing_raw(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx({kostat.BIRTHS_URL: pdf_from_pages(["- 1 -\n출생아 수\n2025 254,341"])})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == ()
+    assert any(s.startswith("births_2025.pdf: layout not recognised (") for s in result.skipped)
+    result = PIPELINE.run(Stage.STAGE, make_ctx({}))
+    assert any(s.startswith("births_2025.pdf: raw missing") for s in result.skipped)
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert any(
+        s.startswith(f"{pipeline.KR_BIRTHS_TABLE}: staged table missing") for s in result.skipped
+    )
+
+
+def test_stage_and_mart_h9_eu_from_the_countries_that_have_raw() -> None:
+    fi = next(r for r in es.frate_requests() if r.geo == "FI")
+    ctx = make_ctx({fi.url: (FIXTURES / "eurostat_frate_fi.json").read_bytes()})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.EU_FRATE_TABLE,)
+    missing = [s for s in result.skipped if s.startswith("eurostat_demo_frate_")]
+    assert len(missing) == 12 and all("raw missing" in s for s in missing)
+    staged = ctx.tables.read_table(pipeline.EU_FRATE_TABLE)
+    assert len(staged) == 35 * 35 and {r["iso3"] for r in staged} == {"FIN"}
+    assert set(staged[0]) == {"iso3", "year", "age", "rate", "source"}
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.EU_COHORT_MART,)
+    mart = ctx.tables.read_table(pipeline.EU_COHORT_MART)
+    assert set(mart[0]) == {
+        "iso3", "metric", "year", "cohort", "age", "value", "censored_at", "source",
+    }  # fmt: skip
+    assert {str(r["metric"]) for r in mart} == {"asfr", "cohort_cum", "completed"}
+    completed = [r for r in mart if r["metric"] == "completed" and r["censored_at"] is None]
+    assert [r["cohort"] for r in completed] == list(range(1975, 1980))
+
+
+def test_stage_h9_eu_without_any_raw_writes_nothing_and_mart_is_skipped() -> None:
+    result = PIPELINE.run(Stage.STAGE, make_ctx({}))
+    assert pipeline.EU_FRATE_TABLE not in result.written
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert any(
+        s.startswith(f"{pipeline.EU_FRATE_TABLE}: staged table missing") for s in result.skipped
     )

@@ -138,6 +138,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h8c(ctx, written, skipped)
     written, skipped = _fetch_h8d(ctx, written, skipped)
     written, skipped = _fetch_h8d_k(ctx, written, skipped)
+    written, skipped = _fetch_h9_kr(ctx, written, skipped)
+    written, skipped = _fetch_h9_eu(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -221,6 +223,8 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h8c(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8d(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h8d_k(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h9_kr(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h9_eu(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -483,6 +487,8 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h8c(ctx, written, skipped)
     written, skipped = _mart_h8d(ctx, written, skipped)
     written, skipped = _mart_h8d_k(ctx, written, skipped)
+    written, skipped = _mart_h9_kr(ctx, written, skipped)
+    written, skipped = _mart_h9_eu(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -1105,4 +1111,125 @@ def _mart_h8d_k(
         return written, skipped
     ctx.tables.write_table(MOEKR_MART, moekr.build_mart(staged_rows))
     written.append(MOEKR_MART)
+    return written, skipped
+
+
+# ---- H9-KR: 국가데이터처 2025년 출생 통계 press release (one PDF, one long mart) ----------------
+# Births by birth order (1981-2025) and age-specific fertility rates (5-year classes). Parsed
+# fail-closed from the pypdf text; independent of every other source.
+
+KR_BIRTHS_TABLE = "staged/kostat/births_order_asfr"
+KR_BIRTHS_MART = "marts/kr_births_order_asfr"
+
+
+def _fetch_h9_kr(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        payload = ctx.fetcher.fetch(kostat.BIRTHS_URL)
+    except FetchError as e:
+        skipped.append(f"{kostat.BIRTHS_RAW_NAME}: {e}")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=kostat.BIRTHS_SOURCE,
+        name=kostat.BIRTHS_RAW_NAME,
+        url=kostat.BIRTHS_URL,
+        license=kostat.BIRTHS_LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h9_kr(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    payload = ctx.raw.get(theme=THEME, source=kostat.BIRTHS_SOURCE, name=kostat.BIRTHS_RAW_NAME)
+    if payload is None:
+        skipped.append(f"{kostat.BIRTHS_RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows = kostat.births_rows(payload)
+    except ValueError as e:
+        skipped.append(f"{kostat.BIRTHS_RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(KR_BIRTHS_TABLE, rows)
+    written.append(KR_BIRTHS_TABLE)
+    return written, skipped
+
+
+def _mart_h9_kr(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged_rows = ctx.tables.read_table(KR_BIRTHS_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{KR_BIRTHS_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(KR_BIRTHS_MART, kostat.build_births_mart(staged_rows))
+    written.append(KR_BIRTHS_MART)
+    return written, skipped
+
+
+# ---- H9-EU: Eurostat demo_frate (single-age fertility rates -> cohort cumulative fertility) --
+# One request per ORDER_GEOS country (raw ``eurostat_demo_frate_<geo>.json``), staged as single-age
+# rates, marted as period ASFR + cohort cumulative / completed fertility. Kept apart from the H5
+# block so the two can evolve independently.
+
+EU_FRATE_TABLE = "staged/eurostat/asfr_single_age"
+EU_COHORT_MART = "marts/eu_cohort_fertility"
+
+
+def _fetch_h9_eu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    for req in es.frate_requests():
+        try:
+            payload = ctx.fetcher.fetch(req.url)
+        except FetchError as e:
+            skipped.append(f"{req.raw_name}: {e}")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=es.SOURCE,
+            name=req.raw_name,
+            url=req.url,
+            license=es.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h9_eu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    """One staged table concatenating the countries whose raw exists; missing countries are
+    reported and a dataset with no raw at all is not written."""
+    rows: list[dict[str, object]] = []
+    for req in es.frate_requests():
+        payload = ctx.raw.get(theme=THEME, source=es.SOURCE, name=req.raw_name)
+        if payload is None:
+            skipped.append(f"{req.raw_name}: raw missing (run fetch)")
+            continue
+        rows.extend(es.frate_rows(payload))
+    if rows:
+        ctx.tables.write_table(EU_FRATE_TABLE, rows)
+        written.append(EU_FRATE_TABLE)
+    return written, skipped
+
+
+def _mart_h9_eu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged_rows = ctx.tables.read_table(EU_FRATE_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{EU_FRATE_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    mart, dropped = es.build_cohort_mart(staged_rows)
+    ctx.tables.write_table(EU_COHORT_MART, mart)
+    written.append(EU_COHORT_MART)
+    skipped.extend(f"{EU_COHORT_MART}: {d}" for d in dropped)
     return written, skipped
