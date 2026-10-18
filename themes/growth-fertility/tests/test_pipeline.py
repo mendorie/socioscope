@@ -6,6 +6,7 @@ import pytest
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
 from theme_growth_fertility import (
+    cao,
     dhs,
     estat,
     hdr,
@@ -16,6 +17,7 @@ from theme_growth_fertility import (
     oecd_eag,
     oecd_family,
     pipeline,
+    prefecture,
     surveys,
     unsdg,
 )
@@ -56,6 +58,8 @@ H9_JP_ITEMS = len(ipss.TABLES) + 1
 H9_EB_OECD_ITEMS = len(ebm.SPECIAL_WAVES) + 1
 # H9 items: one 국가데이터처 출생통계 PDF + one Eurostat demo_frate request per ORDER_GEOS country
 H9_ITEMS = 1 + len(es.ORDER_GEOS)
+# H10-PREF items: 就業構造 時系列 第18表 + 住宅・土地統計 時系列 第34-2表 + 県民経済計算 総括表7
+H10_PREF_ITEMS = 3
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -106,6 +110,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H9_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
+        + H10_PREF_ITEMS
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -146,7 +151,12 @@ def test_fetch_also_stores_country_metadata() -> None:
                 "hdr25_",
                 moekr.RAW_NAME,
                 "T04-",
+                "T06-",
+                "T12-",
                 ipss.PDF_RAW_NAME,
+                prefecture.SHUGYO_TS18_RAW_NAME,
+                prefecture.JUTAKU_RAW_NAME,
+                cao.RAW_NAME,
                 "eb_EBS",
                 oecd_family.RAW_NAME,
                 kostat.BIRTHS_RAW_NAME,
@@ -237,6 +247,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H9_JP_ITEMS
         + H9_EB_OECD_ITEMS
         + H9_ITEMS  # H9: one births PDF + 13 demo_frate raws missing
+        + H10_PREF_ITEMS
     )
 
 
@@ -280,6 +291,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H9_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
+        + H10_PREF_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -643,6 +655,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H9_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
+        + H10_PREF_ITEMS
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -741,6 +754,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H9_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
+        + H10_PREF_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -1647,10 +1661,13 @@ def test_fetch_h9_jp_stores_seven_workbooks_and_the_pdf_with_pdl_license(pdf_fro
     assert len(recs) == H9_JP_ITEMS
     assert all("PDL" in r.license for r in recs)
     assert {r.url for r in recs} == {t.url for t in ipss.TABLES} | {ipss.PDF_URL}
-    assert not any(s.startswith(("T04-", "JNFS16")) for s in result.skipped)
+    assert not any(s.startswith(("T04-", "T06-", "T12-", "JNFS16")) for s in result.skipped)
     # fetch failures are reported per item without writing
     result = PIPELINE.run(Stage.FETCH, make_ctx({}))
-    assert sum(s.startswith(("T04-", "JNFS16gaiyo.pdf")) for s in result.skipped) == H9_JP_ITEMS
+    assert (
+        sum(s.startswith(("T04-", "T06-", "T12-", "JNFS16gaiyo.pdf")) for s in result.skipped)
+        == H9_JP_ITEMS
+    )
 
 
 def test_stage_h9_jp_writes_one_staged_table_per_raw(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
@@ -1666,7 +1683,7 @@ def test_stage_h9_jp_writes_one_staged_table_per_raw(pdf_from_pages) -> None:  #
     assert len(rows) == 2020 and {r["metric"] for r in rows} == {"cohort_cum_fertility"}
     rows = ctx.tables.read_table("staged/ipss/jnfs16")
     assert len(rows) == 58 and {r["table"] for r in rows} == {"JNFS16-7-1", "JNFS16-3-3"}
-    assert not any(s.startswith(("T04-", "JNFS16")) for s in result.skipped)
+    assert not any(s.startswith(("T04-", "T06-", "T12-", "JNFS16")) for s in result.skipped)
 
 
 def test_stage_h9_jp_skips_each_unrecognised_table_and_keeps_the_rest(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
@@ -1686,9 +1703,10 @@ def test_stage_h9_jp_skips_each_unrecognised_table_and_keeps_the_rest(pdf_from_p
         for s in result.skipped
     )
     result = PIPELINE.run(Stage.STAGE, make_ctx({}))
-    assert sum(s.startswith(("T04-", "JNFS16")) and "raw missing" in s for s in result.skipped) == (
-        H9_JP_ITEMS
-    )
+    assert sum(
+        s.startswith(("T04-", "T06-", "T12-", "JNFS16")) and "raw missing" in s
+        for s in result.skipped
+    ) == (H9_JP_ITEMS)
 
 
 def test_mart_h9_jp_writes_survey_and_births_marts_from_whatever_is_staged(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
@@ -1696,7 +1714,12 @@ def test_mart_h9_jp_writes_survey_and_births_marts_from_whatever_is_staged(pdf_f
     PIPELINE.run(Stage.FETCH, ctx)
     PIPELINE.run(Stage.STAGE, ctx)
     result = PIPELINE.run(Stage.MART, ctx)
-    assert result.written == (pipeline.IPSS_SURVEY_MART, pipeline.IPSS_BIRTHS_MART)
+    assert result.written == (
+        pipeline.IPSS_SURVEY_MART,
+        pipeline.IPSS_BIRTHS_MART,
+        pipeline.H10_MARRIAGE_MART,
+        pipeline.H10_PREF_MART,
+    )
     assert pipeline.IPSS_SURVEY_MART == "marts/jp_fertility_survey"
     assert pipeline.IPSS_BIRTHS_MART == "marts/jp_births_order_cohort"
     survey = ctx.tables.read_table(pipeline.IPSS_SURVEY_MART)
@@ -2056,3 +2079,110 @@ def test_stage_h9_eu_without_any_raw_writes_nothing_and_mart_is_skipped() -> Non
     assert any(
         s.startswith(f"{pipeline.EU_FRATE_TABLE}: staged table missing") for s in result.skipped
     )
+
+
+# ---------------------------------------------------------------- H10-PREF: prefecture panel
+
+
+def h10_responses() -> dict[str, bytes]:
+    out = {t.url: (FIXTURES / f"ipss_{t.code}.xlsx").read_bytes() for t in ipss.TABLES[7:]}
+    out[prefecture.SHUGYO_TS18_URL] = (FIXTURES / "estat_shugyo_ts18.xlsx").read_bytes()
+    out[prefecture.JUTAKU_URL] = (FIXTURES / "estat_jutaku_34_2.xlsx").read_bytes()
+    out[cao.URL] = (FIXTURES / "cao_soukatu7.xlsx").read_bytes()
+    return out
+
+
+def test_fetch_h10_pref_stores_the_three_explanatory_workbooks_with_their_licenses() -> None:
+    ctx = make_ctx(h10_responses())
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert "growth-fertility/estat_shugyo/shugyo_ts18_employment.xlsx" in result.written
+    assert "growth-fertility/estat_jutaku/jutaku_34_2_rent.xlsx" in result.written
+    assert "growth-fertility/cao_kenmin/kenmin_soukatu7.xlsx" in result.written
+    # the nine H10 IPSS workbooks ride on the H9-JP loop
+    assert all(f"growth-fertility/ipss/{t.raw_name}" in result.written for t in ipss.TABLES[7:])
+    by_name = {r.name: r for r in ctx.raw.records()}
+    assert "政府標準利用規約" in by_name["shugyo_ts18_employment.xlsx"].license
+    assert "政府標準利用規約" in by_name["jutaku_34_2_rent.xlsx"].license
+    assert "内閣府" in by_name["kenmin_soukatu7.xlsx"].license
+    assert by_name["kenmin_soukatu7.xlsx"].url == cao.URL
+    assert "PDL" in by_name["T12-36.xlsx"].license
+
+
+def test_stage_h10_pref_writes_one_staged_table_per_raw_and_skips_unrecognised() -> None:
+    ctx = make_ctx(h10_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert pipeline.H10_TABLES == {
+        "shugyo_ts18": "staged/estat/shugyo_ts18_employment",
+        "jutaku_34_2": "staged/estat/jutaku_rent",
+        "kenmin": "staged/cao/kenmin_income",
+    }
+    for name in pipeline.H10_TABLES.values():
+        assert name in result.written
+    assert len(ctx.tables.read_table("staged/estat/shugyo_ts18_employment")) == 5472
+    assert len(ctx.tables.read_table("staged/estat/jutaku_rent")) == 48 * 21
+    assert len(ctx.tables.read_table("staged/cao/kenmin_income")) == 576
+    assert len(ctx.tables.read_table("staged/ipss/t12_36")) == 480
+    assert len(ctx.tables.read_table("staged/ipss/t06_23")) == 24
+    # a wrong workbook under a URL is reported and the other tables are still written
+    responses = h10_responses()
+    responses[cao.URL] = responses[prefecture.JUTAKU_URL]
+    ctx2 = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx2)
+    result2 = PIPELINE.run(Stage.STAGE, ctx2)
+    assert "staged/cao/kenmin_income" not in result2.written
+    assert any(s.startswith("kenmin_soukatu7.xlsx: layout not recognised") for s in result2.skipped)
+    assert "staged/estat/jutaku_rent" in result2.written
+
+
+def test_stage_h10_pref_reports_missing_raw() -> None:
+    ctx = make_ctx({})
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert "shugyo_ts18_employment.xlsx: raw missing (run fetch)" in result.skipped
+    assert "kenmin_soukatu7.xlsx: raw missing (run fetch)" in result.skipped
+
+
+def test_mart_h10_pref_builds_marriage_series_and_prefecture_panel_from_staged() -> None:
+    ctx = make_ctx(h10_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    PIPELINE.run(Stage.STAGE, ctx)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert pipeline.H10_MARRIAGE_MART == "marts/jp_marriage_series"
+    assert pipeline.H10_PREF_MART == "marts/jp_prefecture_panel"
+    assert "marts/jp_marriage_series" in result.written
+    assert "marts/jp_prefecture_panel" in result.written
+    series = ctx.tables.read_table("marts/jp_marriage_series")
+    assert len(series) == 352 + 270 + 24
+    assert {r["table"] for r in series} == {"T06-24", "T06-12", "T06-23"}
+    panel = ctx.tables.read_table("marts/jp_prefecture_panel")
+    staged_n = sum(
+        len(ctx.tables.read_table(f"staged/ipss/{t.key}"))
+        for t in ipss.TABLES
+        if t.mart == "prefecture"
+    ) + sum(len(ctx.tables.read_table(n)) for n in pipeline.H10_TABLES.values())
+    assert len(panel) == staged_n
+    assert {r["source"] for r in panel} == {"ipss", "estat_shugyo", "estat_jutaku", "cao_kenmin"}
+    tokyo_2020 = {
+        (r["metric"], r["sex"], r["age_class"]): r["value"]
+        for r in panel
+        if r["pref_code"] == "13" and r["year"] == 2020
+    }
+    assert tokyo_2020[("never_married_m30_34", "M", "30-34")] == 58.8
+    assert tokyo_2020[("tfr", "T", None)] == 1.12
+    assert tokyo_2020[("income_per_capita", "T", None)] == 5201.0
+
+
+def test_mart_h10_pref_uses_whatever_is_staged_and_skips_when_nothing_is() -> None:
+    responses = h10_responses()
+    del responses[cao.URL]
+    ctx = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx)
+    PIPELINE.run(Stage.STAGE, ctx)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert "staged/cao/kenmin_income: staged table missing (run stage)" in result.skipped
+    panel = ctx.tables.read_table("marts/jp_prefecture_panel")
+    assert "income_per_capita" not in {r["metric"] for r in panel}
+    empty = make_ctx({})
+    result = PIPELINE.run(Stage.MART, empty)
+    assert "marts/jp_prefecture_panel: no staged prefecture table (run stage)" in result.skipped
+    assert "marts/jp_marriage_series: no staged ipss table (run stage)" in result.skipped

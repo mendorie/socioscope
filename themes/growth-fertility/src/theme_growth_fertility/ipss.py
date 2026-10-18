@@ -22,6 +22,17 @@ Two marts:
   cohort_cum_fertility), group (総数 / 第1子…第5子以上 / age 15..49), cohort (T04-11 only:
   birth year; the sheet's column label is the year the cohort turned 15, so cohort = label − 15
   and year = cohort + age), value, table, source.
+
+H10 (family-formation constraints) adds two more mart sides, see the ``# ---- H10`` section:
+
+- ``marriage`` (``marts/jp_marriage_series``): T06-24(1) never_married_share by sex x 5-year age
+  class (census 1920–2020), T06-12 mean_age_marriage_all / mean_age_first_marriage by sex
+  (1899–2024, two column blocks), T06-23 never_married_at_50 by sex (1920–2020).
+- ``prefecture`` (``marts/jp_prefecture_panel``, built in ``prefecture.py`` together with the
+  e-Stat / 内閣府 sources): T12-33★ tfr (every year), T12-35 mean_age_first_marriage, T12-36
+  never_married_m30_34 / never_married_f25_29, T12-37 never_married_at_50, T12-52 lfp by sex x
+  age class, T12-53 unemployment_rate by sex. 全国 is ``pref_code`` "00"; the 47 prefectures must
+  appear in JIS order.
 """
 
 import re
@@ -29,6 +40,7 @@ import unicodedata
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
+from theme_growth_fertility import prefecture
 from theme_growth_fertility.estat import xlsx_rows
 from theme_growth_fertility.kostat import pdf_text
 
@@ -89,7 +101,7 @@ class Table:
     key: str
     code: str
     sheet: str
-    mart: str  # "survey" | "births"
+    mart: str  # "survey" | "births" | "marriage" | "prefecture"
 
     @property
     def url(self) -> str:
@@ -108,6 +120,16 @@ TABLES: tuple[Table, ...] = (
     Table("t04_16", "T04-16", "T04-16★", "births"),
     Table("t04_09", "T04-09", "T04-09★", "births"),
     Table("t04_11", "T04-11", "T04-11★", "births"),
+    # ---- H10 (appended; the sheet of a multi-sheet table is the first one it reads)
+    Table("t06_24", "T06-24", "T06-24(1)", "marriage"),
+    Table("t06_12", "T06-12", "T06-12", "marriage"),
+    Table("t06_23", "T06-23", "T06-23", "marriage"),
+    Table("t12_33", "T12-33", "T12-33★", "prefecture"),
+    Table("t12_35", "T12-35", "T12-35(1)", "prefecture"),
+    Table("t12_36", "T12-36", "T12-36", "prefecture"),
+    Table("t12_37", "T12-37", "T12-37(1)", "prefecture"),
+    Table("t12_52", "T12-52", "T12-52(1)", "prefecture"),
+    Table("t12_53", "T12-53", "T12-53", "prefecture"),
 )
 
 Rows = Sequence[dict[int, str]]
@@ -560,7 +582,10 @@ _PARSERS: dict[str, Callable[[Rows], list[dict[str, object]]]] = {
 
 
 def parse_table(payload: bytes, table: Table) -> list[dict[str, object]]:
-    """xlsx bytes -> long rows of *table* (``ValueError`` on any layout mismatch)."""
+    """xlsx bytes -> long rows of *table* (``ValueError`` on any layout mismatch). Tables that
+    read several sheets (``_PAYLOAD_PARSERS``) get the payload; the rest get ``table.sheet``."""
+    if table.code in _PAYLOAD_PARSERS:
+        return _PAYLOAD_PARSERS[table.code](payload)
     return _PARSERS[table.code](sheet_rows(payload, table.sheet))
 
 
@@ -737,3 +762,415 @@ def build_births_mart(parts: dict[str, Sequence[dict[str, object]]]) -> list[dic
         )
 
     return _combine(parts, key, "(year, metric, group, cohort)")
+
+
+# ============================================================================================
+# ---- H10: 婚姻時系列 (T06-24 / T06-12 / T06-23) と 都道府県表 (T12-33★ … T12-53) -----------
+# ============================================================================================
+
+MARRIAGE_METRICS: tuple[str, ...] = (
+    "never_married_share",
+    "mean_age_marriage_all",
+    "mean_age_first_marriage",
+    "never_married_at_50",
+)
+SEX_LABELS: dict[str, str] = {"男": "M", "女": "F"}
+CENSUS_YEARS: tuple[int, ...] = (
+    1920,
+    1930,
+    1950,
+    1960,
+    1970,
+    1980,
+    1990,
+    2000,
+    2010,
+    2015,
+    2020,
+)
+AGE_CLASSES_5Y: tuple[str, ...] = (
+    "total",
+    *(f"{a}-{a + 4}" for a in range(15, 85, 5)),
+    "85-",
+)
+_YEAR_CELL = re.compile(r"^(\d{4})年?(?:\d\)|\*)?$")  # '1950年1)', '2015年*', '2015*', '1951'
+_AGE_CELL = re.compile(r"^(\d{2})~(\d{2})$")
+
+
+def _year_cell(text: str | None) -> int | None:
+    m = _YEAR_CELL.match(_norm(text))
+    return int(m.group(1)) if m else None
+
+
+def _year_columns(row: dict[int, str], cols: Sequence[int], code: str) -> list[int]:
+    out: list[int] = []
+    for c in cols:
+        y = _year_cell(row.get(c))
+        if y is None:
+            msg = f"{code}: header column {c} is {row.get(c)!r}, not a year"
+            raise ValueError(msg)
+        out.append(y)
+    return out
+
+
+def _expect_years(got: Sequence[int], want: Sequence[int], code: str) -> None:
+    if tuple(got) != tuple(want):
+        msg = f"{code}: header years must be {tuple(want)}, got {tuple(got)}"
+        raise ValueError(msg)
+
+
+def _age_class(text: str | None) -> str | None:
+    s = _norm(text)
+    if s.startswith("総数"):
+        return "total"
+    if s == "85歳以上":
+        return "85-"
+    m = _AGE_CELL.match(s)
+    return f"{m.group(1)}-{m.group(2)}" if m else None
+
+
+def _marriage_row(
+    year: int, metric: str, sex: str, age_class: str | None, value: float, table: str
+) -> dict[str, object]:
+    return {
+        "year": year,
+        "metric": metric,
+        "sex": sex,
+        "age_class": age_class,
+        "value": value,
+        "table": table,
+        "source": SOURCE,
+    }
+
+
+def _opt_num(text: str | None, where: str) -> float | None:
+    """Float of a cell, ``None`` for the not-published marks ('…', '...')."""
+    if _norm(text) in _MISSING:
+        return None
+    return _num(text, where)
+
+
+# ---- T06-24(1): 性，年齢（5 歳階級），配偶関係別割合 — 未婚 ----------------------------------
+
+
+def never_married_share_rows(rows: Rows) -> list[dict[str, object]]:
+    """T06-24 sheet (1) 未婚: ``never_married_share`` (%) by sex x 16 age classes (total, 15-19 …
+    80-84, 85-) for the 11 census years 1920–2020 (1940 not published)."""
+    code = "T06-24"
+    _title(rows, "表6-24性,年齢(5歳階級),配偶関係別割合", code)
+    label = _norm(rows[1].get(1)) if len(rows) > 1 else ""
+    if not label.startswith("(1)未婚"):
+        msg = f"{code}: sheet (1) 未婚 expected, got {label!r}"
+        raise ValueError(msg)
+    h = _header_row(rows, "年齢", code)
+    _expect_years(_year_columns(rows[h], range(2, 13), code), CENSUS_YEARS, code)
+    out: list[dict[str, object]] = []
+    i = h + 1
+    for sex_label, sex in SEX_LABELS.items():
+        if i >= len(rows) or _norm(rows[i].get(2)) != sex_label or rows[i].get(1):
+            msg = f"{code}: sex marker row {sex_label!r} expected at row {i}"
+            raise ValueError(msg)
+        block = rows[i + 1 : i + 1 + len(AGE_CLASSES_5Y)]
+        ages = [_age_class(r.get(1)) for r in block]
+        if ages != list(AGE_CLASSES_5Y):
+            msg = f"{code} {sex_label}: age rows must be {AGE_CLASSES_5Y}, got {ages}"
+            raise ValueError(msg)
+        for r, ac in zip(block, AGE_CLASSES_5Y, strict=True):
+            for c, year in zip(range(2, 13), CENSUS_YEARS, strict=True):
+                v = _num(r.get(c), f"{code} {sex_label} {ac} {year}")
+                out.append(_marriage_row(year, "never_married_share", sex, ac, v, code))
+        i += 1 + len(AGE_CLASSES_5Y)
+    return out
+
+
+# ---- T06-12: 全婚姻および初婚の平均婚姻年齢 (two column blocks: 1899–1989 | 1990–) ------------
+
+_T0612_COLS: tuple[tuple[int, str, str], ...] = (
+    (2, "mean_age_marriage_all", "M"),
+    (3, "mean_age_marriage_all", "F"),
+    (5, "mean_age_first_marriage", "M"),
+    (6, "mean_age_first_marriage", "F"),
+)
+_T0612_FIRST_YEAR = 1899
+_T0612_RIGHT_OFFSET = 7
+
+
+def mean_marriage_age_rows(rows: Rows) -> list[dict[str, object]]:
+    """T06-12: ``mean_age_marriage_all`` / ``mean_age_first_marriage`` by sex (歳). The sheet
+    prints two blocks side by side (年次 in A and H); the right block must continue the left
+    one year by year. '…' produces no row."""
+    code = "T06-12"
+    _title(rows, "表6-12全婚姻および初婚の平均婚姻年齢", code)
+    h = _header_row(rows, "年次", code)
+    _check_header(
+        rows[h], {1: "年次", 3: "全婚姻", 6: "初婚", 8: "年次", 10: "全婚姻", 13: "初婚"}, code
+    )
+    sub = {2: "夫", 3: "妻", 4: "年齢差", 5: "夫", 6: "妻", 7: "年齢差"}
+    _check_header(rows[h + 1], sub | {c + _T0612_RIGHT_OFFSET: g for c, g in sub.items()}, code)
+    left: list[tuple[int, dict[int, str]]] = []
+    right: list[tuple[int, dict[int, str]]] = []
+    for r in rows[h + 2 :]:
+        y = _int(r.get(1))
+        if y is None:
+            break
+        left.append((y, r))
+        yr = _int(r.get(1 + _T0612_RIGHT_OFFSET))
+        if yr is not None:
+            right.append((yr, r))
+    years_l = [y for y, _ in left]
+    if not years_l or years_l[0] != _T0612_FIRST_YEAR or years_l != sorted(set(years_l)):
+        msg = f"{code}: left block years must increase from {_T0612_FIRST_YEAR}, got {years_l}"
+        raise ValueError(msg)
+    years_r = [y for y, _ in right]
+    want_r = list(range(years_l[-1] + 1, years_l[-1] + 1 + len(years_r)))
+    if not years_r or years_r != want_r:
+        msg = f"{code}: right block must run {want_r[0]}…{want_r[-1]} consecutively, got {years_r}"
+        raise ValueError(msg)
+    out: list[dict[str, object]] = []
+    for block, offset in ((left, 0), (right, _T0612_RIGHT_OFFSET)):
+        for year, r in block:
+            for c, metric, sex in _T0612_COLS:
+                v = _opt_num(r.get(c + offset), f"{code} {year} {metric} {sex}")
+                if v is not None:
+                    out.append(_marriage_row(year, metric, sex, None, v, code))
+    return out
+
+
+# ---- T06-23: 性別 50 歳時の未婚割合 ----------------------------------------------------------
+
+_T0623_YEARS: tuple[int, ...] = (1920, 1930, 1940, *CENSUS_YEARS[2:])
+
+
+def never_married_at_50_rows(rows: Rows) -> list[dict[str, object]]:
+    """T06-23: ``never_married_at_50`` (%) by sex for the 12 census years 1920–2020 (the
+    有配偶 / 死別 / 離別 columns are not kept)."""
+    code = "T06-23"
+    _title(rows, "表6-23性別50歳時の未婚割合", code)
+    h = _header_row(rows, "年次", code)
+    _check_header(rows[h], {1: "年次", 2: "男", 6: "女"}, code)
+    _check_header(rows[h + 1], {2: "未婚", 3: "有配偶", 6: "未婚", 7: "有配偶"}, code)
+    out: list[dict[str, object]] = []
+    years: list[int] = []
+    for r in rows[h + 2 :]:
+        y = _year_cell(r.get(1))
+        if y is None:
+            break
+        years.append(y)
+        for c, sex in ((2, "M"), (6, "F")):
+            v = _num(r.get(c), f"{code} {y} {sex}")
+            out.append(_marriage_row(y, "never_married_at_50", sex, None, v, code))
+    if tuple(years) != _T0623_YEARS:
+        msg = f"{code}: years must be {_T0623_YEARS}, got {years}"
+        raise ValueError(msg)
+    return out
+
+
+# ---- T12-NN: 都道府県表 (全国 + 47 prefectures in JIS order) --------------------------------
+
+
+def _pref_header(rows: Rows, code: str, title: str) -> int:
+    _title(rows, title, code)
+    return _header_row(rows, "都道府県", code)
+
+
+def _pref_label(r: dict[int, str]) -> str | None:
+    return r.get(1)
+
+
+def _pref_year_grid(
+    rows: Rows,
+    start: int,
+    code: str,
+    cols_years: Sequence[tuple[int, int]],
+    metric: str,
+    sex: str,
+    age_class: str | None,
+) -> list[dict[str, object]]:
+    """Region rows from *start*: (column, year) cells -> metric rows; '…' produces no row."""
+    out: list[dict[str, object]] = []
+    for pc, r in prefecture.regions(rows, start, code, _pref_label):
+        for c, year in cols_years:
+            v = _opt_num(r.get(c), f"{code} {prefecture.pref_name(pc)} {year} {metric} {sex}")
+            if v is not None:
+                out.append(prefecture.panel_row(pc, year, metric, sex, age_class, v, code, SOURCE))
+    return out
+
+
+_T1233_FIXED: tuple[int, ...] = (1925, 1930)
+_T1233_FIRST_ANNUAL = 1950
+
+
+def pref_tfr_rows(rows: Rows) -> list[dict[str, object]]:
+    """T12-33★: ``tfr`` per prefecture, columns 1925, 1930 and every year 1950–. The unnamed
+    全国 row (5-year-class computation, in parentheses) right under 全国 has no label: skipped."""
+    code = "T12-33"
+    h = _pref_header(rows, code, "表12-33都道府県別合計特殊出生率")
+    cols = [c for c in sorted(rows[h]) if c > 1]
+    years = _year_columns(rows[h], cols, code)
+    annual = years[len(_T1233_FIXED) :]
+    if tuple(years[: len(_T1233_FIXED)]) != _T1233_FIXED or annual != list(
+        range(_T1233_FIRST_ANNUAL, _T1233_FIRST_ANNUAL + len(annual))
+    ):
+        msg = f"{code}: header years must be {_T1233_FIXED} then consecutive from 1950, got {years}"
+        raise ValueError(msg)
+    return _pref_year_grid(rows, h + 1, code, list(zip(cols, years, strict=True)), "tfr", "T", None)
+
+
+_T1235_YEARS: tuple[int, ...] = (1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2024)
+
+
+def _sex_sheets(payload: bytes, code: str) -> list[tuple[str, list[dict[int, str]]]]:
+    """[(sex, rows)] of the sheets ``<code>(1)`` 男 and ``<code>(2)`` 女."""
+    out: list[tuple[str, list[dict[int, str]]]] = []
+    for n, (label, sex) in enumerate(SEX_LABELS.items(), start=1):
+        rows = sheet_rows(payload, f"{code}({n})")
+        cell = _norm(rows[1].get(1)) if len(rows) > 1 else ""
+        if not cell.startswith(f"({n}){label}"):
+            msg = f"{code}({n}): sheet label ({n}){label} expected, got {cell!r}"
+            raise ValueError(msg)
+        out.append((sex, rows))
+    return out
+
+
+def pref_first_marriage_age_rows(payload: bytes) -> list[dict[str, object]]:
+    """T12-35 sheets (1) 男 / (2) 女: ``mean_age_first_marriage`` (歳) for 1950…2020, 2024."""
+    code = "T12-35"
+    out: list[dict[str, object]] = []
+    for sex, rows in _sex_sheets(payload, code):
+        h = _pref_header(rows, code, "表12-35都道府県,性別平均初婚年齢")
+        _expect_years(_year_columns(rows[h], range(2, 11), code), _T1235_YEARS, code)
+        cols = list(zip(range(2, 11), _T1235_YEARS, strict=True))
+        out += _pref_year_grid(rows, h + 1, code, cols, "mean_age_first_marriage", sex, None)
+    return out
+
+
+_T1236_YEARS: tuple[int, ...] = (1970, 1990, 2010, 2015, 2020)
+
+
+def pref_never_married_young_rows(rows: Rows) -> list[dict[str, object]]:
+    """T12-36: ``never_married_m30_34`` (男 30–34 歳) and ``never_married_f25_29`` (女 25–29 歳)
+    (%) for 1970, 1990, 2010, 2015, 2020."""
+    code = "T12-36"
+    h = _pref_header(rows, code, "表12-36都道府県別男子30~34歳,女子25~29歳未婚者割合")
+    men, women = _norm(rows[h].get(2)), _norm(rows[h].get(7))
+    if not men.startswith("男性30~34歳") or not women.startswith("女性25~29歳"):
+        msg = f"{code}: header groups 男性30~34歳 / 女性25~29歳 expected, got {men!r} / {women!r}"
+        raise ValueError(msg)
+    _expect_years(_year_columns(rows[h + 1], range(2, 12), code), _T1236_YEARS * 2, code)
+    out = _pref_year_grid(
+        rows,
+        h + 2,
+        code,
+        list(zip(range(2, 7), _T1236_YEARS, strict=True)),
+        "never_married_m30_34",
+        "M",
+        "30-34",
+    )
+    out += _pref_year_grid(
+        rows,
+        h + 2,
+        code,
+        list(zip(range(7, 12), _T1236_YEARS, strict=True)),
+        "never_married_f25_29",
+        "F",
+        "25-29",
+    )
+    return out
+
+
+_T1237_YEARS: tuple[int, ...] = (1920, 1930, 1940, 1950, 1970, 1990, 2000, 2005, 2010, 2015, 2020)
+
+
+def pref_never_married_at_50_rows(payload: bytes) -> list[dict[str, object]]:
+    """T12-37 sheets (1) 男 / (2) 女: ``never_married_at_50`` (%) for 11 census years."""
+    code = "T12-37"
+    out: list[dict[str, object]] = []
+    for sex, rows in _sex_sheets(payload, code):
+        h = _pref_header(rows, code, "表12-37都道府県,性別50歳時未婚割合")
+        _expect_years(_year_columns(rows[h], range(2, 13), code), _T1237_YEARS, code)
+        cols = list(zip(range(2, 13), _T1237_YEARS, strict=True))
+        out += _pref_year_grid(rows, h + 1, code, cols, "never_married_at_50", sex, None)
+    return out
+
+
+_T1252_YEARS: tuple[int, ...] = (1980, 2000, 2010, 2020)
+_T1252_AGES: tuple[tuple[str, str], ...] = (
+    ("総数1)", "total"),
+    ("15~29歳", "15-29"),
+    ("30~44歳", "30-44"),
+    ("45~59歳", "45-59"),
+    ("60歳以上", "60-"),
+)
+_T1252_SHEET_LABEL = re.compile(r"^\((\d)\)(\d{4})年\*?$")
+
+
+def pref_lfp_rows(payload: bytes) -> list[dict[str, object]]:
+    """T12-52 sheets (1)…(4) = 1980 / 2000 / 2010 / 2020: ``lfp`` (労働力率 %) by sex x age
+    class (total, 15-29, 30-44, 45-59, 60-)."""
+    code = "T12-52"
+    out: list[dict[str, object]] = []
+    for n, want_year in enumerate(_T1252_YEARS, start=1):
+        rows = sheet_rows(payload, f"{code}({n})")
+        _title(rows, "表12-52都道府県,性,年齢別労働力率", code)
+        cell = _norm(rows[1].get(1)) if len(rows) > 1 else ""
+        m = _T1252_SHEET_LABEL.match(cell)
+        if m is None or int(m.group(1)) != n or int(m.group(2)) != want_year:
+            msg = f"{code}({n}): sheet label ({n}) {want_year}年 expected, got {cell!r}"
+            raise ValueError(msg)
+        h = _header_row(rows, "都道府県", code)
+        _check_header(rows[h], {4: "男", 9: "女"}, code)
+        sub = {c: label for c, (label, _) in zip(range(2, 7), _T1252_AGES, strict=True)}
+        _check_header(rows[h + 1], sub | {c + 5: g for c, g in sub.items()}, code)
+        for sex, base in (("M", 2), ("F", 7)):
+            for off, (_, ac) in enumerate(_T1252_AGES):
+                out += _pref_year_grid(rows, h + 2, code, [(base + off, want_year)], "lfp", sex, ac)
+    return out
+
+
+_T1253_YEARS: tuple[int, ...] = (1980, 1990, 2000, 2010, 2015, 2020)
+
+
+def pref_unemployment_rows(rows: Rows) -> list[dict[str, object]]:
+    """T12-53: ``unemployment_rate`` (完全失業率 %) by sex for 1980…2020."""
+    code = "T12-53"
+    h = _pref_header(rows, code, "表12-53都道府県別完全失業率")
+    _check_header(rows[h], {1: "都道府県", 2: "男", 8: "女"}, code)
+    _expect_years(_year_columns(rows[h + 1], range(2, 14), code), _T1253_YEARS * 2, code)
+    out: list[dict[str, object]] = []
+    for sex, base in (("M", 2), ("F", 8)):
+        cols = list(zip(range(base, base + 6), _T1253_YEARS, strict=True))
+        out += _pref_year_grid(rows, h + 2, code, cols, "unemployment_rate", sex, None)
+    return out
+
+
+_PARSERS.update(
+    {
+        "T06-24": never_married_share_rows,
+        "T06-12": mean_marriage_age_rows,
+        "T06-23": never_married_at_50_rows,
+        "T12-33": pref_tfr_rows,
+        "T12-36": pref_never_married_young_rows,
+        "T12-53": pref_unemployment_rows,
+    }
+)
+_PAYLOAD_PARSERS: dict[str, Callable[[bytes], list[dict[str, object]]]] = {
+    "T12-35": pref_first_marriage_age_rows,
+    "T12-37": pref_never_married_at_50_rows,
+    "T12-52": pref_lfp_rows,
+}
+
+
+def build_marriage_mart(parts: dict[str, Sequence[dict[str, object]]]) -> list[dict[str, object]]:
+    """``marts/jp_marriage_series``: sorted by (year, metric, sex, age_class); duplicate keys
+    raise ``ValueError``."""
+
+    def key(r: dict[str, object]) -> tuple[object, ...]:
+        ac = r["age_class"]
+        return (
+            int(str(r["year"])),
+            MARRIAGE_METRICS.index(str(r["metric"])),
+            str(r["sex"]),
+            "" if ac is None else str(ac),
+        )
+
+    return _combine(parts, key, "(year, metric, sex, age_class)")
