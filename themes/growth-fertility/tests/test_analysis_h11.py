@@ -115,8 +115,9 @@ def test_framed_stance_adds_qualifications() -> None:
         j3_ok=False,
         robust_changes=[],
     )
-    assert s.startswith(h11.final_stance(1980, main.s_m, False))
-    assert "J2 で確認できず" in s
+    assert s.startswith("期間の分解では 1980→2020 年の低下のほぼ全部")
+    assert "11 割" not in s
+    assert "J1 のみ成立、J2 不成立" in s and "主経路」の帯" in s
     assert "1 を超える" in s
     assert "2.21" in s and "1.81" in s
     assert "判定は変わらない" in s
@@ -140,9 +141,9 @@ def test_framed_stance_reports_j3_high_group_against_prediction() -> None:
             j3_high=high,
         )
 
-    assert "予測とは逆" in framed((0.1, 0.03, 0.05, 0.16))
+    assert "予測と逆" in framed((0.1, 0.03, 0.05, 0.16))
     s2 = framed((0.0, 0.03, -0.05, 0.05))
-    assert "CI が 0 を含む" in s2 and "予測とは逆" not in s2
+    assert "（CI∋0）" in s2 and "予測と逆" not in s2
     assert "判定が変わるものがある（x）" in s2
 
 
@@ -178,3 +179,14 @@ def test_first_diff_consecutive_within_unit() -> None:
         ("b", 2010, 1990),
     ]
     assert out["d_x"].to_list() == [2.0, 3.0, None]
+
+
+def test_final_stance_records_reversed_j3() -> None:
+    s = h11.final_stance(1980, 1.13, False, True)
+    assert "逆の結果" in s and "確かめられなかった" not in s
+
+
+def test_wari_approx() -> None:
+    assert h11.wari_approx(0.42) == "4 割強"
+    assert h11.wari_approx(0.47) == "5 割弱"
+    assert h11.wari_approx(0.40) == "4 割"

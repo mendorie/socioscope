@@ -90,7 +90,7 @@ J3_WINDOW, J3_MIN_N, J3_MIN_G = 2, 10, 4
 J2_MIN_N, J2_MIN_G = 20, 20
 VERDICT_JA = {
     "main": "結婚の減少が主経路",
-    "main_unconfirmed": "結婚の減少が主経路（ただし J2 で確認できず）",
+    "main_unconfirmed": "事前の『主経路』の条件は満たさない（J1 のみ成立、J2 不成立）",
     "both": "結婚と夫婦の出生数の両方",
     "couple": "夫婦の出生数の低下が主",
 }
@@ -174,8 +174,10 @@ def wari(x: float) -> str:
     return f"{round(x * 10)}"
 
 
-def final_stance(y0: int, s_m: float, j3_ok: bool) -> str:
-    """The pre-registered sentence (design H11 最終スタンスの文型), filled mechanically."""
+def final_stance(y0: int, s_m: float, j3_ok: bool, j3_reversed: bool = False) -> str:
+    """The pre-registered sentence (design H11 最終スタンスの文型), filled mechanically.
+
+    Kept as a record; the report's lead sentence is `framed_stance`."""
     head = (
         f"日本の出生率低下（{y0}→2020）の {wari(s_m)}"
         " 割は結婚の減少（有配偶割合の低下）で説明でき、"
@@ -183,10 +185,26 @@ def final_stance(y0: int, s_m: float, j3_ok: bool) -> str:
     )
     if j3_ok:
         return head + "結婚と出生の結びつきは婚外出生の少ない国に固有で、北欧では切り離されている。"
+    if j3_reversed:
+        return (
+            head + "結婚と出生の結びつきが婚外出生の少ない国に固有だという予測に対し、"
+            "国際比較では逆の結果（婚外出生の多い国でも婚姻率と出生率が連動）だった。"
+        )
     return (
         head + "結婚と出生の結びつきが婚外出生の少ない国に固有かどうかは、"
         "国際比較では確かめられなかった。"
     )
+
+
+def wari_approx(x: float) -> str:
+    """'4 割強' / '4 割弱' / '4 割' (within ±0.5 percentage of a whole 割 -> no suffix)."""
+    r = round(x * 10)
+    d = x * 10 - r
+    return f"{r} 割" + ("強" if d > 0.05 else "弱" if d < -0.05 else "")
+
+
+def period_phrase(s_m: float) -> str:
+    return "ほぼ全部" if s_m >= 0.9 else f"約 {wari(s_m)} 割"
 
 
 def framed_stance(
@@ -201,48 +219,62 @@ def framed_stance(
     robust_changes: Sequence[str],
     j3_low: Coef | None = None,
     j3_high: Coef | None = None,
+    s_m_range: tuple[float, float] | None = None,
+    cohort: tuple[int, int, float] | None = None,
 ) -> str:
-    """Reporting sentence: the pre-registered pattern plus the qualifications the results need."""
-    head = final_stance(main.y0, main.s_m, j3_ok)
-    parts = [head, f"判定は「{VERDICT_JA[code]}」。"]
+    """Reporting sentence (the report's lead): period and cohort shares side by side, then the
+    pre-registered verdict and qualifications. The mechanical pattern is `final_stance`."""
+    rng = f"、起点で {s_m_range[0]:.2f}〜{s_m_range[1]:.2f}" if s_m_range else ""
+    lead = (
+        f"期間の分解では {main.y0}→2020 年の低下の{period_phrase(main.s_m)}（s_m = "
+        f"{main.s_m:.2f}{rng}）"
+    )
+    if cohort is not None:
+        c0, c1, sh = cohort
+        lead += f"、世代の分解（探索的）では {wari_approx(sh)}（{c0}→{c1} 年生まれで {sh:.0%}）"
+    lead += "が結婚の減少（有配偶割合の低下）で説明できる。"
+    parts = [lead]
+    if completed is not None:
+        y0, v0, y1, v1 = completed
+        parts.append(
+            f"夫婦の完結出生児数（結婚持続 15–19 年）も {v0:.2f}（{y0} 年調査）→ {v1:.2f}"
+            f"（{y1} 年調査）に下がった。"
+        )
+    if main.s_m > 1:
+        parts.append(
+            "期間の s_m が 1 を超えるのは出産年齢の後ろ倒し（テンポ）による見かけの可能性が高いが、"
+            "根拠は世代の分解・完結出生児数との対比で、Bongaarts–Feeney 等の直接のテンポ調整は"
+            "していない。"
+        )
+    parts.append(f"事前の判定は「{VERDICT_JA[code]}」。")
+    if code == "main_unconfirmed":
+        parts.append(
+            f"J1 の s_m（{main.s_m:.2f}）は事前の「主経路」の帯（≥ 2/3）にあるが、"
+            "AND 条件の J2 が成り立たない。"
+        )
     parts.append(
         f"{main.y0}→2020 年に TFR は {main.tfr0:.2f} → {main.tfr1:.2f}"
         f"（Δln {main.d_ln_tfr:+.3f}）、"
         f"結婚指数 Cm は {main.cm0:.3f} → {main.cm1:.3f}（Δln {main.d_ln_cm:+.3f}）、"
         f"TFR/Cm は Δln {main.d_ln_rest:+.3f}。"
     )
-    if main.s_m > 1:
-        parts.append(
-            "s_m が 1 を超えるのは、有配偶割合の低下だけなら TFR はもっと下がったはずで、"
-            "Cm で割った夫婦の側の指標はむしろ上がったとい"
-            "う意味である（Cm は出生の年齢分布で重みを付ける"
-            "ため、出産の高年齢化で有配偶割合の高い年齢に重みが移る分を含む）。"
-        )
     seg = "、".join(f"{d.y0}→{d.y1} は {d.s_m:.2f}" for d in segments)
-    parts.append(f"区間別の s_m は {seg}。")
+    if seg:
+        parts.append(f"区間別の s_m は {seg}。")
     parts.append(
         f"夫婦の出生率を有配偶出生率 f_a/m_a の和で測る Bongaarts の原定義（探索的）では s_m = "
         f"{std_s_m:.2f}。"
     )
-    if completed is not None:
-        y0, v0, y1, v1 = completed
-        parts.append(
-            f"一方、結婚持続 15–19 年の夫婦の完結出生児数は {v0:.2f}（{y0} 年調査）→ {v1:.2f}"
-            f"（{y1} 年調査）に下がっており（Δln {math.log(v1 / v0):+.3f}"
-            "）、期間指標の TFR/Cm の上昇は"
-            "夫婦が最終的に持つ子ども数が増えたことを意味しない。"
-        )
     if j3_low is not None and j3_high is not None:
-        high_txt = (
-            "多い国でも正で CI∌0 であり、婚外出生の多い"
-            "国で結婚と出生が切り離されているという予測とは逆"
-            if h10.passes(j3_high, 1)
-            else "多い国では CI が 0 を含む"
-        )
+        rev = h10.passes(j3_high, 1)
+        edge = "。CI の下端は 0 の境界上" if abs(j3_low[2]) < 0.01 else ""
         parts.append(
-            f"国パネル（J3）の婚姻率の係数は婚外出生の少ない国で {j3_low[0]:+.3f} "
-            f"[{j3_low[2]:+.3f}, {j3_low[3]:+.3f}]、多い国で {j3_high[0]:+.3f} "
-            f"[{j3_high[2]:+.3f}, {j3_high[3]:+.3f}] で、{high_txt}である。"
+            f"国パネル（J3）は{'予測と逆の結果で' if rev else ''}"
+            "、婚姻率の係数は婚外出生の多い国で "
+            f"{j3_high[0]:+.3f} [{j3_high[2]:+.3f}, {j3_high[3]:+.3f}]"
+            f"{'（CI∌0）' if rev else '（CI∋0）'}、少ない国で {j3_low[0]:+.3f} "
+            f"[{j3_low[2]:+.3f}, {j3_low[3]:+.3f}"
+            f"]（4 か国で検出力は低い{edge}）。"
         )
     if j2_main is not None:
         parts.append(
@@ -619,8 +651,12 @@ def compute(d: Mapping[str, pl.DataFrame]) -> H11Result:
         if (v, j) != (code, j3_ok)
     ]
     j2m = j2["main nm_m3034"]
-    final = final_stance(main.y0, main.s_m, j3_ok)
     j3m = j3["main (5y, <25%)"]
+    j3_rev = j3m["high"] is not None and h10.passes(j3m["high"].coefs.get("cmr"), 1)
+    final = final_stance(main.y0, main.s_m, j3_ok, j3_rev)
+    starts = [x.s_m for x in j1["main"] if x.y1 == 2020 and x.y0 in (1970, 1980, 1990)]
+    cps = {c0.cohort: (c0, c1) for c0, c1 in cohort_pairs(d)}
+    coh = (1950, cps[1950][1].cohort, cohort_share(*cps[1950])) if 1950 in cps else None
     framed = framed_stance(
         main=main,
         code=code,
@@ -632,6 +668,8 @@ def compute(d: Mapping[str, pl.DataFrame]) -> H11Result:
         robust_changes=changes,
         j3_low=j3m["low"].coefs["cmr"] if j3m["low"] else None,
         j3_high=j3m["high"].coefs["cmr"] if j3m["high"] else None,
+        s_m_range=(min(starts), max(starts)),
+        cohort=coh,
     )
     return H11Result(
         ys, cm, tfr, j1, completed, j2, j3, j3_groups, bom, code, j2_pass, j3_ok, robust,
