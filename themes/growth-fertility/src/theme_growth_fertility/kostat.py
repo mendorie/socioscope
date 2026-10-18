@@ -47,6 +47,22 @@ LICENSE = (
 POPULATION = "first_marriage_within_5y"
 WAGE_ONLY_RELEASE_YEARS = frozenset({2015})
 
+# ---- H9: 「2025년 출생 통계」 press release (births by order, ASFR; one PDF, KOGL type 1) ------
+BIRTHS_SOURCE = "kostat_births"
+BIRTHS_URL = "https://mods.go.kr/boardDownload.es?bid=204&list_no=446625&seq=1"
+BIRTHS_RAW_NAME = "births_2025.pdf"
+BIRTHS_REF_YEAR = 2025
+BIRTHS_RELEASE_YEAR = 2026
+BIRTHS_LICENSE = (
+    "KOGL Type 1 (공공누리 제1유형: 출처표시; https://www.kogl.or.kr/info/license.do). "
+    "Attribution: 국가데이터처, 2025년 출생 통계 보도자료, mods.go.kr (KOGL 제1유형)"
+)
+BIRTHS_FIRST_YEAR = 1981
+BIRTH_ORDERS: tuple[str, ...] = ("계", "첫째아", "둘째아", "셋째아", "넷째아 이상")
+ASFR_AGES: tuple[str, ...] = tuple(f"{a}-{a + 4}" for a in range(15, 50, 5))
+BIRTHS_METRICS: tuple[str, ...] = ("births", "births_share", "asfr", "tfr")
+BIRTHS_GROUPS: tuple[str, ...] = (*BIRTH_ORDERS, *ASFR_AGES)
+
 
 @dataclass(frozen=True)
 class Release:
@@ -511,3 +527,127 @@ def income_children_rows_from_pages(
 
 def income_children_rows(payload: bytes, release: Release) -> list[dict[str, object]]:
     return income_children_rows_from_pages(pdf_text(payload), release)
+
+
+# ---- H9: 2025년 출생 통계 (births by order, ASFR by 5-year age class) ----------------------
+# Two statistics tables of the 「2025년 출생 통계」 press release, read fail-closed from the pypdf
+# text: 통계표 3 「출산 순위별 출생아 수, 1981-2025」 (연도 / 계* / 첫째아 / 둘째아 / 셋째아 /
+# 넷째아 이상; 계 includes births of unknown order) and 통계표 2 「모(母)의 연령별 출산율,
+# 1981-2025」 (연도 / 합계출산율 / 15-19세 … 45-49세, births per 1,000 women of the class).
+# Long rows: metric births (5 groups) / births_share (4 orders, fraction of 계) / asfr (7 classes)
+# / tfr (group 계). The latest release is taken as the truth for every year (older releases
+# differ slightly for 1997-2000 after re-tabulation).
+
+_BIRTHS_TITLE = re.compile(r"^\d+\.\s*출산\s*순위별\s*출생아\s*수,\s*\d{4}-\d{4}$")
+_BIRTHS_HEADER = "연도계*첫째아둘째아셋째아넷째아이상"
+_ASFR_TITLE = re.compile(r"^\d+\.\s*모\(母\)의\s*연령별\s*출산율,\s*\d{4}-\d{4}$")
+_ASFR_HEADER = "연도합계출산율" + "".join(f"{a}세" for a in ASFR_AGES)
+_YEAR_START = re.compile(r"^\d{4}\b")
+_DEC = r"\d+\.\d+"
+
+
+def _births_row(year: int, metric: str, group: str, value: float) -> dict[str, object]:
+    return {
+        "year": year,
+        "metric": metric,
+        "group": group,
+        "value": value,
+        "release_year": BIRTHS_RELEASE_YEAR,
+        "source": BIRTHS_SOURCE,
+    }
+
+
+def _find_table(pages: Sequence[str], title: re.Pattern[str], what: str) -> tuple[list[str], int]:
+    """Normalised lines of the first page with a line matching *title* (anchored at both ends so
+    the table-of-contents entry with leaders and a page number does not match) and its index."""
+    for page in pages:
+        lines = _normalise(page)
+        for i, line in enumerate(lines):
+            if title.match(line):
+                return lines, i
+    msg = f"{what} not found in any page"
+    raise ValueError(msg)
+
+
+def _year_rows(
+    lines: list[str], start: int, header: str, value_re: str, n: int, what: str
+) -> dict[int, tuple[str, ...]]:
+    """Header check then one row per consecutive year; ``ValueError`` on any deviation."""
+    i = start
+    while i < len(lines) and not _YEAR_START.match(lines[i]):
+        i += 1
+    found = re.sub(r"\s+", "", "".join(lines[start:i]))
+    if not found.endswith(header):
+        msg = f"{what}: unexpected header {found!r}"
+        raise ValueError(msg)
+    row_re = re.compile(rf"^(\d{{4}}) ((?:{value_re})(?: (?:{value_re})){{{n - 1}}})$")
+    out: dict[int, tuple[str, ...]] = {}
+    while i < len(lines) and _YEAR_START.match(lines[i]):
+        m = row_re.match(lines[i])
+        if m is None:
+            msg = f"{what} {lines[i][:4]}: expected {n} values, got {lines[i]!r}"
+            raise ValueError(msg)
+        out[int(m.group(1))] = tuple(m.group(2).split())
+        i += 1
+    years = list(out)
+    if years != list(range(BIRTHS_FIRST_YEAR, BIRTHS_FIRST_YEAR + len(years))) or not years:
+        msg = f"{what}: years must be consecutive from {BIRTHS_FIRST_YEAR}, got {years}"
+        raise ValueError(msg)
+    return out
+
+
+def births_rows_from_pages(pages: Sequence[str]) -> list[dict[str, object]]:
+    """Long rows (year × metric × group) from the two statistics tables. ``ValueError`` on a
+    missing table, header mismatch, non-consecutive years, wrong column count, order counts
+    exceeding 계, or the two tables covering different years (fail closed; nothing imputed)."""
+    lines, start = _find_table(
+        pages, _BIRTHS_TITLE, "births-by-order table (출산 순위별 출생아 수)"
+    )
+    births = _year_rows(lines, start + 1, _BIRTHS_HEADER, _INT, len(BIRTH_ORDERS), "births table")
+    lines, start = _find_table(pages, _ASFR_TITLE, "ASFR table (모의 연령별 출산율)")
+    asfr = _year_rows(lines, start + 1, _ASFR_HEADER, _DEC, 1 + len(ASFR_AGES), "ASFR table")
+    if list(births) != list(asfr):
+        msg = (
+            f"births and ASFR tables cover different years: {list(births)[-1]} vs {list(asfr)[-1]}"
+        )
+        raise ValueError(msg)
+    out: list[dict[str, object]] = []
+    for year, toks in births.items():
+        counts = _ints(toks)
+        total, orders = counts[0], counts[1:]
+        if not total * 0.99 <= sum(orders) <= total:
+            msg = f"{year}: birth orders {sum(orders)} do not add up to 계 {total} (unknown order)"
+            raise ValueError(msg)
+        for group, n in zip(BIRTH_ORDERS, counts, strict=True):
+            out.append(_births_row(year, "births", group, float(n)))
+        for group, n in zip(BIRTH_ORDERS[1:], orders, strict=True):
+            out.append(_births_row(year, "births_share", group, n / total))
+        values = tuple(float(t) for t in asfr[year])
+        for group, v in zip(ASFR_AGES, values[1:], strict=True):
+            out.append(_births_row(year, "asfr", group, v))
+        out.append(_births_row(year, "tfr", "계", values[0]))
+    return out
+
+
+def births_rows(payload: bytes) -> list[dict[str, object]]:
+    return births_rows_from_pages(pdf_text(payload))
+
+
+def build_births_mart(rows: Sequence[dict[str, object]]) -> list[dict[str, object]]:
+    """Long mart sorted by (year, metric, group) in the declared orders; duplicate keys raise
+    ``ValueError``. Pure and deterministic."""
+
+    def key(r: dict[str, object]) -> tuple[int, int, int]:
+        return (
+            int(str(r["year"])),
+            BIRTHS_METRICS.index(str(r["metric"])),
+            BIRTHS_GROUPS.index(str(r["group"])),
+        )
+
+    out = sorted((dict(r) for r in rows), key=key)
+    keys = [key(r) for r in out]
+    if len(keys) != len(set(keys)):
+        dup = next(k for i, k in enumerate(keys) if k in keys[:i])
+        msg = f"duplicate key (year, metric, group) = {dup}"
+        raise ValueError(msg)
+    return out

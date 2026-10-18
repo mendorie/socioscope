@@ -267,3 +267,14 @@ def test_income_children_rows_end_to_end_from_pdf_bytes(pdf_from_pages) -> None:
     payload = pdf_from_pages(pages_of(2021))
     rows = kostat.income_children_rows(payload, release(2021))
     assert by_year(rows, 2021)["total"]["with_children_share"] == pytest.approx(0.542)
+
+
+# ---------------------------------------------------------------- H9: 2025년 출생 통계 (births PDF)
+
+
+def test_births_release_is_a_single_static_url_with_kogl_license() -> None:
+    assert kostat.BIRTHS_URL == "https://mods.go.kr/boardDownload.es?bid=204&list_no=446625&seq=1"
+    assert kostat.BIRTHS_RAW_NAME == "births_2025.pdf"
+    assert kostat.BIRTHS_SOURCE == "kostat_births"
+    assert kostat.BIRTHS_RELEASE_YEAR == 2026
+    assert "KOGL" in kostat.BIRTHS_LICENSE and "2025년 출생 통계" in kostat.BIRTHS_LICENSE

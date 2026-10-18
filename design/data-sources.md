@@ -306,6 +306,28 @@
   - 国名は UNDP 表記（例 "Korea (Republic of)", "Türkiye", "Côte d'Ivoire"）。latin-1 で復号するので UTF-8 として読むと壊れる。
   - 値は HDR 2025 時点の改訂済み系列で、過去版 HDR の数値とは一致しない。
 
+### 国家データ処（韓国）— 2025년 출생 통계 報道資料 PDF（growth-fertility H9-KR: 出生順位別出生数・母の年齢別出生率）
+- URL / API: 掲示板 `https://mods.go.kr/board.es?mid=a10301010000&bid=204`（보도자료）。PDF（固定 URL、`theme_growth_fertility.kostat.BIRTHS_URL`）: `https://mods.go.kr/boardDownload.es?bid=204&list_no=446625&seq=1`（2026-10-18 確認: 200、3.47 MB、`%PDF`、50 ページ）。KOSIS OpenAPI はキー必須のため使わない。robots.txt は 신혼부부통계 の節と同じ（`boardDownload.es` 許可）。
+- 表の位置（pypdf の `extract_text`、0 始まりのページ index）: index 37（資料の p.33）統計表 2「모(母)의 연령별 출산율, 1981-2025」（列 = 연도 / 합계출산율 / 15-19세 / … / 45-49세。単位: 가임 여자 1명당 명、해당 연령 여자인구 1천 명당 명）、index 38（p.34）統計表 3「출산 순위별 출생아 수, 1981-2025」（列 = 연도 / 계* / 첫째아 / 둘째아 / 셋째아 / 넷째아 이상。単位 명、`* 출산 순위 미상 포함`）。index 34 の統計表目次は見出しが行末アンカーで一致しない。2022–2024 行は空白が不規則だが正規化で吸収。
+- 対象指標・粒度: `marts/kr_births_order_asfr`（long）: year(1981–2025) × metric(births / births_share / asfr / tfr) × group(계 / 첫째아 / 둘째아 / 셋째아 / 넷째아 이상 / 15-19 … 45-49)。births_share = 順位別出生数 ÷ 계（계 は順位未詳を含むので 4 順位の和は 1 をわずかに下回る）。母集団: 가족관계등록법 により申告された全出生（인구동향조사、承認番号 101003）。
+- ライセンス・利用規約（確認日 2026-10-18）: 국가데이터처 報道資料は **공공누리（KOGL）제1유형（출처표시）**。出典表記: 「국가데이터처, 2025년 출생 통계 보도자료, mods.go.kr（KOGL 제1유형）」。`kostat.BIRTHS_LICENSE` に記載し manifest に残す。raw（PDF）はコミットしない。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.kostat`（`births_rows_from_pages` / `build_births_mart` の純粋変換、`pdf_text` 再利用）＋ `pipeline._fetch_h9_kr` / `_stage_h9_kr` / `_mart_h9_kr`（`HttpxFetcher`）。**1 リクエスト（3.5 MB）**。raw は `data/raw/growth-fertility/kostat_births/births_2025.pdf`、staged は `staged/kostat/births_order_asfr`、mart は `marts/kr_births_order_asfr`（765 行）。公開レート制限なし。再取得は年 1 回（翌年 8 月頃の確定公表後、`list_no`/`seq` を掲示板で確認）。
+- 既知の欠損・断絶・定義変更:
+  - **1997–2000 年**は旧資料と再集計差（出生申告の遅れ分の補正）があるため、全期間を再掲する**最新資料を正**とする。年ごとの資料を積まない。
+  - 計 は 출산 순위 미상 を含む（2025 年: 254,341 − 4 順位の和 254,213 = 128）。順位別の比は 계 を分母にする。女性人口は未取込なので順位別 TFR ではなく出生数の比で近似する（設計 H9 V2 の韓国の扱い）。
+  - 解析は fail-closed: 見出し不一致・年の連番外（1981 から）・列数不一致・順位合計が 계 の 99% 未満または超過・両表の年不一致は `ValueError` → stage の skipped に「`births_2025.pdf: layout not recognised (<reason>)`」。
+  - 統計表 1（出生数・粗出生率・合計特殊出生率 1970–）、表 4（母の年齢別出生数）、시도별・結婚持続期間別などは資料にあるが未取込（任意項目）。
+
+### Eurostat `demo_frate`（年齢各歳別出生率）— 欧州のコーホート累積・完結出生率（growth-fertility H9-EU）
+- URL / API: 上の Eurostat 節と同じ dissemination API。`https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/demo_frate?format=JSON&lang=EN&geo=<GEO>&sinceTimePeriod=1960&agedef=COMPLET&age=Y15&…&age=Y49`（`theme_growth_fertility.eurostat.frate_requests`、ORDER_GEOS 13 か国 × 1 リクエスト、raw `eurostat_demo_frate_<geo>.json`、各 18–39 KB）。次元（`id` 順、2026-10-18 に実レスポンスで確認）: freq.unit.age.agedef.geo.time、unit=NR（女性 1 人当たり、例 0.00106）、agedef=COMPLET（満年齢。`REACH` = 到達年齢は使わない）。
+- 対象指標・粒度: `staged/eurostat/asfr_single_age`（iso3 × year × age 15–49、rate）、`marts/eu_cohort_fertility`（long）: asfr（期間）、cohort_cum（cohort = year − age の 15 歳から age までの累積）、completed（45 歳時点。未到達は 40 歳以上の最終観測で打ち切り `censored_at`）。
+- ライセンス・利用規約: 上の Eurostat 節と同じ（出典明記で再利用可、確認日 2026-10-06）。出典表記: 「Source: Eurostat, demo_frate（accessed 2026-10-18）」。raw はコミットしない。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.eurostat`（`frate_requests` / `frate_rows` / `cohort_cumulative` / `build_cohort_mart` の純粋関数）＋ `pipeline._fetch_h9_eu` / `_stage_h9_eu` / `_mart_h9_eu`（`HttpxFetcher`、H5 の `_fetch_h5` とは別ブロック）。**13 リクエスト（計 ~430 KB）**。公開レート制限なし。再取得は年 1 回。
+- 既知の欠損・断絶・定義変更:
+  - 開始年が国で異なる: DE 2000（統一後の系列のみ、completed 行なし）、FR 1998（completed は 1983 コーホート 41 歳打ち切りのみ）、PL 1990、ES 1971、SE 1968、IS 1963、NO 1961、CZ/DK/FI/HU/IT/NL 1960。CZ は 1960–1986 に 45–49 歳が無い（1945 コーホート以降の累積には影響しない）。NO は 1971/1973/1978/1979/1987 に 47–49 歳の 1 セルが欠ける（同上）。`status` フラグ（b 断絶、p 暫定、e 推計）は保持しない。
+  - 15 歳の観測が無いコーホート（1960 年開始の国では 1944 以前）は累積を出さない。途中で欠けた歳があるコーホートは落として mart の skipped に出す（2026-10-18 時点 0 件）。完結（45 歳）は 1979 コーホートまで、1980–1984 は 40–44 歳打ち切り。
+  - cohort = year − age は満年齢ベースなので、誕生年は 2 暦年にまたがる（通常のコーホート出生率の近似）。
+
 ## 記録テンプレート（ソース採用時）
 ```
 ### <ソース名>
