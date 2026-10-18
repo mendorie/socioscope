@@ -483,3 +483,22 @@
   - 住宅・土地統計調査 第 34-2 表: 家賃は名目円。`rent` は総数列（専用住宅＋併用住宅）。1993・1998 年の民営借家は木造の内訳が設備専用／共用で総数が無いため `rent_private` は 2018・2023 のみ、`rent_private_nonwood` は全期間（設計 H10 の頑健性「民営借家のみ」はこれで行う）。公的借家の列名は 公団・公社（1993–2003）→ 都市再生機構・公社（2008–）と変わるが未取込。
   - 県民経済計算 総括表 7: 2022 年度版の 2011–2022 年度系列（名目、千円）。全県計は 47 都道府県の合計ベース。
   - 解析は fail-closed: 表題・ヘッダ・年列・全国＋47 都道府県の JIS 順（`prefecture.regions`）・第 18 表の 雇用者 ≥ 正規＋非正規 と 有業者 ≥ 雇用者 を照合。違えば `ValueError` → stage の skipped に「`<raw>: layout not recognised (<reason>)`」として残し、その表だけ書かない。
+
+### H11 結婚の減少が出生率低下の何割か（growth-fertility H11。IPSS T06-24 の残り 3 シート、OECD Family Database SF2.4。2026-10-18 追記）
+- 概要表への追記（共有ファイルのため末尾に記す）:
+  | ソース | 内容 | 形式 | ライセンス | 状態 |
+  |---|---|---|---|---|
+  | IPSS 人口統計資料集 2026 表 6-24（追加シート） | 性・5 歳階級別の 有配偶・死別・離別 割合（1920–2020 の国勢調査 11 回。未婚は H10 で取込済み） | 既存 raw `ipss/T06-24.xlsx` のシート `T06-24(2)`〜`(4)`（再取得なし、manifest 追加なし） | PDL1.0 | **採用**（H11） |
+  | OECD Family Database SF2.4 Share of births outside of marriage（xlsx） | 国 × 年（1960–2024）の婚外出生割合 %（OECD 加盟 38 か国） | 静的 xlsx `https://webfs.oecd.org/Els-com/Family_Database/SF_2_4_Share_births_outside_marriage.xlsx`（94 KB、鍵不要）、openpyxl | OECD Terms（CC BY 4.0、確認 2026-10-18） | **採用**（H11） |
+- URL / API: SF2.4 のファイル名は `https://webfs.oecd.org/Els-com/Family_Database/` のディレクトリ一覧（HTML、2026-10-18 に httpx で取得）から特定した（同名の `.pdf` が説明文書。`SF_2_4_Share_births_outside_marriage.xlsx`、Last-Modified 2025-10-16）。`oecd_family.BOM_URL` に固定。
+- 表の構成（実測）:
+  - T06-24 シート (2) 有配偶 / (3) 死別 / (4) 離別: シート (1) と同じ配置（A=年齢、B..L=1920年 … 2020年*、B 列に「男」「女」のマーカー行、表題末尾に「（つづき）」）。**1950 年の 85 歳以上は (2)–(4) が `#DIV/0!`**（(1) は 0）。4 シートの同じセルの和は 99.9–100.1。
+  - SF2.4 シート `Births_outside_marriage`: 行 4 = `Country | Note | 1960 … 2024`（Note 列は全行空）、行 5–42 = 加盟 38 か国、空行の後に Bulgaria / Croatia / Cyprus / Malta / Romania（非加盟、落とす）、`.. Not available` の凡例、Notes、Sources。シート `Chart SF2.4.A`（2023 または最新年、列 L–N と Q–S に同じ表が 2 回）・`Chart SF2.4.B`（1970 / 1995 / 2020 / 2023、参照年の注記列つき）は年次表の抜粋なので未取込。
+- 対象指標・粒度: `marts/jp_marriage_series` に metric `married_share` / `widowed_share` / `divorced_share`（各 350 行）を追加して 1,696 行。`marts/oecd_births_outside_marriage`（long: iso3, year, metric, value, chart, source。1,998 行、38 か国、1960–2024）。列定義は `themes/growth-fertility/CLAUDE.md` の H11 追記。
+- ライセンス・利用規約（確認日 2026-10-18）: IPSS は PDL1.0（H9/H10 と同じ）。SF2.4 は OECD Terms & Conditions（`oecd.LICENSE`、CC BY 4.0）。出典表記: 「OECD Family Database, SF2.4 Share of births outside of marriage (accessed 2026-10-18)」。raw はコミットしない（manifest のみ）。
+- 取得方法: T06-24 は H9-JP の枠（`_fetch_h9_jp/_stage_h9_jp`）で既に取得・stage され、`ipss.marital_status_share_rows` が 4 シートを読む。SF2.4 は `pipeline._fetch_h11_oecd / _stage_h11_oecd / _mart_h11_oecd`（**1 リクエスト**）。
+- 既知の欠損・断絶・定義変更:
+  - T06-24: 1950 年 85 歳以上の有配偶・死別・離別は行なし。1950・1960 年は沖縄県を含まない。2015・2020 年は不詳補完値に基づく（H10 と同じ）。
+  - SF2.4: 定義が 2 系統。AUS・CAN（1960–1973）・JPN・KOR・NZL は「親が互いに婚姻登録していない出生」（ex-nuptial / out-of-wedlock）、他国は「出生時の母の配偶関係が有配偶以外の出生」。CAN（1991 年以降）と MEX は配偶関係が記録された出生を分母にする（2018 年の未記録は CAN 8.3 %、MEX 7 %）。ISR は 2016 年までユダヤ人女性のみ。USA の 1980 年以前は推計。欧州各国は Eurostat Demographic Statistics が出典。
+  - SF2.4 の被覆: 開始年は多くが 1960、AUS 1975、KOR 1981、CRI 1983、MEX 1985、EST 1989、FRA/COL 1998、CHL/ISR 2002、TUR 2010。最新年は 2023 が多く、CAN/GBR/KOR/MEX/NZL 2024、BEL 2018、IRL/ISL 2019、CHE 2020、DNK 2021、CHL 2022。JPN は 1960–1995 が 5 年刻み（2000 年以降各年）、POL も 1970–1995 が 5 年刻み、CAN は 1974–1990 が '..'。'..' は行なし（補完しない）。
+  - 最新年の値（2026-10-18 取得）: JPN 2023 2.4、KOR 2024 4.7、ITA 2023 40.5、ESP 2023 50.0、SWE 2023 57.4、DNK 2021 54.7、FRA 2023 58.5、USA 2023 40.0。

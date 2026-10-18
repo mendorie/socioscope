@@ -773,6 +773,10 @@ MARRIAGE_METRICS: tuple[str, ...] = (
     "mean_age_marriage_all",
     "mean_age_first_marriage",
     "never_married_at_50",
+    # H11 (appended so the mart order of the earlier rows is unchanged)
+    "married_share",
+    "widowed_share",
+    "divorced_share",
 )
 SEX_LABELS: dict[str, str] = {"男": "M", "女": "F"}
 CENSUS_YEARS: tuple[int, ...] = (
@@ -850,17 +854,29 @@ def _opt_num(text: str | None, where: str) -> float | None:
     return _num(text, where)
 
 
-# ---- T06-24(1): 性，年齢（5 歳階級），配偶関係別割合 — 未婚 ----------------------------------
+# ---- T06-24(1)–(4): 性，年齢（5 歳階級），配偶関係別割合 — 未婚 / 有配偶 / 死別 / 離別 ----------
+
+# (sheet number, label after "(n)", metric). Sheet (1) is H10, (2)–(4) are H11; same layout.
+_MARITAL_SHEETS: tuple[tuple[int, str, str], ...] = (
+    (1, "未婚", "never_married_share"),
+    (2, "有配偶", "married_share"),
+    (3, "死別", "widowed_share"),
+    (4, "離別", "divorced_share"),
+)
+MARITAL_STATUS_METRICS: tuple[str, ...] = tuple(m for _, _, m in _MARITAL_SHEETS)
+_SHARE_SUM_TOL = 0.3
+_ERROR_CELL = "#DIV/0!"  # 1950 85歳以上 on sheets (2)–(4): the census did not tabulate it
 
 
-def never_married_share_rows(rows: Rows) -> list[dict[str, object]]:
-    """T06-24 sheet (1) 未婚: ``never_married_share`` (%) by sex x 16 age classes (total, 15-19 …
-    80-84, 85-) for the 11 census years 1920–2020 (1940 not published)."""
+def _marital_share_rows(rows: Rows, n: int, label: str, metric: str) -> list[dict[str, object]]:
+    """One T06-24 sheet ``(n) <label>``: *metric* (%) by sex x 16 age classes (total, 15-19 …
+    80-84, 85-) for the 11 census years 1920–2020 (1940 not published). A '…' or ``#DIV/0!``
+    cell gives no row; any other non-numeric cell is a ``ValueError``."""
     code = "T06-24"
     _title(rows, "表6-24性,年齢(5歳階級),配偶関係別割合", code)
-    label = _norm(rows[1].get(1)) if len(rows) > 1 else ""
-    if not label.startswith("(1)未婚"):
-        msg = f"{code}: sheet (1) 未婚 expected, got {label!r}"
+    got = _norm(rows[1].get(1)) if len(rows) > 1 else ""
+    if not got.startswith(f"({n}){label}"):
+        msg = f"{code}: sheet ({n}) {label} expected, got {got!r}"
         raise ValueError(msg)
     h = _header_row(rows, "年齢", code)
     _expect_years(_year_columns(rows[h], range(2, 13), code), CENSUS_YEARS, code)
@@ -877,9 +893,47 @@ def never_married_share_rows(rows: Rows) -> list[dict[str, object]]:
             raise ValueError(msg)
         for r, ac in zip(block, AGE_CLASSES_5Y, strict=True):
             for c, year in zip(range(2, 13), CENSUS_YEARS, strict=True):
-                v = _num(r.get(c), f"{code} {sex_label} {ac} {year}")
-                out.append(_marriage_row(year, "never_married_share", sex, ac, v, code))
+                if _norm(r.get(c)) in (*_MISSING, _ERROR_CELL):
+                    continue
+                v = _num(r.get(c), f"{code} ({n}) {sex_label} {ac} {year}")
+                out.append(_marriage_row(year, metric, sex, ac, v, code))
         i += 1 + len(AGE_CLASSES_5Y)
+    return out
+
+
+def never_married_share_rows(rows: Rows) -> list[dict[str, object]]:
+    """T06-24 sheet (1) 未婚 only: ``never_married_share`` (H10)."""
+    n, label, metric = _MARITAL_SHEETS[0]
+    return _marital_share_rows(rows, n, label, metric)
+
+
+def _check_share_sums(rows: Sequence[dict[str, object]], code: str) -> None:
+    """The four marital-status shares of a (year, sex, age class) add to 100 ± 0.3 wherever all
+    four are published (rounding leaves 99.9–100.1 in the 2026 file)."""
+    cells: dict[tuple[object, object, object], dict[str, float]] = {}
+    for r in rows:
+        key = (r["year"], r["sex"], r["age_class"])
+        cells.setdefault(key, {})[str(r["metric"])] = float(str(r["value"]))
+    for (year, sex, ac), shares in cells.items():
+        if len(shares) < len(MARITAL_STATUS_METRICS):
+            continue
+        total = sum(shares.values())
+        if abs(total - 100) > _SHARE_SUM_TOL:
+            msg = (
+                f"{code}: shares of {sex} {ac} {year} sum to {total:.1f}, not 100 "
+                f"(±{_SHARE_SUM_TOL}): {shares}"
+            )
+            raise ValueError(msg)
+
+
+def marital_status_share_rows(payload: bytes) -> list[dict[str, object]]:
+    """T06-24 sheets (1)–(4): ``never_married_share`` / ``married_share`` / ``widowed_share`` /
+    ``divorced_share`` (%) by sex x age class x census year, checked to add to 100 (H11)."""
+    code = "T06-24"
+    out: list[dict[str, object]] = []
+    for n, label, metric in _MARITAL_SHEETS:
+        out += _marital_share_rows(sheet_rows(payload, f"{code}({n})"), n, label, metric)
+    _check_share_sums(out, code)
     return out
 
 
@@ -1145,7 +1199,6 @@ def pref_unemployment_rows(rows: Rows) -> list[dict[str, object]]:
 
 _PARSERS.update(
     {
-        "T06-24": never_married_share_rows,
         "T06-12": mean_marriage_age_rows,
         "T06-23": never_married_at_50_rows,
         "T12-33": pref_tfr_rows,
@@ -1154,6 +1207,7 @@ _PARSERS.update(
     }
 )
 _PAYLOAD_PARSERS: dict[str, Callable[[bytes], list[dict[str, object]]]] = {
+    "T06-24": marital_status_share_rows,
     "T12-35": pref_first_marriage_age_rows,
     "T12-37": pref_never_married_at_50_rows,
     "T12-52": pref_lfp_rows,

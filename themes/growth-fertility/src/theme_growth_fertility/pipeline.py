@@ -163,6 +163,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_h10_oecd(ctx, written, skipped)
     written, skipped = _fetch_h10_eu(ctx, written, skipped)
     written, skipped = _fetch_h10_jp(ctx, written, skipped)
+    written, skipped = _fetch_h11_oecd(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -255,6 +256,7 @@ def stage(ctx: Context) -> StageResult:
     dhs_written, dhs_skipped = _stage_h10_oecd(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h10_eu(ctx, dhs_written, dhs_skipped)
     dhs_written, dhs_skipped = _stage_h10_jp(ctx, dhs_written, dhs_skipped)
+    dhs_written, dhs_skipped = _stage_h11_oecd(ctx, dhs_written, dhs_skipped)
     return StageResult(
         stage=Stage.STAGE,
         written=tuple(wb_written + es_written + dhs_written + h5_written),
@@ -525,6 +527,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_h10_oecd(ctx, written, skipped)
     written, skipped = _mart_h10_eu(ctx, written, skipped)
     written, skipped = _mart_h10_jp(ctx, written, skipped)
+    written, skipped = _mart_h11_oecd(ctx, written, skipped)
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -1850,4 +1853,66 @@ def _mart_h10_jp(
         return written, skipped
     ctx.tables.write_table(H10_JP_MART, estat.build_marital_employment_mart(staged))
     written.append(H10_JP_MART)
+    return written, skipped
+
+
+# ---- H11-OECD: OECD Family Database SF2.4 share of births outside of marriage (one xlsx) ------
+# Single raw (OECD terms, attribution), same source directory as SF2.5 (`oecd_family`). Stage
+# parses the annual sheet fail-closed; an unrecognised layout is reported in skipped and nothing
+# is written. Mart = the staged rows sorted with a unique key. Independent of the rest.
+
+OECD_BOM_TABLE = "staged/oecd_family/births_outside_marriage"
+OECD_BOM_MART = "marts/oecd_births_outside_marriage"
+
+
+def _fetch_h11_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        payload = ctx.fetcher.fetch(oecd_family.BOM_URL)
+    except FetchError as e:
+        skipped.append(f"{oecd_family.BOM_RAW_NAME}: {e}")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=oecd_family.SOURCE,
+        name=oecd_family.BOM_RAW_NAME,
+        url=oecd_family.BOM_URL,
+        license=oecd_family.BOM_LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_h11_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    payload = ctx.raw.get(theme=THEME, source=oecd_family.SOURCE, name=oecd_family.BOM_RAW_NAME)
+    if payload is None:
+        skipped.append(f"{oecd_family.BOM_RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows, dropped = oecd_family.parse_births_outside_marriage(payload)
+    except ValueError as e:
+        skipped.append(f"{oecd_family.BOM_RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(OECD_BOM_TABLE, rows)
+    written.append(OECD_BOM_TABLE)
+    skipped.extend(f"{oecd_family.BOM_RAW_NAME}: {note}" for note in dropped)
+    return written, skipped
+
+
+def _mart_h11_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged_rows = ctx.tables.read_table(OECD_BOM_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{OECD_BOM_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(
+        OECD_BOM_MART, oecd_family.build_births_outside_marriage_mart(staged_rows)
+    )
+    written.append(OECD_BOM_MART)
     return written, skipped
