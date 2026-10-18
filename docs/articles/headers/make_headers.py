@@ -559,6 +559,115 @@ def growth_fertility_h8_part4() -> Path:
     return out
 
 
+def growth_fertility_h9_part5() -> Path:
+    """Part5: 日本の理想・予定・期間 TFR（左）と 1975 年生まれの完結出生数（右）。"""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "themes" / "growth-fertility" / "src"))
+    from theme_growth_fertility.analysis import a20261018_h9_norms_vs_constraints as h9
+
+    d = h9.load(ROOT / "data")
+    series = h9.japan_series(d)
+    cums = {
+        i: h9.eu_cohort_cum(d["coh"], i, h9.V3_AGE) for i in ("SWE", "DNK", "FIN", "ITA", "ESP")
+    }
+    cums["JPN"] = h9.jp_cohort_cum(d["jp"], h9.V3_AGE)
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "出生率が 2 人を切っても「2 人」という望みは残っている",
+        "崩れたのは望みではなく実現する条件。"
+        "日本・南欧は一生に産む数が 1.4 台へ、北欧は 1.9 を保った",
+        size=31,
+    )
+
+    ax1 = fig.add_axes([0.07, 0.13, 0.40, 0.52])
+    keys = [
+        ("ideal (couples, JNFS)", BLUE, "夫婦の理想"),
+        ("planned (couples, T04-25)", ORANGE, "夫婦の予定"),
+        ("period TFR (T04-16)", INK, "その年の出生率"),
+    ]
+    for k, c, lab in keys:
+        xs = [y for y, _ in series[k]]
+        ys = [v for _, v in series[k]]
+        ax1.plot(
+            xs,
+            ys,
+            color=c,
+            lw=4 if k != "period TFR (T04-16)" else 3,
+            marker="o" if k != "period TFR (T04-16)" else None,
+            ms=6,
+        )
+        ax1.text(
+            xs[-1] + 0.8,
+            ys[-1],
+            f"{lab} {ys[-1]:.2f}",
+            color=c,
+            fontsize=11,
+            va="center",
+            fontweight="bold",
+        )
+    ax1.axhline(2.0, color=MUTED, lw=1, ls="--")
+    ax1.set_xlim(1975, 2040)
+    ax1.set_ylim(1.0, 2.8)
+    ax1.set_yticks([1.0, 1.5, 2.0, 2.5])
+    ax1.set_xticks([1980, 2000, 2020])
+    ax1.tick_params(colors=MUTED, labelsize=11, length=0)
+    for sp in ax1.spines.values():
+        sp.set_visible(False)
+    ax1.set_facecolor(PAPER)
+    tag(bg, 92, 470, "日本: 望む数は 2 人前後のまま、出生率だけが下がった", BLUE)
+
+    ax2 = fig.add_axes([0.58, 0.13, 0.38, 0.52])
+    names = {
+        "SWE": "スウェー\nデン",
+        "DNK": "デン\nマーク",
+        "FIN": "フィン\nランド",
+        "JPN": "日本",
+        "ITA": "イタリア",
+        "ESP": "スペイン",
+    }
+    order = ["SWE", "DNK", "FIN", "JPN", "ITA", "ESP"]
+    vals = [cums[i][1975] for i in order]
+    cols = [BLUE, BLUE, BLUE, ORANGE, ORANGE, ORANGE]
+    ax2.bar(range(len(order)), vals, color=cols, width=0.65, lw=0)
+    ax2.set_xticks(range(len(order)))
+    ax2.set_xticklabels([names[i] for i in order], fontsize=11, color=INK)
+    for i, v in enumerate(vals):
+        ax2.text(
+            i,
+            v + 0.03,
+            f"{v:.2f}",
+            ha="center",
+            va="bottom",
+            color=INK,
+            fontsize=12,
+            fontweight="bold",
+        )
+    ax2.axhline(2.0, color=MUTED, lw=1, ls="--")
+    ax2.set_ylim(0, 2.4)
+    ax2.set_yticks([])
+    ax2.tick_params(colors=INK, labelsize=11, length=0)
+    for sp in ax2.spines.values():
+        sp.set_visible(False)
+    ax2.set_facecolor(PAPER)
+    tag(bg, 770, 470, "1975 年生まれの女性が 45 歳までに産んだ数", ORANGE)
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: 国立社会保障・人口問題研究所 / Eurostat / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-18-note-norms-or-constraints.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     for p in (
         growth_fertility(),
@@ -566,5 +675,6 @@ if __name__ == "__main__":
         growth_fertility_h7(),
         growth_fertility_h8(),
         growth_fertility_h8_part4(),
+        growth_fertility_h9_part5(),
     ):
         print(p)
