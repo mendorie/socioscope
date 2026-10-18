@@ -9,6 +9,7 @@ from theme_growth_fertility import (
     dhs,
     estat,
     hdr,
+    ipss,
     kostat,
     moekr,
     oecd,
@@ -48,6 +49,8 @@ H8C_ITEMS = len(oecd_eag.DATASETS)
 H8D_ITEMS = len(unsdg.SERIES) + 1
 # H8d-K items: one 교육부 사교육비조사 press-release PDF
 H8D_K_ITEMS = 1
+# H9-JP items: seven 人口統計資料集 workbooks + one 出生動向基本調査 PDF
+H9_JP_ITEMS = len(ipss.TABLES) + 1
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -95,6 +98,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H8C_ITEMS
         + H8D_ITEMS
         + H8D_K_ITEMS
+        + H9_JP_ITEMS
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -134,6 +138,8 @@ def test_fetch_also_stores_country_metadata() -> None:
                 "ic_gen_",
                 "hdr25_",
                 moekr.RAW_NAME,
+                "T04-",
+                ipss.PDF_RAW_NAME,
             )
         )
         for s in result.skipped
@@ -218,6 +224,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H8C_ITEMS  # H8c: three raw missing
         + H8D_ITEMS  # H8d: two UN SDG + one HDR raw missing
         + H8D_K_ITEMS  # H8d-K: raw missing
+        + H9_JP_ITEMS
     )
 
 
@@ -258,6 +265,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H8C_ITEMS
         + H8D_ITEMS
         + H8D_K_ITEMS
+        + H9_JP_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -618,6 +626,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H8C_ITEMS
         + H8D_ITEMS
         + H8D_K_ITEMS
+        + H9_JP_ITEMS
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -713,6 +722,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H8C_ITEMS
         + H8D_ITEMS
         + H8D_K_ITEMS
+        + H9_JP_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -1594,3 +1604,108 @@ def test_mart_h8d_k_writes_sorted_long_mart(pdf_from_pages) -> None:  # type: ig
     assert any(
         s.startswith(f"{pipeline.MOEKR_TABLE}: staged table missing") for s in result.skipped
     )
+
+
+# ---------------------------------------------------------------- H9-JP: IPSS (7 xlsx + 1 PDF)
+
+
+def ipss_pages() -> list[str]:
+    return (FIXTURES / "ipss_jnfs16_gaiyo.txt").read_text(encoding="utf-8").split("\f")
+
+
+def ipss_responses(pdf_from_pages) -> dict[str, bytes]:  # type: ignore[no-untyped-def]
+    out = {t.url: (FIXTURES / f"ipss_{t.code}.xlsx").read_bytes() for t in ipss.TABLES}
+    out[ipss.PDF_URL] = pdf_from_pages(ipss_pages())
+    return out
+
+
+def test_fetch_h9_jp_stores_seven_workbooks_and_the_pdf_with_pdl_license(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx(ipss_responses(pdf_from_pages))
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    expected = tuple(f"growth-fertility/ipss/{t.raw_name}" for t in ipss.TABLES) + (
+        "growth-fertility/ipss/JNFS16gaiyo.pdf",
+    )
+    assert result.written == expected
+    recs = ctx.raw.records()
+    assert len(recs) == H9_JP_ITEMS
+    assert all("PDL" in r.license for r in recs)
+    assert {r.url for r in recs} == {t.url for t in ipss.TABLES} | {ipss.PDF_URL}
+    assert not any(s.startswith(("T04-", "JNFS16")) for s in result.skipped)
+    # fetch failures are reported per item without writing
+    result = PIPELINE.run(Stage.FETCH, make_ctx({}))
+    assert sum(s.startswith(("T04-", "JNFS16gaiyo.pdf")) for s in result.skipped) == H9_JP_ITEMS
+
+
+def test_stage_h9_jp_writes_one_staged_table_per_raw(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx(ipss_responses(pdf_from_pages))
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == tuple(pipeline.IPSS_TABLES.values())
+    assert pipeline.IPSS_TABLES["t04_25"] == "staged/ipss/t04_25"
+    assert pipeline.IPSS_TABLES["jnfs16"] == "staged/ipss/jnfs16"
+    rows = ctx.tables.read_table("staged/ipss/t04_25")
+    assert len(rows) == 70 and all(r["source"] == "ipss" and r["table"] == "T04-25" for r in rows)
+    rows = ctx.tables.read_table("staged/ipss/t04_11")
+    assert len(rows) == 2020 and {r["metric"] for r in rows} == {"cohort_cum_fertility"}
+    rows = ctx.tables.read_table("staged/ipss/jnfs16")
+    assert len(rows) == 58 and {r["table"] for r in rows} == {"JNFS16-7-1", "JNFS16-3-3"}
+    assert not any(s.startswith(("T04-", "JNFS16")) for s in result.skipped)
+
+
+def test_stage_h9_jp_skips_each_unrecognised_table_and_keeps_the_rest(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    responses = ipss_responses(pdf_from_pages)
+    t25 = next(t for t in ipss.TABLES if t.code == "T04-25")
+    responses[t25.url] = responses[next(t for t in ipss.TABLES if t.code == "T04-24").url]
+    responses[ipss.PDF_URL] = pdf_from_pages(["35 \n no figure here"])
+    ctx = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert "staged/ipss/t04_25" not in result.written
+    assert "staged/ipss/jnfs16" not in result.written
+    assert "staged/ipss/t04_24" in result.written and "staged/ipss/t04_09" in result.written
+    assert any(s.startswith("T04-25.xlsx: layout not recognised (") for s in result.skipped)
+    assert any(
+        s.startswith("JNFS16gaiyo.pdf: layout not recognised (") and "7-1" in s
+        for s in result.skipped
+    )
+    result = PIPELINE.run(Stage.STAGE, make_ctx({}))
+    assert sum(s.startswith(("T04-", "JNFS16")) and "raw missing" in s for s in result.skipped) == (
+        H9_JP_ITEMS
+    )
+
+
+def test_mart_h9_jp_writes_survey_and_births_marts_from_whatever_is_staged(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx(ipss_responses(pdf_from_pages))
+    PIPELINE.run(Stage.FETCH, ctx)
+    PIPELINE.run(Stage.STAGE, ctx)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.IPSS_SURVEY_MART, pipeline.IPSS_BIRTHS_MART)
+    assert pipeline.IPSS_SURVEY_MART == "marts/jp_fertility_survey"
+    assert pipeline.IPSS_BIRTHS_MART == "marts/jp_births_order_cohort"
+    survey = ctx.tables.read_table(pipeline.IPSS_SURVEY_MART)
+    assert len(survey) == 70 + 70 + 90 + 58
+    keyed = {
+        (r["survey_year"], r["metric"], r["group"], r["birth_cohort"]): r["value"] for r in survey
+    }
+    assert len(keyed) == len(survey)
+    assert keyed[(2021, "ideal_children", "夫婦", None)] == 2.25
+    assert keyed[(2021, "planned_children", "総数", None)] == 1.95
+    assert keyed[(2021, "completed_fertility", "妻の生まれ年 1971-1976", 1971)] == 1.81
+    births = ctx.tables.read_table(pipeline.IPSS_BIRTHS_MART)
+    assert len(births) == 192 + 870 + 2835 + 2020
+    bk = {(r["year"], r["metric"], r["group"], r["cohort"]): r["value"] for r in births}
+    assert len(bk) == len(births)
+    assert bk[(2024, "tfr_order", "第1子", None)] == 0.55
+    assert bk[(2024, "cohort_cum_fertility", "age 49", 1975)] == 1.4557
+    # only the survey side staged -> only the survey mart; nothing staged -> both skipped
+    ctx2 = make_ctx({ipss.PDF_URL: pdf_from_pages(ipss_pages())})
+    PIPELINE.run(Stage.FETCH, ctx2)
+    PIPELINE.run(Stage.STAGE, ctx2)
+    result = PIPELINE.run(Stage.MART, ctx2)
+    assert pipeline.IPSS_SURVEY_MART in result.written
+    assert pipeline.IPSS_BIRTHS_MART not in result.written
+    assert len(ctx2.tables.read_table(pipeline.IPSS_SURVEY_MART)) == 58
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert pipeline.IPSS_SURVEY_MART not in result.written
+    assert any(s.startswith("marts/jp_fertility_survey: no staged ipss") for s in result.skipped)
+    assert any(s.startswith("marts/jp_births_order_cohort: no staged ipss") for s in result.skipped)

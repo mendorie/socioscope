@@ -28,7 +28,7 @@
 | 교육부（韓国教育部）初中高 사교육비조사 報道資料 PDF | 学校外教育費（私教育費）: 年次（2007–2025）の総額・参加率・週当たり参加時間・1 人当たり月平均（全学生／参加学生）、자녀수別（1/2/3+）と 학교급別（초/중/고）の 2024–2025 | 報道資料掲示板の静的 PDF（`moe.go.kr/boardCnts/fileDown.do?…&fileSeq=…`、キー不要。pypdf でテキスト抽出し 3 表をパース） | **公共ヌリ（KOGL）第 1 類型＝出典表示のみ**（確認 2026-10-17） | **採用**（growth-fertility H8d 仮説 K、記述のみ） |
 | Testa (2012) *Family sizes in Europe* 付表（VID/ÖAW EDRP 2、データ＝Eurobarometer 75.4, 2011）＋ BiB (2025) *Intended, ideal and actual fertility in 11 European countries* Table 1（GGS-II 2020–23） | 理想・意図・実際の子ども数の国別平均と分布（EB: EU-27 × 性 × 年齢 15–24/25–39/40–54/55+/計、2011。GGS: 11 か国 × 女性 18–29/30–39/40–49/計、2020–23） | 静的 PDF（`oeaw.ac.at/.../edrp_2012_02.pdf`、`bib.bund.de/Publikation/2025/pdf/...`、キー不要。pypdf でテキスト抽出し付表をパース） | Testa 2012: **ライセンス未明示 → 出典明記で事実の転記のみ、PDF は再配布しない**（EB 75.4 自体は欧州委員会 CC BY 4.0）。BiB 2025: **CC BY-SA 4.0**（本文表記、確認 2026-10-06） | **採用**（growth-fertility H6） |
 | Standard Eurobarometer（data.europa.eu）Volume A | 「今後 12 か月の期待（生活全般・家計・国の経済・国の雇用）」の国別 Better/Worse/Same/DK 割合、STD91（2019 春）〜STD105（2026 春）15 波 | hub API の JSON-LD（`data.europa.eu/api/hub/repo/datasets/<id>.jsonld`）から Volume A の静的 URL（`webgate.ec.europa.eu/ebsm/api/public/odp/download?key=…`、キー不要）を解決して xlsx/xls を取得 | **欧州委員会 再利用方針（Decision 2011/833/EU）＝CC BY 4.0 相当**（JSON-LD も `licence/CC_BY_4_0`。`commission.europa.eu/legal-notice_en`、確認 2026-10-06） | **採用**（growth-fertility H6） |
-| 国立社会保障・人口問題研究所 | 出生動向基本調査、将来推計人口 | CSV/Excel | 要確認 | 候補（日本） |
+| 国立社会保障・人口問題研究所（IPSS） | 『人口統計資料集 2026』表 4-25 妻の年齢別 予定子ども数・4-24 平均出生児数（1977–2021）・4-23 妻の生まれ年別 完結出生児数（1890–1976 生まれ）・4-15 出生順位別出生数・4-16 出生順位別 TFR／平均出生年齢（1950–2024）・4-09 年齢各歳別出生率（1925–2024）・4-11 コーホート別累積出生率；『第 16 回出生動向基本調査 結果の概要』図表 7-1（夫婦の平均理想・予定子ども数 1977–2021）・図表 3-3（未婚者の平均希望子ども数 1982–2021） | 静的 xlsx（`ipss.go.jp/syoushika/tohkei/Data/Popular2026/T04-NN.xlsx`、標準ライブラリで解析）＋ 静的 PDF（AES 暗号化、pypdf ＋ `cryptography`）。キー不要 | **PDL1.0（公共データ利用規約 第 1.0 版）＝出典表示で商用含め利用可**（確認 2026-10-18） | **採用**（growth-fertility H9） |
 | 国税庁 統計年報 / 民間給与実態統計 | 所得分布 | Excel | 政府標準利用規約 | 候補（日本） |
 | 野村総研 富裕層レポート等 | 資産階層別世帯数（推計） | PDF（公開レポート） | 引用のみ | 候補（LLM 構造化対象） |
 
@@ -305,6 +305,29 @@
   - GII は 172 か国のみ（構成要素が欠ける国は空）。`mmr`・`abr` は TFR と機械的に関係するので判定には使わない（設計 H8d Z4）。GII 総合も Z4 では使わない。
   - 国名は UNDP 表記（例 "Korea (Republic of)", "Türkiye", "Côte d'Ivoire"）。latin-1 で復号するので UTF-8 として読むと壊れる。
   - 値は HDR 2025 時点の改訂済み系列で、過去版 HDR の数値とは一致しない。
+
+### IPSS 国立社会保障・人口問題研究所 — 人口統計資料集 2026（xlsx）と 第 16 回出生動向基本調査 結果の概要（PDF）（growth-fertility H9: 規範の崩れ vs 実現の阻害、出生順位、コーホート）
+- URL / API:
+  - 人口統計資料集 2026 の表 xlsx（固定 URL 規則、`theme_growth_fertility.ipss.TABLES`）: `https://www.ipss.go.jp/syoushika/tohkei/Data/Popular2026/T04-NN.xlsx`（NN = 25, 24, 23, 15, 16, 09, 11。2026-10-18 確認: すべて 200、`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`、10–41 KB）。各 xlsx は 1 シートだが、★付き表（T04-09, T04-11, T04-16）は第 2 シート `T04-NN★` に各年版があり、adapter はそちらを読む（第 1 シートは 5 年刻み等の抜粋）。
+  - 第 16 回出生動向基本調査 結果の概要: `https://www.ipss.go.jp/ps-doukou/j/doukou16/JNFS16gaiyo.pdf`（`ipss.PDF_URL`。2026-10-18 確認: 200、`application/pdf`、5.3 MB、95 ページ、**AES 暗号化**（空パスワード）→ pypdf の復号に `cryptography` が必要なので `themes/growth-fertility/pyproject.toml` に追加）。
+- 表の列構成（実測、`estat.xlsx_rows(payload, sheet)` の 1 始まり列番号）:
+  - T04-25 妻の年齢（5 歳階級）別予定子ども数 / T04-24 同 平均出生児数: A=年次, B=（第N回）, C=総数, D..I=20～24歳…45～49歳。1977/1982/1987/1992/1997/2002/2005/2010/2015/2021（第 7〜16 回）の 10 行。
+  - T04-23 妻の生まれ年別出生児数割合および平均出生児数: A=妻の生まれ年（`1890～1895` … `1971～1976`、B に注記号）, C=調査年次（1950–2021）, D..H=無子/1人/2人/3人/4人以上（%）, I=平均出生児数。15 行。1970 年以前は国勢調査（既婚女性）、1977 年以降は出生動向基本調査（初婚どうし夫婦、妻 45–49 歳 = 結婚持続 15–19 年）。
+  - T04-15 出生順位別出生数および割合: A=年次, C=総数, D..H=第1子…第5子～。C に「実数」「割合(％)」のブロック見出し。実数 1950–2015 は 5 年刻み、2016–2024 は各年（23 行）、割合は 1950–2020 の 10 年刻み＋2024（9 行）。総数は順位不詳を含む。
+  - T04-16★ 出生順位別合計特殊出生率および平均出生年齢: A=年次（1950–2024 各年）, B..G=TFR 総数/第1子…第5子～, H..M=平均出生年齢 同。1951–1953 の順位別は '…'。
+  - T04-09★ 女性の年齢（各歳）別出生率: A=年齢 15..49 ＋ 合計（= TFR）, 列 = 1925年, 1930年, 1940年, 1947年…2024年（81 列）。
+  - T04-11★ 女性のコーホート別累積出生率: A=年齢 15..49, 列 = 1950年…2020年（71 列）。**列見出しはコーホートが 15 歳に達した年**（1950 列 = 1935 年生まれ。T04-09 の累積と一致することを確認）。未到達年齢は空白。
+  - PDF 図表 7-1（p.54、pypdf index 53）: タイトル行の直後にデータラベル 20 個が 1 行（理想 10 ＋予定 10、`2.252.17` のように連結）。注に妻 35 歳未満の理想・予定（`第N回（YYYY）d.dd` × 10 × 2）。図表 3-3（p.34、index 33）: タイトル行〜「男性 女性」の間に 18 個（男 9 ＋女 9、1982–2021）。
+- 対象指標・粒度: `marts/jp_fertility_survey`（long: survey_year × metric(planned_children / children_born / completed_fertility / completed_parity_share / ideal_children / planned_children_pdf / desired_children_single) × group × birth_cohort、288 行）と `marts/jp_births_order_cohort`（long: year × metric(births / births_share / tfr_order / mean_age_order / asfr / cohort_cum_fertility) × group(総数 / 第1子…第5子以上 / age 15..49) × cohort（生まれ年）、5,917 行）。列定義は `themes/growth-fertility/CLAUDE.md`。
+- ライセンス・利用規約（確認日 2026-10-18）: IPSS サイトは **PDL1.0（公共データ利用規約（第 1.0 版））** = 出典表示で複製・改変・商用利用可。出典表記: 「国立社会保障・人口問題研究所『人口統計資料集 2026』『第 16 回出生動向基本調査 結果の概要』（PDL1.0）」。`ipss.LICENSE` に記載し manifest に残す。raw（xlsx・PDF）はコミット可だが既定どおりコミットしない。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.ipss`（`parse_table` / 表ごとの `*_rows` / `survey_pdf_rows_from_pages` / `build_survey_mart` / `build_births_mart` の純粋変換。xlsx は `estat.xlsx_rows(payload, sheet)` のシート名指定、PDF は `kostat.pdf_text` を再利用）＋ `pipeline._fetch_h9_jp` / `_stage_h9_jp` / `_mart_h9_jp`（`HttpxFetcher`）。**8 リクエスト（合計 5.5 MB）**。raw は `data/raw/growth-fertility/ipss/{T04-NN.xlsx, JNFS16gaiyo.pdf}`、staged は `staged/ipss/{t04_25, t04_24, t04_23, t04_15, t04_16, t04_09, t04_11, jnfs16}`。公開レート制限なし。再取得は年 1 回（人口統計資料集の次年版は `ipss.BASE_URL` の `Popular2027`、出生動向基本調査は第 17 回公表時に `PDF_URL`・`_ANCHORS` を更新）。
+- 既知の欠損・断絶・定義変更:
+  - **予定子ども数の 2 系統**: xlsx T04-25 の 2021 年総数は 1.95、PDF 図表 7-1 のデータラベルは 2.01（2010 年も 2.08 vs 2.07）。同じ第 16 回でも集計・公表時点が違うため、mart では `planned_children`（xlsx）と `planned_children_pdf`（PDF）を別 metric で保持する。設計 H9 V1 の主判定にどちらを使うかは分析側で明記する。
+  - T04-15/T04-16 は 1970（T04-16★ は 1972）年以前が沖縄県を含まない。T04-16 の 1950–64・1966–67 の順位別 TFR は 5 歳階級から算出で Σ順位 と総数の差が最大 0.03（adapter の許容 0.05）。1951–1953 の順位別は未公表（'…' → 行なし）。
+  - T04-09 の分母は 1925–40 が総人口、1947 年以降が日本人人口。T04-11 の 1976 年生まれ以降（列 1991–）は 49 歳未到達で完結していない（空白 → 行なし）。1966 年生まれ（列 1981）の累積は丙午の影響で前後より低い（1.43）。
+  - T04-23 は 1950 年調査に 3 コーホート（妻 55–59・50–54・45–49 歳）が並ぶ。1970 年以前（国勢調査の既婚女性）と 1977 年以降（初婚どうし夫婦）で母集団が違う。
+  - PDF の図表 3-3 は「いずれ結婚するつもり」の 18–34 歳未婚者のみ（未婚者全体の値は注にあるが未取込）。希望子ども数は 5 人以上を 5 として平均。
+  - 解析は fail-closed: 表題・ヘッダ・年／年齢／調査回の範囲・列数・合計の照合、PDF はラベル点数と第 7 回・第 16 回（図表 3-3 は第 8 回・第 16 回）の公表値による端点照合。違えば `ValueError` → stage の skipped に「`<raw>: layout not recognised (<reason>)`」として残し、その表だけ書かない。
 
 ## 記録テンプレート（ソース採用時）
 ```

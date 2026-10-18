@@ -193,6 +193,42 @@ def test_xlsx_rows_reads_shared_strings_and_numbers() -> None:
         estat.xlsx_rows(MARITAL)
 
 
+def test_xlsx_rows_drops_phonetic_runs_and_reads_a_named_sheet() -> None:
+    """IPSS workbooks carry furigana (<rPh>) inside shared strings: only the <t> text counts."""
+    import io
+    import zipfile
+
+    shared = (
+        '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1">'
+        '<si><r><t>年次</t></r><rPh sb="0" eb="2"><t>ネンジ</t></rPh></si></sst>'
+    )
+    sheet = (
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        '<sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1"><v>1977</v></c></row>'
+        "</sheetData></worksheet>"
+    )
+    workbook = (
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        '<sheets><sheet name="T04-25" sheetId="1" r:id="rId1"/></sheets></workbook>'
+    )
+    rels = (
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="x" Target="worksheets/sheet1.xml"/></Relationships>'
+    )
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("xl/workbook.xml", workbook)
+        z.writestr("xl/_rels/workbook.xml.rels", rels)
+        z.writestr("xl/worksheets/sheet1.xml", sheet)
+        z.writestr("xl/sharedStrings.xml", shared)
+    rows = estat.xlsx_rows(buf.getvalue(), "T04-25")
+    assert rows == [{1: "年次", 2: "1977"}]
+    assert estat.xlsx_rows(buf.getvalue()) == rows
+    with pytest.raises(ValueError, match="no worksheet named"):
+        estat.xlsx_rows(buf.getvalue(), "T04-24")
+
+
 def test_shugyo_rows_keep_status_total_and_education_total_only() -> None:
     rows = estat.shugyo_marital_age_income_rows(SHUGYO, SHUGYO_TABLE)
     # fixture: 2 sexes x 2 marital x 3 ages x 4 income classes, 従業上の地位 = 総数 only
