@@ -32,6 +32,8 @@
 | 国立社会保障・人口問題研究所（IPSS） | 『人口統計資料集 2026』表 4-25 妻の年齢別 予定子ども数・4-24 平均出生児数（1977–2021）・4-23 妻の生まれ年別 完結出生児数（1890–1976 生まれ）・4-15 出生順位別出生数・4-16 出生順位別 TFR／平均出生年齢（1950–2024）・4-09 年齢各歳別出生率（1925–2024）・4-11 コーホート別累積出生率；『第 16 回出生動向基本調査 結果の概要』図表 7-1（夫婦の平均理想・予定子ども数 1977–2021）・図表 3-3（未婚者の平均希望子ども数 1982–2021） | 静的 xlsx（`ipss.go.jp/syoushika/tohkei/Data/Popular2026/T04-NN.xlsx`、標準ライブラリで解析）＋ 静的 PDF（AES 暗号化、pypdf ＋ `cryptography`）。キー不要 | **PDL1.0（公共データ利用規約 第 1.0 版）＝出典表示で商用含め利用可**（確認 2026-10-18） | **採用**（growth-fertility H9） |
 | Special Eurobarometer 253（data.europa.eu、dataset `s406_65_1_ebs253`）EB65.1 Volume C ＋ EB65.3 Volume A | 2006 年の理想子ども数（一般理想・個人理想）の国別分布と平均、EU-25 × 性・年齢 ＋ 候補 4 か国 | hub の JSON-LD から 2 配布物（zip 内 xls）を解決して取得、xlrd で解析 | 欧州委員会 再利用方針（CC BY 4.0 相当、確認 2026-10-18） | **採用**（growth-fertility H9） |
 | OECD Family Database SF2.5 Childlessness（xlsx） | 出生コーホート（1935–1975）別 定義的無子率 %、1975 コーホートの完結出生率 | 静的 xlsx（`webfs.oecd.org`、鍵不要）、openpyxl | OECD Terms（CC BY 4.0、確認 2026-10-18） | **採用**（growth-fertility H9） |
+| OECD 住宅価格（`DF_HOUSE_PRICES`）・有期雇用（`DF_TEMP_I`）・LFS 指標（`DF_LFS_INDIC`）＋ Family Database SF3.1 婚姻（xlsx） | 住宅価格対所得比・対家賃比・実質指数（2015=100）、有期雇用比率（15–24 / 25–54 / 計 × 性）、若年失業率（15–24 / 25–34 × 性）、粗婚姻率 1960–・平均初婚年齢 1990– | SDMX REST CSV 3 本（鍵不要）＋静的 xlsx、openpyxl | OECD Terms（CC BY 4.0、確認 2026-10-18） | **採用**（growth-fertility H10） |
+| Eurostat `demo_nind` / `lfsa_etpgan` / `une_rt_a` / `ilc_lvho07a` | 粗婚姻率・初婚平均年齢・初婚率（1960–）、有期雇用比率 15–24 / 25–34（1995–）、若年失業率 15–24（2003–）、若年層の住宅費過重負担率（2004–） | dissemination API JSON-stat（鍵不要、国別分割） | Eurostat copyright notice（出典明記で再利用可） | **採用**（growth-fertility H10） |
 | 国税庁 統計年報 / 民間給与実態統計 | 所得分布 | Excel | 政府標準利用規約 | 候補（日本） |
 | 野村総研 富裕層レポート等 | 資産階層別世帯数（推計） | PDF（公開レポート） | 引用のみ | 候補（LLM 構造化対象） |
 
@@ -401,6 +403,39 @@
   - 雇用者には会社などの役員を含む（正規＋非正規 ≤ 雇用者 の検査はこの差を許す）。「起業者」列は雇用形態と直交するため落とす。
   - 2017 年の表は列順が 教育→年齢（2022 は 年齢→教育）、2007 年の派遣社員ラベルは「労働派遣事業所」（2012 年以降「労働者派遣事業所」）。
   - 調査時点は各年 10 月 1 日。配偶関係は「総数」「うち未婚」のみ（有配偶／死別・離別は非公表）なので未婚率 = うち未婚 ÷ 総数、既婚経験率はその補数。
+### OECD 住宅価格・有期雇用・若年失業（SDMX REST）＋ Family Database SF3.1 婚姻（xlsx）— 家族形成を阻む制約（growth-fertility H10-OECD）
+- URL / API（source-scout が 2026-10-18 に httpx で 200 を確認。`theme_growth_fertility.oecd_labour.DATASETS` / `MARRIAGE_URL` に固定、改変しない）。REF_AREA は 19 か国 `JPN+KOR+ITA+ESP+PRT+GRC+SWE+DNK+FIN+NOR+FRA+DEU+NLD+GBR+USA+AUT+CZE+HUN+POL`（`H10_COUNTRIES`）:
+  | raw | dataflow / key（次元順） | 取れた範囲 |
+  |---|---|---|
+  | `oecd_labour/house_prices.csv`（671 KB） | `OECD.ECO.MPD,DSD_AN_HOUSE_PRICES@DF_HOUSE_PRICES,1.0/<REF>.A.HPI_YDH+HPI_RPI+RHP.`（REF_AREA.FREQ.MEASURE.UNIT_MEASURE。UNIT は空 = 全部、返るのは `IX`（2015=100）のみ。`PT_AVG_L_TERM` は許容するが今回は無し） | 2,522 行。JPN 1960–2025、ITA/SWE/DEU/DNK/FIN/FRA/NLD/NOR/USA 1970–、GBR 1969–、KOR 1986–、PRT 1988–、GRC 1997–、AUT 2000–、POL 2005–、HUN 2007–、CZE 2008–。`HPI_YDH`（対所得比）は DEU/NLD 1980–、DNK 1981–、GBR 1987–、PRT 1995– と遅い。USA の `HPI_RPI` は 2024 まで |
+  | `oecd_labour/temp_employment.csv`（1.7 MB） | `OECD.ELS.SAE,DSD_TEMP@DF_TEMP_I,1.0/<REF>.EMP_TEMP.PT_POP_SUB._T+M+F.Y15T24+Y25T54+_T.ICSE93_1.A`（REF_AREA.MEASURE.UNIT_MEASURE.SEX.AGE.WORKER_STATUS.FREQ） | 5,841 行。JPN 1980–、FRA/GBR/GRC/ITA/NLD 1983–、DEU/DNK 1984–、PRT 1986–、ESP 1987–、CZE 1993–、AUT/USA 1995–、FIN/HUN/SWE 1997–、NOR 1999–、POL 2001–、KOR 2004–。USA は 1995/1997/1999/2001/2005/2017/2023 の 7 時点のみ |
+  | `oecd_labour/youth_unemployment.csv`（1.7 MB） | `OECD.ELS.SAE,DSD_LFS@DF_LFS_INDIC,1.1/<REF>.UNE_RATE.PT_LF_SUB._T+M+F.Y15T24+Y25T34.UNE`（REF_AREA.MEASURE.UNIT_MEASURE.SEX.AGE.LABOUR_FORCE_STATUS。FREQ 次元なし） | 5,489 行。USA 1960–、FIN/SWE 1963–、JPN 1968–、DEU/ITA 1970–、KOR 1980–、HUN/POL 1992–、CZE 1993–、AUT 1994–。`OBS_STATUS` は A（AUT 2023–2024 の 17 行は空） |
+  | `oecd_labour/sf3_1_marriage_divorce_rates.xlsx`（970 KB） | `https://webfs.oecd.org/Els-com/Family_Database/SF_3_1_Marriage_divorce_rates.xlsx`。読むシートは `MarriageRates`（行 = ISO3・国名・Note、列 = 1960–2022、粗婚姻率 人口 1,000 人当たり）と `MeanAgeFirstMarriage`（行 = 国名 × Gender、列 = 1990–2021、平均初婚年齢）。他 7 シート（Chart SF3.1.A–D、同性婚、離婚率、前婚姻状態）は未取込 | 粗婚姻率 1,114 行（FRA 1994–、KOR/USA 1970–、GBR 2020 まで、他 1960–2022）、初婚年齢 1,096 行（FRA 1998–2018、POL 1993–、PRT 1991–、DEU –2017、AUT/FIN/GBR –2019、USA のみ 2021） |
+- 対象指標・粒度: `staged/oecd_labour/{house_prices,temp_employment,youth_unemployment,marriage}` → `marts/oecd_family_formation`（long: iso3, year, dataset, measure, sex, age, unit, value, obs_status, source。16,062 行、19 か国、1960–2025。キー `(iso3, year, dataset, measure, sex, age, unit)` 一意）。測度コード `CMR`/`MAFM`、単位 `PER_1000_POP`/`YR` は本テーマの命名（xlsx にコードは無い）。
+- ライセンス・利用規約（確認日 2026-10-18）: OECD Terms & Conditions（`oecd.LICENSE`、CC BY 4.0）。出典表記: 「OECD (2026), House prices / Temporary employment / LFS indicators (sdmx.oecd.org) and Family Database SF3.1 (accessed 2026-10-18)」。raw はコミットしない（manifest のみ）。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.oecd_labour`（`parse` / `parse_marriage` / `build_mart`、openpyxl）＋ `pipeline._fetch_h10_oecd / _stage_h10_oecd / _mart_h10_oecd`（`HttpxFetcher`）。**4 リクエスト（計 ~5 MB）**。公開レート制限なし。再取得は年 1 回。
+- 既知の欠損・断絶・定義変更:
+  - 住宅価格は OECD Analytical house price indicators（季節調整済み年次平均、2015=100 の指数）。対所得比は「名目住宅価格 ÷ 1 人当たり名目可処分所得」の指数なので水準の国際比較はできない（同一国内の推移・差分で使う。設計 H10 A は 5 年差分）。
+  - 有期雇用は ICSE-93 の被用者（`ICSE93_1`）に占める有期契約の割合（OECD 定義、各国 LFS）。日本の「非正規」（パート・アルバイト・派遣・契約・嘱託）とは定義が異なり、日本の値は契約期間が有期の者のみ（2020 年 15–24 歳 16.3%、ESP 66.4%、ITA 58.8%、SWE 53.8%）。設計 H10 の「南欧の有期雇用と日本の非正規は制度が違う」に対応。
+  - 若年失業率は ILO 定義。AUT 2023–2024 は `OBS_STATUS` 空（上流の暫定値の可能性、値はそのまま）。
+  - SF3.1 の注記: 初婚年齢は AUS/NZL/USA が中央値、MEX は全婚姻（非対象国なので落ちる）。GBR の婚姻は 2014 年以降同性婚を含み、2021–2022 が未公表。'..' と空セルは行なし（補完しない）。`MeanAgeFirstMarriage` に ISO3 列が無いので国名を `oecd_labour.NAME_TO_ISO3` で引き、`MarriageRates` のコードと国名の対応を照合する（不一致は `ValueError`）。
+  - 解析は fail-closed: `STRUCTURE_ID`・固定次元・閉集合外の可変次元・見出し違い・年列が文字列・未知の国名・Gender ∉ {Male, Female}・数値でも '..' でもないセル・シート内キー重複は `ValueError` → stage の skipped（xlsx は「`layout not recognised`」）。
+
+### Eurostat `demo_nind` / `lfsa_etpgan` / `une_rt_a` / `ilc_lvho07a` — 婚姻・有期雇用・若年失業・住宅費負担（growth-fertility H10-EU）
+- URL / API: 上の Eurostat 節と同じ dissemination API。`theme_growth_fertility.eurostat.family_formation_requests`（`H10_GEOS` = ORDER_GEOS 13 ＋ PT/EL/AT = 16 か国 × 4 dataset = 64 リクエスト、raw `eurostat_<dataset>_<geo>.json`、各 4–9 KB）。source-scout が 2026-10-18 に httpx で 200 を確認。次元（`id` 順、実レスポンスで確認）:
+  | dataset | 次元 | 絞り込み | 取れた範囲 |
+  |---|---|---|---|
+  | `demo_nind` | freq.indic_de.geo.time | `sinceTimePeriod=1960`（indic_de は全部: GNUPRT 粗婚姻率、MARRIAGE 婚姻数、FAGEMAR1/MAGEMAR1 初婚平均年齢、FMAR1CUM/MMAR1CUM 合計初婚率、FMAR1PC/MMAR1PC 初婚割合。unit 次元なし） | 5,668 行、1960–2024。初婚年齢・合計初婚率は 1990–。FRA 1994–2023、DNK –2021、IS/NO –2020 |
+  | `lfsa_etpgan` | freq.unit.sex.age.citizen.geo.time | `sinceTimePeriod=1995&sex=T,M,F&age=Y15-24,Y25-34&citizen=TOTAL`（unit=PC、被用者に占める有期契約 %） | 2,918 行、1995–2025。CZ/HU/PL 1997–、IS は小セル欠損。`status: b`（断絶）は保持しない |
+  | `une_rt_a` | freq.age.unit.sex.geo.time | `sinceTimePeriod=1990&sex=T,M,F&age=Y15-24,Y25-29&unit=PC_ACT` | 846 行。**返るのは Y15-24 のみ**（Y25-29 は dataset に無い）。FR 2003–、SE 2005–、他 2009– |
+  | `ilc_lvho07a` | freq.unit.rskpovth.age.sex.geo.time | `sinceTimePeriod=2003&age=Y20-29,Y25-29,Y16-29&sex=T&rskpovth=TOTAL`（unit=PC、住宅費が可処分所得の 40% 超の人の割合） | 1,002 行、2004–2025。DE 2010–、IS –2020、3 age とも返る |
+- 対象指標・粒度: `staged/eurostat/{demo_nind,lfsa_etpgan,une_rt_a,ilc_lvho07a}` → `marts/eu_family_formation`（long: iso3, year, dataset, indicator, sex, age, unit, value, source。10,434 行、16 か国、1960–2025。キー `(iso3, year, dataset, indicator, sex, age, unit)` 一意）。`indicator` は demo_nind が `indic_de` そのまま、他は `temp_share` / `unemployment_rate` / `housing_cost_overburden`。
+- ライセンス・利用規約: 上の Eurostat 節と同じ（出典明記で再利用可、確認日 2026-10-06）。出典表記: 「Source: Eurostat, demo_nind / lfsa_etpgan / une_rt_a / ilc_lvho07a（accessed 2026-10-18）」。raw はコミットしない。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.eurostat`（`family_formation_requests` / `family_formation_rows` / `build_family_formation_mart` の純粋関数）＋ `pipeline._fetch_h10_eu` / `_stage_h10_eu` / `_mart_h10_eu`（`HttpxFetcher`、H5・H9-EU とは別ブロック）。**64 リクエスト（計 ~400 KB）**。公開レート制限なし。再取得は年 1 回。
+- 既知の欠損・断絶・定義変更:
+  - 次元コードが dataset ごとの閉集合の外なら `ValueError`（fail-closed）。要求したが返らない組み合わせ（`une_rt_a` Y25-29）は行なし。
+  - OECD SF3.1 の粗婚姻率は欧州諸国については Eurostat Demographic Statistics が出典なので、同じ国・年では `demo_nind` GNUPRT と一致する（2020 年 ITA 1.6、ESP 1.9、SWE 3.6）。重複して保持するのは日本・韓国・米国と欧州を同じ mart で比べるため。
+  - `lfsa_etpgan` は LFS 標本で、小セル（IS）は非公表 → 行なし。2021 年に LFS の調査設計が変わり `status: b`。
 
 ## 記録テンプレート（ソース採用時）
 ```
@@ -411,3 +446,40 @@
 - 取得方法（adapter 名、レート制限）:
 - 既知の欠損・断絶・定義変更:
 ```
+
+### H10 日本の婚姻時系列・都道府県パネル（growth-fertility H10 検定 C。IPSS 人口統計資料集 2026 の追加 9 表、e-Stat 時系列 2 表、内閣府 県民経済計算。2026-10-18 追記）
+- 概要表への追記（共有ファイルのため末尾に記す）:
+  | ソース | 内容 | 形式 | ライセンス | 状態 |
+  |---|---|---|---|---|
+  | IPSS 人口統計資料集 2026（追加） | 表 6-24 性・年齢別 未婚割合（1920–2020）・6-12 平均婚姻年齢（1899–2024）・6-23 50 歳時未婚割合；都道府県別 12-33★ TFR（1925–2024）・12-35 平均初婚年齢・12-36 男 30–34／女 25–29 未婚割合・12-37 50 歳時未婚割合・12-52 労働力率・12-53 完全失業率 | 静的 xlsx（`Popular2026/T06-NN.xlsx`, `T12-NN.xlsx`） | PDL1.0 | **採用**（H10） |
+  | e-Stat 就業構造基本調査 時系列統計表 第 18 表 | 都道府県・性・従業上の地位・雇用形態別 有業者数（1977–2022、10 時点） | `file-download?statInfId=000031732282&fileKind=4`（xlsx 110 KB） | 政府標準利用規約（第2.0版） | **採用**（H10） |
+  | e-Stat 住宅・土地統計調査 時系列 第 34-2 表 | 都道府県別 借家の 1 か月当たり家賃（総数・民営借家、1993–2023、7 時点） | `file-download?statInfId=000040354073&fileKind=4`（xlsx 130 KB） | 同上 | **採用**（H10） |
+  | 内閣府 県民経済計算 総括表 7 | 1 人当たり県民所得（千円、2011–2022 年度） | 静的 xlsx `https://www.esri.cao.go.jp/jp/sna/data/data_list/kenmin/files/contents/tables/2022/soukatu7.xlsx`（32 KB） | 政府標準利用規約（第2.0版）（内閣府サイト利用規約） | **採用**（H10） |
+- URL / API（2026-10-18 確認、すべて 200・xlsx、キー不要）:
+  - IPSS: `https://www.ipss.go.jp/syoushika/tohkei/Data/Popular2026/{T06-24,T06-12,T06-23,T12-33,T12-35,T12-36,T12-37,T12-52,T12-53}.xlsx`（12–39 KB）。`theme_growth_fertility.ipss.TABLES` の末尾 9 件。
+  - e-Stat 第 18 表（`prefecture.SHUGYO_TS18_URL`）と 第 34-2 表（`prefecture.JUTAKU_URL`）: `fileKind=4` がこの 2 表の xlsx。
+  - 内閣府（`cao.URL`）。年度版が変わるとパスの `2022` が変わる。
+- 表の構成（実測、`estat.xlsx_rows(payload, sheet)` の 1 始まり列番号）:
+  - T06-24: 4 シート `(1) 未婚` `(2) 有配偶` `(3) 死別` `(4) 離別`（未婚のみ取込）。A=年齢（総数, 15～19 … 80～84, 85歳以上）、B..L=1920年, 1930年, 1950年1), 1960年1), 1970年 … 2015年*, 2020年*。B 列に「男」「女」のマーカー行。
+  - T06-12: 2 段組。A=年次 1899–1989（1899, 1900, 1905–1940 の 5 年刻み, 1947, 1950–1970 の 5 年刻み, 1971–1989 各年）, B–D=全婚姻 夫/妻/年齢差, E–G=初婚 同; H=年次 1990–2024, I–K / L–N 同。初婚 1899–1905、全婚姻 1947・1950 は '…'。
+  - T06-23: A=年次（1920 … 2010, 2015*, 2020*）, B–E=男 未婚/有配偶/死別/離別, F–I=女 同（未婚のみ取込）。1940 年の離別は空欄。
+  - T12-33★（第 2 シート。第 1 シートは 5 年刻みの抜粋）: A=都道府県, B..=1925年, 1930年, 1950年, 1951 … 2024（77 列）。全国の直下に A 列が空の行 = 全国を都道府県と同じ 5 歳階級で算出した（）内の値（落とす）。沖縄は 1950–1972 が '…'、都道府県は 1951–1969 の非国勢調査年が '…'。
+  - T12-35: 2 シート `T12-35(1)` 男 / `(2)` 女。B..J=1950年, 1960年, …, 2020年, 2024年。沖縄 1950–1970 は '　　...'。
+  - T12-36: 1 シート。B 列ヘッダ「男　性　　30～34歳」、G 列「女　性　　25～29歳」、次行に 1970年, 1990年, 2010年, 2015年*, 2020年* × 2。
+  - T12-37: 2 シート (1) 男 / (2) 女。B..L=1920年, 1930年, 1940年, 1950年, 1970年, 1990年, 2000年, 2005年, 2010年, 2015年*, 2020年*。
+  - T12-52: 4 シート `(1) 1980年` `(2) 2000年` `(3) 2010年` `(4) 2020年*`。D=男, I=女（ヘッダ行）、次行 B..F=総数1), 15～29歳, 30～44歳, 45～59歳, 60歳以上, G..K=女 同。
+  - T12-53: 1 シート。B=男, H=女、次行 1980年 … 2020年（6 列）× 2。
+  - 就業構造 第 18 表 `Z018`: 行 11（0 始まり）= 調査年 1977…2022 が 18 ブロック × 10 列（L..GI、L=12）。ブロック = 総数／自営業主／家族従業者／雇用者／正規／非正規 × 男女計／男／女。非正規 1992 列は `19921)`（パート・アルバイトの合計の注）。都道府県名は I 列（`北 海 道` のように空白入り）、全国は H 列。1977 年の正規・非正規は '...'。政令市（札幌市 … 熊本市、東京特別区部）は行 61 以降（落とす）。sharedStrings の `<rPh>` ルビは `estat.xlsx_rows` が落とす（確認済み）。
+  - 住宅 第 34-2 表: 7 シート（平成5年 … 令和５年）。1993–2013 は B 列が「01　北　海　道」のようにコードと名前の結合、D=総数; 1993/1998 は民営借家が木造（設備専用）/木造（設備共用）/非木造（H/I/J）に分かれ総数なし、2003–2013 は木造/非木造（H/I）; 2018/2023 は B=コード（00/01…/01100 市）、C=名前、E=総数、I=民営借家 総数、J=木造、K=非木造。大都市（札幌市 … 熊本市、特別区部）は都道府県の後（落とす）。1 畳当たり家賃（右半分）は未取込。
+  - 県民経済計算 総括表 7（シート『実数』）: A=コード 01–47, B=都道府県名（北海道 … 沖縄県）, D..O=2011…2022（行 4 に西暦、行 3 に和暦）。47 行の後に 全県計（→ `00`）、地域ブロック、政令市（落とす）。シート『増加率』は未取込。
+- 対象指標・粒度: `marts/jp_marriage_series`（646 行）と `marts/jp_prefecture_panel`（14,884 行、16 metric）。列定義は `themes/growth-fertility/CLAUDE.md` の H10 追記。
+- ライセンス・利用規約（確認日 2026-10-18）: IPSS = PDL1.0（既出）。e-Stat = 政府標準利用規約（第2.0版）（既出、出典表記「出典：政府統計の総合窓口(e-Stat)、就業構造基本調査／住宅・土地統計調査（総務省）を加工」）。内閣府 = 内閣府ウェブサイトの利用規約（`https://www.cao.go.jp/notice/notice.html`）が **政府標準利用規約（第2.0版）** に準拠（CC BY 4.0 互換、出典表示）。出典表記「出典：内閣府『県民経済計算（2022 年度）』総括表 7 を加工」（`cao.LICENSE`）。raw は 3 ソースともコミットしない（manifest のみ）。
+- 取得方法（adapter 名、レート制限）: `theme_growth_fertility.ipss`（H10 部: `never_married_share_rows` / `mean_marriage_age_rows` / `never_married_at_50_rows` / `pref_tfr_rows` / `pref_first_marriage_age_rows` / `pref_never_married_young_rows` / `pref_never_married_at_50_rows` / `pref_lfp_rows` / `pref_unemployment_rows` / `build_marriage_mart`）、`theme_growth_fertility.prefecture`（`employment_rows` / `rent_rows` / `build_prefecture_mart`）、`theme_growth_fertility.cao`（`income_rows`）＋ `pipeline._fetch_h9_jp/_stage_h9_jp`（IPSS 9 表）と `_fetch_h10_pref/_stage_h10_pref/_mart_h10_pref`。**12 リクエスト（合計 約 0.5 MB）**。raw は `data/raw/growth-fertility/{ipss/T06-NN.xlsx, ipss/T12-NN.xlsx, estat_shugyo/shugyo_ts18_employment.xlsx, estat_jutaku/jutaku_34_2_rent.xlsx, cao_kenmin/kenmin_soukatu7.xlsx}`。再取得は年 1 回（IPSS は `Popular2027`、県民経済計算は年度版のパス、e-Stat は statInfId が年次更新で変わる可能性）。
+- 既知の欠損・断絶・定義変更:
+  - 都道府県 TFR の全国値は日本人人口・年齢各歳、都道府県は 5 歳階級による算出（全国の（）内行は落としている）。1950–1972 年は全国に沖縄県を含まない。
+  - 2015・2020 年の列見出しに `*`、1950・1960 年に `1)`（沖縄県を含まない）、T12-52 の総数に `1)` の注記号が付く（adapter は記号を落として年を照合。意味は各表の注を参照）。T06-23 の 1940 年は離別列が空欄（行なし）。
+  - T06-12 と T12-35 の平均初婚年齢は人口動態統計に基づく（表の出典行）。T12-53 は国勢調査報告の完全失業率（労働力調査とは別系列）。
+  - 就業構造基本調査 第 18 表: 1977 年は正規／非正規が '...'（行なし）。非正規の 1992 列に注 1)「パート」及び「アルバイト」の合計。推定人数は標本から復元した値で標準誤差は非公表。
+  - 住宅・土地統計調査 第 34-2 表: 家賃は名目円。`rent` は総数列（専用住宅＋併用住宅）。1993・1998 年の民営借家は木造の内訳が設備専用／共用で総数が無いため `rent_private` は 2018・2023 のみ、`rent_private_nonwood` は全期間（設計 H10 の頑健性「民営借家のみ」はこれで行う）。公的借家の列名は 公団・公社（1993–2003）→ 都市再生機構・公社（2008–）と変わるが未取込。
+  - 県民経済計算 総括表 7: 2022 年度版の 2011–2022 年度系列（名目、千円）。全県計は 47 都道府県の合計ベース。
+  - 解析は fail-closed: 表題・ヘッダ・年列・全国＋47 都道府県の JIS 順（`prefecture.regions`）・第 18 表の 雇用者 ≥ 正規＋非正規 と 有業者 ≥ 雇用者 を照合。違えば `ValueError` → stage の skipped に「`<raw>: layout not recognised (<reason>)`」として残し、その表だけ書かない。

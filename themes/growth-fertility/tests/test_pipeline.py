@@ -6,6 +6,7 @@ import pytest
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
 from theme_growth_fertility import (
+    cao,
     dhs,
     estat,
     hdr,
@@ -15,7 +16,9 @@ from theme_growth_fertility import (
     oecd,
     oecd_eag,
     oecd_family,
+    oecd_labour,
     pipeline,
+    prefecture,
     surveys,
     unsdg,
 )
@@ -58,6 +61,10 @@ H10_JP_ITEMS = len(estat.MARITAL_EMPLOYMENT_TABLES)
 H9_EB_OECD_ITEMS = len(ebm.SPECIAL_WAVES) + 1
 # H9 items: one 국가데이터처 출생통계 PDF + one Eurostat demo_frate request per ORDER_GEOS country
 H9_ITEMS = 1 + len(es.ORDER_GEOS)
+# H10-PREF items: 就業構造 時系列 第18表 + 住宅・土地統計 時系列 第34-2表 + 県民経済計算 総括表7
+H10_PREF_ITEMS = 3
+# H10 items: three OECD SDMX CSVs + one SF3.1 xlsx + four Eurostat datasets x H10_GEOS
+H10_ITEMS = len(oecd_labour.DATASETS) + 1 + len(es.family_formation_requests())
 
 
 def make_ctx(responses: dict[str, bytes]) -> Context:
@@ -109,6 +116,8 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H10_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
+        + H10_PREF_ITEMS
+        + H10_ITEMS
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -151,10 +160,17 @@ def test_fetch_also_stores_country_metadata() -> None:
                 "T04-",
                 "shugyo_employment_",
                 "shugyo_not_employed_",
+                "T06-",
+                "T12-",
                 ipss.PDF_RAW_NAME,
+                prefecture.SHUGYO_TS18_RAW_NAME,
+                prefecture.JUTAKU_RAW_NAME,
+                cao.RAW_NAME,
                 "eb_EBS",
                 oecd_family.RAW_NAME,
                 kostat.BIRTHS_RAW_NAME,
+                *(d.raw_name for d in oecd_labour.DATASETS),
+                oecd_labour.MARRIAGE_RAW_NAME,
             )
         )
         for s in result.skipped
@@ -243,6 +259,8 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H10_JP_ITEMS
         + H9_EB_OECD_ITEMS
         + H9_ITEMS  # H9: one births PDF + 13 demo_frate raws missing
+        + H10_PREF_ITEMS
+        + H10_ITEMS  # H10: 4 OECD raws + 64 Eurostat raws missing
     )
 
 
@@ -287,6 +305,8 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H10_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
+        + H10_PREF_ITEMS
+        + H10_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -651,6 +671,8 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H10_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
+        + H10_PREF_ITEMS
+        + H10_ITEMS
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -750,6 +772,8 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H10_JP_ITEMS
         + H9_ITEMS
         + H9_EB_OECD_ITEMS
+        + H10_PREF_ITEMS
+        + H10_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -779,7 +803,8 @@ def test_stage_eurostat_concatenates_countries_and_reports_missing() -> None:
     PIPELINE.run(Stage.FETCH, ctx)
     result = PIPELINE.run(Stage.STAGE, ctx)
     assert set(result.written) == {pipeline.OECD_TABLE, *pipeline.EU_TABLES.values()}
-    h5 = [s for s in result.skipped if s.startswith("eurostat_") and "demo_frate" not in s]
+    h5_prefixes = tuple(f"eurostat_{ds}_" for ds in pipeline.EU_TABLES)
+    h5 = [s for s in result.skipped if s.startswith(h5_prefixes)]
     assert sum("raw missing" in s for s in h5) == len(es.requests()) - 5
     census = ctx.tables.read_table(pipeline.EU_TABLES["cens_21me_r2"])
     assert len(census) == 60 and {r["iso3"] for r in census} == {"FIN"}
@@ -1656,10 +1681,13 @@ def test_fetch_h9_jp_stores_seven_workbooks_and_the_pdf_with_pdl_license(pdf_fro
     assert len(recs) == H9_JP_ITEMS
     assert all("PDL" in r.license for r in recs)
     assert {r.url for r in recs} == {t.url for t in ipss.TABLES} | {ipss.PDF_URL}
-    assert not any(s.startswith(("T04-", "JNFS16")) for s in result.skipped)
+    assert not any(s.startswith(("T04-", "T06-", "T12-", "JNFS16")) for s in result.skipped)
     # fetch failures are reported per item without writing
     result = PIPELINE.run(Stage.FETCH, make_ctx({}))
-    assert sum(s.startswith(("T04-", "JNFS16gaiyo.pdf")) for s in result.skipped) == H9_JP_ITEMS
+    assert (
+        sum(s.startswith(("T04-", "T06-", "T12-", "JNFS16gaiyo.pdf")) for s in result.skipped)
+        == H9_JP_ITEMS
+    )
 
 
 def test_stage_h9_jp_writes_one_staged_table_per_raw(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
@@ -1675,7 +1703,7 @@ def test_stage_h9_jp_writes_one_staged_table_per_raw(pdf_from_pages) -> None:  #
     assert len(rows) == 2020 and {r["metric"] for r in rows} == {"cohort_cum_fertility"}
     rows = ctx.tables.read_table("staged/ipss/jnfs16")
     assert len(rows) == 58 and {r["table"] for r in rows} == {"JNFS16-7-1", "JNFS16-3-3"}
-    assert not any(s.startswith(("T04-", "JNFS16")) for s in result.skipped)
+    assert not any(s.startswith(("T04-", "T06-", "T12-", "JNFS16")) for s in result.skipped)
 
 
 def test_stage_h9_jp_skips_each_unrecognised_table_and_keeps_the_rest(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
@@ -1695,9 +1723,10 @@ def test_stage_h9_jp_skips_each_unrecognised_table_and_keeps_the_rest(pdf_from_p
         for s in result.skipped
     )
     result = PIPELINE.run(Stage.STAGE, make_ctx({}))
-    assert sum(s.startswith(("T04-", "JNFS16")) and "raw missing" in s for s in result.skipped) == (
-        H9_JP_ITEMS
-    )
+    assert sum(
+        s.startswith(("T04-", "T06-", "T12-", "JNFS16")) and "raw missing" in s
+        for s in result.skipped
+    ) == (H9_JP_ITEMS)
 
 
 def test_mart_h9_jp_writes_survey_and_births_marts_from_whatever_is_staged(pdf_from_pages) -> None:  # type: ignore[no-untyped-def]
@@ -1705,7 +1734,12 @@ def test_mart_h9_jp_writes_survey_and_births_marts_from_whatever_is_staged(pdf_f
     PIPELINE.run(Stage.FETCH, ctx)
     PIPELINE.run(Stage.STAGE, ctx)
     result = PIPELINE.run(Stage.MART, ctx)
-    assert result.written == (pipeline.IPSS_SURVEY_MART, pipeline.IPSS_BIRTHS_MART)
+    assert result.written == (
+        pipeline.IPSS_SURVEY_MART,
+        pipeline.IPSS_BIRTHS_MART,
+        pipeline.H10_MARRIAGE_MART,
+        pipeline.H10_PREF_MART,
+    )
     assert pipeline.IPSS_SURVEY_MART == "marts/jp_fertility_survey"
     assert pipeline.IPSS_BIRTHS_MART == "marts/jp_births_order_cohort"
     survey = ctx.tables.read_table(pipeline.IPSS_SURVEY_MART)
@@ -2065,6 +2099,310 @@ def test_stage_h9_eu_without_any_raw_writes_nothing_and_mart_is_skipped() -> Non
     assert any(
         s.startswith(f"{pipeline.EU_FRATE_TABLE}: staged table missing") for s in result.skipped
     )
+
+
+# ---------------------------------------------------------------- H10-PREF: prefecture panel
+
+
+def h10_responses() -> dict[str, bytes]:
+    out = {t.url: (FIXTURES / f"ipss_{t.code}.xlsx").read_bytes() for t in ipss.TABLES[7:]}
+    out[prefecture.SHUGYO_TS18_URL] = (FIXTURES / "estat_shugyo_ts18.xlsx").read_bytes()
+    out[prefecture.JUTAKU_URL] = (FIXTURES / "estat_jutaku_34_2.xlsx").read_bytes()
+    out[cao.URL] = (FIXTURES / "cao_soukatu7.xlsx").read_bytes()
+    return out
+
+
+def test_fetch_h10_pref_stores_the_three_explanatory_workbooks_with_their_licenses() -> None:
+    ctx = make_ctx(h10_responses())
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert "growth-fertility/estat_shugyo/shugyo_ts18_employment.xlsx" in result.written
+    assert "growth-fertility/estat_jutaku/jutaku_34_2_rent.xlsx" in result.written
+    assert "growth-fertility/cao_kenmin/kenmin_soukatu7.xlsx" in result.written
+    # the nine H10 IPSS workbooks ride on the H9-JP loop
+    assert all(f"growth-fertility/ipss/{t.raw_name}" in result.written for t in ipss.TABLES[7:])
+    by_name = {r.name: r for r in ctx.raw.records()}
+    assert "政府標準利用規約" in by_name["shugyo_ts18_employment.xlsx"].license
+    assert "政府標準利用規約" in by_name["jutaku_34_2_rent.xlsx"].license
+    assert "内閣府" in by_name["kenmin_soukatu7.xlsx"].license
+    assert by_name["kenmin_soukatu7.xlsx"].url == cao.URL
+    assert "PDL" in by_name["T12-36.xlsx"].license
+
+
+def test_stage_h10_pref_writes_one_staged_table_per_raw_and_skips_unrecognised() -> None:
+    ctx = make_ctx(h10_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert pipeline.H10_TABLES == {
+        "shugyo_ts18": "staged/estat/shugyo_ts18_employment",
+        "jutaku_34_2": "staged/estat/jutaku_rent",
+        "kenmin": "staged/cao/kenmin_income",
+    }
+    for name in pipeline.H10_TABLES.values():
+        assert name in result.written
+    assert len(ctx.tables.read_table("staged/estat/shugyo_ts18_employment")) == 5472
+    assert len(ctx.tables.read_table("staged/estat/jutaku_rent")) == 48 * 21
+    assert len(ctx.tables.read_table("staged/cao/kenmin_income")) == 576
+    assert len(ctx.tables.read_table("staged/ipss/t12_36")) == 480
+    assert len(ctx.tables.read_table("staged/ipss/t06_23")) == 24
+    # a wrong workbook under a URL is reported and the other tables are still written
+    responses = h10_responses()
+    responses[cao.URL] = responses[prefecture.JUTAKU_URL]
+    ctx2 = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx2)
+    result2 = PIPELINE.run(Stage.STAGE, ctx2)
+    assert "staged/cao/kenmin_income" not in result2.written
+    assert any(s.startswith("kenmin_soukatu7.xlsx: layout not recognised") for s in result2.skipped)
+    assert "staged/estat/jutaku_rent" in result2.written
+
+
+def test_stage_h10_pref_reports_missing_raw() -> None:
+    ctx = make_ctx({})
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert "shugyo_ts18_employment.xlsx: raw missing (run fetch)" in result.skipped
+    assert "kenmin_soukatu7.xlsx: raw missing (run fetch)" in result.skipped
+
+
+def test_mart_h10_pref_builds_marriage_series_and_prefecture_panel_from_staged() -> None:
+    ctx = make_ctx(h10_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    PIPELINE.run(Stage.STAGE, ctx)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert pipeline.H10_MARRIAGE_MART == "marts/jp_marriage_series"
+    assert pipeline.H10_PREF_MART == "marts/jp_prefecture_panel"
+    assert "marts/jp_marriage_series" in result.written
+    assert "marts/jp_prefecture_panel" in result.written
+    series = ctx.tables.read_table("marts/jp_marriage_series")
+    assert len(series) == 352 + 270 + 24
+    assert {r["table"] for r in series} == {"T06-24", "T06-12", "T06-23"}
+    panel = ctx.tables.read_table("marts/jp_prefecture_panel")
+    staged_n = sum(
+        len(ctx.tables.read_table(f"staged/ipss/{t.key}"))
+        for t in ipss.TABLES
+        if t.mart == "prefecture"
+    ) + sum(len(ctx.tables.read_table(n)) for n in pipeline.H10_TABLES.values())
+    assert len(panel) == staged_n
+    assert {r["source"] for r in panel} == {"ipss", "estat_shugyo", "estat_jutaku", "cao_kenmin"}
+    tokyo_2020 = {
+        (r["metric"], r["sex"], r["age_class"]): r["value"]
+        for r in panel
+        if r["pref_code"] == "13" and r["year"] == 2020
+    }
+    assert tokyo_2020[("never_married_m30_34", "M", "30-34")] == 58.8
+    assert tokyo_2020[("tfr", "T", None)] == 1.12
+    assert tokyo_2020[("income_per_capita", "T", None)] == 5201.0
+
+
+def test_mart_h10_pref_uses_whatever_is_staged_and_skips_when_nothing_is() -> None:
+    responses = h10_responses()
+    del responses[cao.URL]
+    ctx = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx)
+    PIPELINE.run(Stage.STAGE, ctx)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert "staged/cao/kenmin_income: staged table missing (run stage)" in result.skipped
+    panel = ctx.tables.read_table("marts/jp_prefecture_panel")
+    assert "income_per_capita" not in {r["metric"] for r in panel}
+    empty = make_ctx({})
+    result = PIPELINE.run(Stage.MART, empty)
+    assert "marts/jp_prefecture_panel: no staged prefecture table (run stage)" in result.skipped
+    assert "marts/jp_marriage_series: no staged ipss table (run stage)" in result.skipped
+
+
+# ---- H10-OECD: house prices / temporary employment / youth unemployment + SF3.1 marriage -----
+
+H10_OECD_FIXTURES = {
+    "house_prices": (FIXTURES / "oecd_labour_house_prices.csv").read_bytes(),
+    "temp_employment": (FIXTURES / "oecd_labour_temp.csv").read_bytes(),
+    "youth_unemployment": (FIXTURES / "oecd_labour_une.csv").read_bytes(),
+}
+SF31 = (FIXTURES / "oecd_sf3_1_marriage.xlsx").read_bytes()
+
+
+def h10_oecd_responses() -> dict[str, bytes]:
+    out = {d.url: H10_OECD_FIXTURES[d.key] for d in oecd_labour.DATASETS}
+    out[oecd_labour.MARRIAGE_URL] = SF31
+    return out
+
+
+def test_fetch_h10_oecd_stores_three_csvs_and_the_xlsx_with_oecd_license() -> None:
+    ctx = make_ctx(h10_oecd_responses())
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert set(result.written) == {
+        "growth-fertility/oecd_labour/house_prices.csv",
+        "growth-fertility/oecd_labour/temp_employment.csv",
+        "growth-fertility/oecd_labour/youth_unemployment.csv",
+        "growth-fertility/oecd_labour/sf3_1_marriage_divorce_rates.xlsx",
+    }
+    recs = ctx.raw.records()
+    assert len(recs) == 4 and {r.source for r in recs} == {"oecd_labour"}
+    assert all(r.license == oecd_labour.LICENSE for r in recs)
+    assert {r.url for r in recs} == set(h10_oecd_responses())
+    assert (
+        ctx.raw.get(
+            theme="growth-fertility", source="oecd_labour", name=oecd_labour.MARRIAGE_RAW_NAME
+        )
+        == SF31
+    )
+    # a missing dataflow is reported and the others are still stored
+    partial = {k: v for k, v in h10_oecd_responses().items() if "DF_TEMP" not in k}
+    result = PIPELINE.run(Stage.FETCH, make_ctx(partial))
+    assert sum(w.startswith("growth-fertility/oecd_labour/") for w in result.written) == 3
+    assert any(s.startswith("temp_employment.csv:") for s in result.skipped)
+
+
+def test_stage_h10_oecd_writes_one_staged_table_per_raw_and_mart_concatenates() -> None:
+    ctx = make_ctx(h10_oecd_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert set(result.written) == set(pipeline.OECD_LABOUR_TABLES.values())
+    assert pipeline.OECD_LABOUR_TABLES == {
+        "house_prices": "staged/oecd_labour/house_prices",
+        "temp_employment": "staged/oecd_labour/temp_employment",
+        "youth_unemployment": "staged/oecd_labour/youth_unemployment",
+        "marriage": "staged/oecd_labour/marriage",
+    }
+    assert any("China (CHN) dropped" in s for s in result.skipped)
+    marriage = ctx.tables.read_table("staged/oecd_labour/marriage")
+    assert {r["dataset"] for r in marriage} == {"marriage_rate", "mean_age_first_marriage"}
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.OECD_LABOUR_MART,)
+    assert pipeline.OECD_LABOUR_MART == "marts/oecd_family_formation"
+    mart = ctx.tables.read_table(pipeline.OECD_LABOUR_MART)
+    assert set(mart[0]) == {
+        "iso3", "year", "dataset", "measure", "sex", "age", "unit", "value", "obs_status",
+        "source",
+    }  # fmt: skip
+    assert len(mart) == 34 + 63 + 48 + len(marriage)
+    keyed = {
+        (r["iso3"], r["year"], r["dataset"], r["measure"], r["sex"], r["age"], r["unit"]): r[
+            "value"
+        ]
+        for r in mart
+    }
+    assert len(keyed) == len(mart)
+    assert keyed["JPN", 2020, "house_prices", "HPI_YDH", "", "", "IX"] == 99.383330118448
+    assert keyed["JPN", 2020, "temp_employment", "EMP_TEMP", "_T", "Y15T24", "PT_POP_SUB"] == 16.291
+    assert keyed["JPN", 2020, "marriage_rate", "CMR", "", "", "PER_1000_POP"] == 4.3
+    assert keyed["JPN", 2020, "mean_age_first_marriage", "MAFM", "F", "", "YR"] == 29.4
+
+
+def test_stage_h10_oecd_stages_whatever_raw_exists_and_skips_unreadable_xlsx() -> None:
+    responses = h10_oecd_responses()
+    responses[oecd_labour.MARRIAGE_URL] = b"<html>maintenance</html>"
+    del responses[oecd_labour.DATASETS[0].url]
+    ctx = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert set(result.written) == {
+        "staged/oecd_labour/temp_employment",
+        "staged/oecd_labour/youth_unemployment",
+    }
+    assert any(s.startswith("house_prices.csv: raw missing") for s in result.skipped)
+    assert any(
+        s.startswith("sf3_1_marriage_divorce_rates.xlsx: layout not recognised")
+        for s in result.skipped
+    )
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert pipeline.OECD_LABOUR_MART in result.written
+    assert {r["dataset"] for r in ctx.tables.read_table(pipeline.OECD_LABOUR_MART)} == {
+        "temp_employment",
+        "youth_unemployment",
+    }
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert pipeline.OECD_LABOUR_MART not in result.written
+    assert any(
+        s.startswith("staged/oecd_labour/house_prices: staged table missing")
+        for s in result.skipped
+    )
+
+
+# ---- H10-EU: Eurostat demo_nind / lfsa_etpgan / une_rt_a / ilc_lvho07a ------------------------
+
+H10_EU_FIXTURES = {
+    ds: (FIXTURES / f"eurostat_{ds}_fi.json").read_bytes() for ds in es.FAMILY_FORMATION_DATASETS
+}
+
+
+def h10_eu_responses() -> dict[str, bytes]:
+    return {
+        r.url: H10_EU_FIXTURES[r.dataset] for r in es.family_formation_requests() if r.geo == "FI"
+    }
+
+
+def test_fetch_h10_eu_stores_one_raw_per_dataset_and_country() -> None:
+    ctx = make_ctx(h10_eu_responses())
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert set(result.written) == {
+        f"growth-fertility/eurostat/eurostat_{ds}_FI.json" for ds in es.FAMILY_FORMATION_DATASETS
+    }
+    missing = [
+        s
+        for s in result.skipped
+        if s.startswith(
+            (
+                "eurostat_demo_nind_",
+                "eurostat_lfsa_etpgan_",
+                "eurostat_une_rt_a_",
+                "eurostat_ilc_lvho07a_",
+            )
+        )
+    ]
+    assert len(missing) == 4 * (len(es.H10_GEOS) - 1)
+    recs = ctx.raw.records()
+    assert len(recs) == 4 and {r.source for r in recs} == {es.SOURCE}
+    assert all("copyright-notice" in r.license for r in recs)
+
+
+def test_stage_and_mart_h10_eu_from_the_countries_that_have_raw() -> None:
+    ctx = make_ctx(h10_eu_responses())
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert set(result.written) == set(pipeline.EU_FAMILY_FORMATION_TABLES.values())
+    assert {
+        ds: f"staged/eurostat/{ds}" for ds in es.FAMILY_FORMATION_DATASETS
+    } == pipeline.EU_FAMILY_FORMATION_TABLES
+    staged = ctx.tables.read_table("staged/eurostat/une_rt_a")
+    assert len(staged) == 51 and {r["iso3"] for r in staged} == {"FIN"}
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.EU_FAMILY_FORMATION_MART,)
+    assert pipeline.EU_FAMILY_FORMATION_MART == "marts/eu_family_formation"
+    mart = ctx.tables.read_table(pipeline.EU_FAMILY_FORMATION_MART)
+    assert set(mart[0]) == {
+        "iso3", "year", "dataset", "indicator", "sex", "age", "unit", "value", "source",
+    }  # fmt: skip
+    assert len(mart) == 388 + 186 + 51 + 66
+    keyed = {
+        (r["iso3"], r["year"], r["dataset"], r["indicator"], r["sex"], r["age"], r["unit"]): r[
+            "value"
+        ]
+        for r in mart
+    }
+    assert len(keyed) == len(mart)
+    assert keyed["FIN", 2020, "demo_nind", "GNUPRT", "", "", ""] == 4.0
+    assert keyed["FIN", 2020, "lfsa_etpgan", "temp_share", "T", "Y15-24", "PC"] == 40.2
+    assert keyed["FIN", 2020, "une_rt_a", "unemployment_rate", "T", "Y15-24", "PC_ACT"] == 21.0
+    assert keyed["FIN", 2020, "ilc_lvho07a", "housing_cost_overburden", "T", "Y25-29", "PC"] == 5.7
+
+
+def test_stage_h10_eu_dataset_without_any_raw_is_not_written_and_mart_uses_the_rest() -> None:
+    responses = {u: p for u, p in h10_eu_responses().items() if "ilc_lvho07a" not in u}
+    ctx = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert "staged/eurostat/ilc_lvho07a" not in result.written
+    assert "staged/eurostat/une_rt_a" in result.written
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert pipeline.EU_FAMILY_FORMATION_MART in result.written
+    assert any(
+        s.startswith("staged/eurostat/ilc_lvho07a: staged table missing") for s in result.skipped
+    )
+    assert {r["dataset"] for r in ctx.tables.read_table(pipeline.EU_FAMILY_FORMATION_MART)} == {
+        "demo_nind",
+        "lfsa_etpgan",
+        "une_rt_a",
+    }
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert pipeline.EU_FAMILY_FORMATION_MART not in result.written
 
 
 # ---------------------------------------------------------------- H10-JP: 就業構造基本調査 4 waves
