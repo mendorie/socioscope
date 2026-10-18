@@ -421,10 +421,27 @@ def ggs_rows(payload: bytes) -> list[dict[str, object]]:
 
 
 def build_ideals_mart(
-    eb_rows: Sequence[dict[str, object]], ggs_rows: Sequence[dict[str, object]]
+    eb_rows: Sequence[dict[str, object]],
+    ggs_rows: Sequence[dict[str, object]],
+    eb2006_rows: Sequence[dict[str, object]] = (),
 ) -> list[dict[str, object]]:
-    """Long table across both surveys. Pure; sorted by source, iso3, sex, age_class, metric."""
+    """Long table across the surveys (EB 2011, GGS-II 2020–23 and, H9, Special EB 253 of 2006).
+    Pure; sorted by source, iso3, sex, age_class, metric."""
     out: list[dict[str, object]] = []
+    for r in eb2006_rows:
+        out.append(
+            {
+                "source": "eb2006",
+                "iso3": r["iso3"],
+                "survey_year": r["survey_year"],
+                "sex": r["sex"],
+                "age_class": r["age_class"],
+                "metric": r["metric"],
+                "value": r["value"],
+                "n": r["n"],
+                "table": r["table"],
+            }
+        )
     for r in eb_rows:
         out.append(
             {

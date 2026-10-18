@@ -222,3 +222,32 @@ def test_build_ideals_mart_is_long_sorted_and_tags_sources() -> None:
     assert keys == sorted(keys)
     assert len(set(keys)) == len(keys)  # (source, iso3, sex, age, metric) is unique
     assert surveys.build_ideals_mart(eb, []) and surveys.build_ideals_mart([], ggs)
+
+
+def test_build_ideals_mart_adds_eb2006_rows_without_touching_the_others() -> None:
+    eb, _ = surveys.eb2011_rows_from_pages(eb_pages())
+    ggs = surveys.ggs_rows_from_pages(bib_pages())
+    eb2006 = [
+        {
+            "iso3": "FIN", "survey_year": 2006, "sex": "T", "age_class": "25-39",
+            "metric": "ideal_personal_mean", "value": 2.478, "n": 239,
+            "table": "QC3 (EB65.1 Volume C)", "source": "eurobarometer_special",
+        },
+        {
+            "iso3": "BGR", "survey_year": 2006, "sex": "T", "age_class": "total",
+            "metric": "ideal_personal_mean", "value": 2.086, "n": 1031,
+            "table": "QE3 (EB65.3 Volume A)", "source": "eurobarometer_special",
+        },
+    ]  # fmt: skip
+    before = surveys.build_ideals_mart(eb, ggs)
+    mart = surveys.build_ideals_mart(eb, ggs, eb2006)
+    assert [r for r in mart if r["source"] != "eb2006"] == before
+    added = [r for r in mart if r["source"] == "eb2006"]
+    assert [r["iso3"] for r in added] == ["BGR", "FIN"]
+    assert added[1] == {
+        "source": "eb2006", "iso3": "FIN", "survey_year": 2006, "sex": "T", "age_class": "25-39",
+        "metric": "ideal_personal_mean", "value": 2.478, "n": 239, "table": "QC3 (EB65.1 Volume C)",
+    }  # fmt: skip
+    keys = [(r["source"], r["iso3"], r["sex"], r["age_class"], r["metric"]) for r in mart]
+    assert keys == sorted(keys) and len(set(keys)) == len(keys)
+    assert surveys.build_ideals_mart([], [], eb2006) == added

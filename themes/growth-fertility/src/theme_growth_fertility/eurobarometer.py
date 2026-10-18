@@ -99,6 +99,52 @@ WAVES: tuple[Wave, ...] = (
     ),
 )
 
+# ---- Special Eurobarometer (H9) ---------------------------------------------------------
+# Same hub -> distribution route as the Standard waves, but a Special survey's record holds
+# several volumes of several fieldwork rounds. ``SpecialWave.volumes`` names the ones we keep;
+# ``special_volumes`` resolves each to exactly one distribution (fail closed).
+
+SPECIAL_SOURCE = "eurobarometer_special"
+SPECIAL_LICENSE = (
+    "European Commission reuse policy, Decision 2011/833/EU (CC BY 4.0 equivalent; "
+    "https://commission.europa.eu/legal-notice_en). Attribution: European Commission, "
+    "Special Eurobarometer 253 (EB65.1/65.3, 2006), Volume A/C, via data.europa.eu."
+)
+_SPECIAL_VOLUME_TITLE: dict[str, re.Pattern[str]] = {
+    # EB65.1 Volume C: one workbook per EU-25 country (sociodemographic cross-tabs)
+    "vol_c": re.compile(r"^OP_VolumesCEB\d{3}.*\.zip$"),
+    # EB65.3 Volume A: candidate countries (BG / RO / HR / TR) by country
+    "vol_a": re.compile(r"^OP_VolumeAEB\d{3}.*\.zip$"),
+}
+
+
+@dataclass(frozen=True)
+class SpecialWave:
+    """One Special Eurobarometer record on data.europa.eu (several EB rounds inside)."""
+
+    code: str
+    dataset_id: str
+    survey_year: int
+    volumes: tuple[str, ...] = ("vol_c", "vol_a")
+
+    @property
+    def jsonld_url(self) -> str:
+        return f"{HUB_REPO}/{self.dataset_id}.jsonld"
+
+    @property
+    def meta_raw_name(self) -> str:
+        return f"eb_{self.code}_meta.json"
+
+    def raw_name(self, volume: str, extension: str) -> str:
+        return f"eb_{self.code}_{volume}.{extension}"
+
+
+# Special Eurobarometer 253 "Childbearing preferences and family issues in Europe" (dataset id
+# checked on the hub 2026-10-18). EB65.1: EU-25, fieldwork 02-03/2006; EB65.3: candidates,
+# 05-06/2006. The record's EB65.1 "Volume A'" holds trend questions only, so the EU-25 ideal
+# number of children (QC2 / QC3) comes from Volume C.
+SPECIAL_WAVES: tuple[SpecialWave, ...] = (SpecialWave("EBS253", "s406_65_1_ebs253", 2006),)
+
 ITEMS: dict[str, str] = {
     "your life in general": "life_general",
     "the financial situation of your household": "household_finance",
@@ -139,9 +185,12 @@ class Distribution:
     filename: str
     url: str
 
+    @property
+    def extension(self) -> str:
+        return self.filename.rsplit(".", 1)[-1].lower()
+
     def raw_name(self, wave_code: str) -> str:
-        ext = self.filename.rsplit(".", 1)[-1].lower()
-        return f"eb_{wave_code}_vol_a.{ext}"
+        return f"eb_{wave_code}_vol_a.{self.extension}"
 
 
 def _titles(node: dict[str, object]) -> list[str]:
@@ -188,6 +237,44 @@ def vol_a(jsonld_payload: bytes) -> Distribution:
         msg = f"{len(found)} Volume A distributions in the dataset record: {found}"
         raise ValueError(msg)
     return found[0]
+
+
+def _distributions(jsonld_payload: bytes) -> list[Distribution]:
+    """Every distribution (English title, access URL) of a dataset's JSON-LD record."""
+    try:
+        doc = json.loads(jsonld_payload)
+    except ValueError:
+        msg = "dataset record is not JSON-LD"
+        raise ValueError(msg) from None
+    graph = doc.get("@graph") if isinstance(doc, dict) else None
+    if not isinstance(graph, list):
+        msg = "dataset record is not JSON-LD (no @graph)"
+        raise ValueError(msg)
+    out: list[Distribution] = []
+    for node in graph:
+        if not isinstance(node, dict) or "Distribution" not in str(node.get("@type")):
+            continue
+        access = node.get("dcat:accessURL")
+        url = access.get("@id") if isinstance(access, dict) else access
+        for title in _titles(node):
+            filename = re.sub(r"^Link to ", "", title).strip()
+            if filename:
+                out.append(Distribution(filename=filename, url=str(url)))
+                break
+    return out
+
+
+def special_volumes(jsonld_payload: bytes) -> dict[str, Distribution]:
+    """volume key (``vol_c`` / ``vol_a``) -> its distribution; exactly one each, else ValueError."""
+    dists = _distributions(jsonld_payload)
+    out: dict[str, Distribution] = {}
+    for key, pattern in _SPECIAL_VOLUME_TITLE.items():
+        found = [d for d in dists if pattern.match(d.filename)]
+        if len(found) != 1:
+            msg = f"{key}: {len(found)} matching distributions in the dataset record: {found}"
+            raise ValueError(msg)
+        out[key] = found[0]
+    return out
 
 
 # ---- workbook -> rows -------------------------------------------------------------------
@@ -240,6 +327,22 @@ def workbook_sheets(payload: bytes) -> list[tuple[str, Grid]]:
         return list(_xls_sheets(payload))
     msg = "payload is not an Excel workbook"
     raise ValueError(msg)
+
+
+def zip_workbooks(payload: bytes) -> list[tuple[str, list[tuple[str, Grid]]]]:
+    """A zip of several workbooks (Volume C: one per country) -> [(member, sheets)]."""
+    if not zipfile.is_zipfile(io.BytesIO(payload)):
+        msg = "payload is not a zip archive"
+        raise ValueError(msg)
+    out: list[tuple[str, list[tuple[str, Grid]]]] = []
+    with zipfile.ZipFile(io.BytesIO(payload)) as z:
+        for name in z.namelist():
+            if name.lower().endswith((".xls", ".xlsx")):
+                out.append((name, workbook_sheets(z.read(name))))
+    if not out:
+        msg = "zip contains no Excel workbook"
+        raise ValueError(msg)
+    return out
 
 
 def _text(cell: object) -> str:

@@ -13,6 +13,7 @@ from theme_growth_fertility import (
     moekr,
     oecd,
     oecd_eag,
+    oecd_family,
     pipeline,
     surveys,
     unsdg,
@@ -48,6 +49,8 @@ H8C_ITEMS = len(oecd_eag.DATASETS)
 H8D_ITEMS = len(unsdg.SERIES) + 1
 # H8d-K items: one 교육부 사교육비조사 press-release PDF
 H8D_K_ITEMS = 1
+# H9 items: one Special Eurobarometer wave (JSON-LD first, volumes after) + one OECD SF2.5 xlsx
+H9_EB_OECD_ITEMS = len(ebm.SPECIAL_WAVES) + 1
 # H9 items: one 국가데이터처 출생통계 PDF + one Eurostat demo_frate request per ORDER_GEOS country
 H9_ITEMS = 1 + len(es.ORDER_GEOS)
 
@@ -98,6 +101,7 @@ def test_fetch_stores_raw_with_manifest_and_reports_failures() -> None:
         + H8D_ITEMS
         + H8D_K_ITEMS
         + H9_ITEMS
+        + H9_EB_OECD_ITEMS
     )
     recs = ctx.raw.records()
     assert len(recs) == 1 and recs[0].license.startswith("CC BY 4.0")
@@ -137,6 +141,8 @@ def test_fetch_also_stores_country_metadata() -> None:
                 "ic_gen_",
                 "hdr25_",
                 moekr.RAW_NAME,
+                "eb_EBS",
+                oecd_family.RAW_NAME,
                 kostat.BIRTHS_RAW_NAME,
             )
         )
@@ -222,6 +228,7 @@ def test_stage_without_raw_skips_explicitly() -> None:
         + H8C_ITEMS  # H8c: three raw missing
         + H8D_ITEMS  # H8d: two UN SDG + one HDR raw missing
         + H8D_K_ITEMS  # H8d-K: raw missing
+        + H9_EB_OECD_ITEMS
         + H9_ITEMS  # H9: one births PDF + 13 demo_frate raws missing
     )
 
@@ -264,6 +271,7 @@ def test_fetch_stores_estat_files_with_license() -> None:
         + H8D_ITEMS
         + H8D_K_ITEMS
         + H9_ITEMS
+        + H9_EB_OECD_ITEMS
     )
     recs = [r for r in ctx.raw.records() if r.source in {"estat_kiso", "estat_shugyo"}]
     assert len(recs) == len(estat.TABLES)
@@ -625,6 +633,7 @@ def test_fetch_stores_dhs_files_with_citation_license() -> None:
         + H8D_ITEMS
         + H8D_K_ITEMS
         + H9_ITEMS
+        + H9_EB_OECD_ITEMS
     )
     recs = ctx.raw.records()
     assert {r.source for r in recs} == {dhs.SOURCE}
@@ -721,6 +730,7 @@ def test_fetch_stores_oecd_and_eurostat_raw_with_licenses() -> None:
         + H8D_ITEMS
         + H8D_K_ITEMS
         + H9_ITEMS
+        + H9_EB_OECD_ITEMS
     )
     assert sum(s.startswith("eurostat_cens_21me_r2_") for s in result.skipped) == 30
     recs = ctx.raw.records()
@@ -1601,6 +1611,234 @@ def test_mart_h8d_k_writes_sorted_long_mart(pdf_from_pages) -> None:  # type: ig
     assert any(
         s.startswith(f"{pipeline.MOEKR_TABLE}: staged table missing") for s in result.skipped
     )
+
+
+# ---------------------------------------------------------------- H9-EB: Special Eurobarometer 253
+
+EBS253 = next(w for w in ebm.SPECIAL_WAVES if w.code == "EBS253")
+VOL_C_URL = "https://webgate.ec.europa.eu/eurobarometer/api/public/odp/download?key=C"
+VOL_A_2006_URL = "https://webgate.ec.europa.eu/eurobarometer/api/public/odp/download?key=A"
+EBS253_ANSWERS = (
+    ("Aucun", "None"), ("Un", "One "), ("Deux", "Two"), ("Trois", "Three"), ("Quatre", "Four"),
+    ("Cinq", "Five"), ("Six", "Six"), ("Plus de six", "More than six"),
+    ("Il n’y a pas de nombre idéal, cela dépend", "There is no ideal number, it depends"),
+    ("NSP", "DK"),
+)  # fmt: skip
+
+
+def ebs253_jsonld() -> bytes:
+    titles = {
+        "OP_VolumesCEB651EMPLageingandfertilityxls_v1.zip": VOL_C_URL,
+        "OP_VolumeAEB653EMPLfertility20060627.zip": VOL_A_2006_URL,
+        "OP_VolumeBEB653EMPLfertility20060627.zip": "https://x/b",
+    }
+    graph: list[dict[str, object]] = [{"@id": "ds", "@type": "dcat:Dataset"}]
+    for i, (title, url) in enumerate(titles.items()):
+        graph.append(
+            {
+                "@id": f"d{i}",
+                "@type": "dcat:Distribution",
+                "dct:title": [{"@language": "en", "@value": f"Link to {title}"}],
+                "dcat:accessURL": {"@id": url},
+            }
+        )
+    return json.dumps({"@graph": graph, "@context": {}}).encode()
+
+
+def ideal_sheet(
+    qcode: str, codes: list[str], counts: list[list[float]], *, volume: str, wave: str
+) -> list[list[object]]:
+    """Volume A-style table (countries as columns; the parser needs no sex/age columns)."""
+    personal = qcode.endswith("3")
+    fr = (
+        f"{qcode} Quel est le nombre idéal d'enfants ..." if personal else f"{qcode} En général ..."
+    )
+    en = (
+        f"{qcode} And for you personally, what would be the ideal number of children you would "
+        "like to have or would have liked to have had? (DO NOT PROMPT)"
+        if personal
+        else f"{qcode} Generally speaking, what do you think is the ideal number of children for "
+        "a family? (DO NOT PROMPT)"
+    )
+    rows: list[list[object]] = [
+        ["Index", "", "", "", "", "", f"EUROBAROMETER {wave}"],
+        ["", "", f"VOLUME {volume} Pondéré Weighted"],
+        ["", fr, "", "", "", "", "", "", "", "", en],
+        [], [], [], [], [],
+        ["", "", "", *codes],
+        ["", "TOTAL", "", *counts[0]],
+    ]  # fmt: skip
+    for (fr_label, en_label), line in zip(EBS253_ANSWERS, counts[1:], strict=True):
+        rows.append(["", fr_label, "", *line])
+        rows.append(
+            ["", en_label, "", *[round(v / t, 2) for v, t in zip(line, counts[0], strict=True)]]
+        )
+    return rows
+
+
+def ebs253_volume(
+    xls, member: str, qprefix: str, codes: list[str], *, volume: str, wave: str
+) -> bytes:  # type: ignore[no-untyped-def]
+    n = len(codes)
+    counts = [[1000.0] * n, [20.0] * n, [100.0] * n, [500.0] * n, [250.0] * n, [60.0] * n,
+              [20.0] * n, [5.0] * n, [5.0] * n, [30.0] * n, [10.0] * n]  # fmt: skip
+    data = xls(
+        {
+            f"{qprefix}2": ideal_sheet(f"{qprefix}2", codes, counts, volume=volume, wave=wave),
+            f"{qprefix}3": ideal_sheet(f"{qprefix}3", codes, counts, volume=volume, wave=wave),
+        }
+    )
+    import io
+    import zipfile
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr(member, data)
+    return buf.getvalue()
+
+
+def h9_eb_responses(xls) -> dict[str, bytes]:  # type: ignore[no-untyped-def]
+    return {
+        EBS253.jsonld_url: ebs253_jsonld(),
+        VOL_C_URL: ebs253_volume(
+            xls,
+            "VolumeCFIEB651EMPLageingandfertility20060407.xls",
+            "QC",
+            ["FI"],
+            volume="C",
+            wave="65.1 - SUOMEN",
+        ),  # fmt: skip
+        VOL_A_2006_URL: ebs253_volume(
+            xls,
+            "VolumeAEB653EMPLfertility20060627.xls",
+            "QE",
+            ["BG", "RO"],
+            volume="A",
+            wave="65.3",
+        ),  # fmt: skip
+    }
+
+
+def test_fetch_h9_eb_stores_jsonld_then_both_volumes_under_their_own_source(
+    xls_from_sheets,
+) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx(h9_eb_responses(xls_from_sheets))
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert [w for w in result.written if "eurobarometer_special" in w] == [
+        "growth-fertility/eurobarometer_special/eb_EBS253_meta.json",
+        "growth-fertility/eurobarometer_special/eb_EBS253_vol_c.zip",
+        "growth-fertility/eurobarometer_special/eb_EBS253_vol_a.zip",
+    ]
+    recs = [r for r in ctx.raw.records() if r.source == ebm.SPECIAL_SOURCE]
+    assert [r.url for r in recs] == [EBS253.jsonld_url, VOL_C_URL, VOL_A_2006_URL]
+    assert all(r.license == ebm.SPECIAL_LICENSE for r in recs)
+    assert "https://x/b" not in ctx.fetcher.requested  # type: ignore[attr-defined]
+
+
+def test_fetch_h9_eb_skips_volumes_when_jsonld_is_unusable_or_missing() -> None:
+    ctx = make_ctx({EBS253.jsonld_url: b"<html>maintenance</html>"})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert "growth-fertility/eurobarometer_special/eb_EBS253_meta.json" in result.written
+    assert any(s.startswith("eb_EBS253_vol") and "not resolved" in s for s in result.skipped)
+    assert all("odp/download" not in u for u in ctx.fetcher.requested)  # type: ignore[attr-defined]
+    result = PIPELINE.run(Stage.FETCH, make_ctx({}))
+    assert any(
+        s.startswith("eb_EBS253_meta.json:") and "not attempted" in s for s in result.skipped
+    )
+
+
+def test_stage_h9_eb_writes_the_2006_ideals_table_and_mart_h6_takes_it_in(xls_from_sheets) -> None:  # type: ignore[no-untyped-def]
+    ctx = make_ctx(h9_eb_responses(xls_from_sheets))
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.SURVEYS_EB2006_TABLE,)
+    rows = ctx.tables.read_table(pipeline.SURVEYS_EB2006_TABLE)
+    assert {r["iso3"] for r in rows} == {"FIN", "BGR", "ROU"}
+    assert all(r["survey_year"] == 2006 and r["source"] == ebm.SPECIAL_SOURCE for r in rows)
+    assert {r["table"] for r in rows} == {
+        "QC2 (EB65.1 Volume C)", "QC3 (EB65.1 Volume C)",
+        "QE2 (EB65.3 Volume A)", "QE3 (EB65.3 Volume A)",
+    }  # fmt: skip
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.IDEALS_MART,)
+    mart = ctx.tables.read_table(pipeline.IDEALS_MART)
+    assert {r["source"] for r in mart} == {"eb2006"}
+    fi = next(
+        r for r in mart if r["iso3"] == "FIN" and r["metric"] == "ideal_personal_mean"
+        and r["sex"] == "T" and r["age_class"] == "total"
+    )  # fmt: skip
+    # (100 + 1000 + 750 + 240 + 100 + 30 + 35) / 960
+    assert fi["value"] == 2.349 and fi["n"] == 1000 and fi["survey_year"] == 2006
+
+
+def test_stage_h9_eb_unreadable_volume_is_skipped_and_the_other_is_staged(xls_from_sheets) -> None:  # type: ignore[no-untyped-def]
+    responses = h9_eb_responses(xls_from_sheets)
+    responses[VOL_C_URL] = b"PK\x03\x04 not really"
+    ctx = make_ctx(responses)
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.SURVEYS_EB2006_TABLE,)
+    assert any(s.startswith("eb_EBS253_vol_c.zip: layout not recognised") for s in result.skipped)
+    assert {r["iso3"] for r in ctx.tables.read_table(pipeline.SURVEYS_EB2006_TABLE)} == {
+        "BGR",
+        "ROU",
+    }
+    result = PIPELINE.run(Stage.STAGE, make_ctx({}))
+    assert any(s.startswith("eb_EBS253_meta.json: raw missing") for s in result.skipped)
+
+
+# ---------------------------------------------------------------- H9-OECD: Family Database SF2.5
+
+OECD_SF25 = (FIXTURES / "oecd_sf2_5_childlessness.xlsx").read_bytes()
+
+
+def test_fetch_h9_oecd_stores_the_xlsx_with_oecd_license() -> None:
+    ctx = make_ctx({oecd_family.URL: OECD_SF25})
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert "growth-fertility/oecd_family/sf2_5_childlessness.xlsx" in result.written
+    (rec,) = [r for r in ctx.raw.records() if r.source == "oecd_family"]
+    assert rec.url == oecd_family.URL and rec.license == oecd_family.LICENSE
+    assert (
+        ctx.raw.get(theme="growth-fertility", source="oecd_family", name=oecd_family.RAW_NAME)
+        == OECD_SF25
+    )
+    result = PIPELINE.run(Stage.FETCH, make_ctx({}))
+    assert any(s.startswith("sf2_5_childlessness.xlsx:") for s in result.skipped)
+
+
+def test_stage_and_mart_h9_oecd_long_table_independent_of_other_sources() -> None:
+    ctx = make_ctx({oecd_family.URL: OECD_SF25})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert result.written == (pipeline.OECD_FAMILY_TABLE,)
+    assert any("England and Wales dropped" in s for s in result.skipped)
+    assert any("CHN" in s and "not an OECD member" in s for s in result.skipped)
+    result = PIPELINE.run(Stage.MART, ctx)
+    assert result.written == (pipeline.OECD_FAMILY_MART,)
+    rows = ctx.tables.read_table(pipeline.OECD_FAMILY_MART)
+    assert set(rows[0]) == {"iso3", "cohort", "metric", "value", "chart", "source"}
+    keyed = {(r["iso3"], r["cohort"], r["metric"], r["chart"]): r["value"] for r in rows}
+    assert len(keyed) == len(rows)
+    assert keyed[("JPN", 1970, "childless_share_pct", "SF2.5.A")] == 26.9
+    assert keyed[("JPN", 1975, "completed_fertility", "SF2.5.B")] == 1.443
+    assert ("CHN", 1970, "childless_share_pct", "SF2.5.A") not in keyed
+    result = PIPELINE.run(Stage.MART, make_ctx({}))
+    assert pipeline.OECD_FAMILY_MART not in result.written
+    assert any(
+        s.startswith(f"{pipeline.OECD_FAMILY_TABLE}: staged table missing") for s in result.skipped
+    )
+
+
+def test_stage_h9_oecd_unrecognised_layout_is_skipped_not_fatal() -> None:
+    ctx = make_ctx({oecd_family.URL: b"<html>maintenance</html>"})
+    PIPELINE.run(Stage.FETCH, ctx)
+    result = PIPELINE.run(Stage.STAGE, ctx)
+    assert pipeline.OECD_FAMILY_TABLE not in result.written
+    assert any(
+        s.startswith("sf2_5_childlessness.xlsx: layout not recognised") for s in result.skipped
+    )
+    result = PIPELINE.run(Stage.STAGE, make_ctx({}))
+    assert any(s.startswith("sf2_5_childlessness.xlsx: raw missing") for s in result.skipped)
 
 
 # ---- H9-KR: 국가데이터처 2025년 출생 통계 (PDF) ------------------------------------------------
