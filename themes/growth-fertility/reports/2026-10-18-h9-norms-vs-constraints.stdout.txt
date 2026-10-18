@@ -1,0 +1,476 @@
+== Operational choices fixed before the first run (also in the module docstring) ==
+  JP main V1 series: ('planned_children', '総数') (xlsx T04-25 total); PDF ('planned_children_pdf', '夫婦') = robustness
+  JP ideal ('ideal_children', '夫婦'): shown, not the main verdict
+  EU waves (personal ideal): (('eb2006', 'T', '25-39'), ('eb2011', 'F', '25-39'), ('ggs2020', 'F', '30-39')); 2006 alt = ('eb2006', 'F', 'total')
+  V2 type window: 2010 -> latest (JPN/KOR 1990 -> latest shown)
+  V3: completed at age 45; period min over 1980-2005
+== Data ==
+  panel: rows=14322 cols=27
+  ideals: rows=5984 cols=9
+  survey: rows=288 cols=7
+  jp: rows=5917 cols=7
+  kr: rows=765 cols=6
+  eu: rows=1433 cols=6
+  coh: rows=42567 cols=8
+  cl: rows=199 cols=6
+shape: (40, 5)
+┌─────────────────────────┬────────────────────────┬─────┬──────┬──────┐
+│ metric                  ┆ group                  ┆ n   ┆ from ┆ to   │
+│ ---                     ┆ ---                    ┆ --- ┆ ---  ┆ ---  │
+│ str                     ┆ str                    ┆ u32 ┆ i64  ┆ i64  │
+╞═════════════════════════╪════════════════════════╪═════╪══════╪══════╡
+│ children_born           ┆ 妻 20-24               ┆ 10  ┆ 1977 ┆ 2021 │
+│ children_born           ┆ 妻 25-29               ┆ 10  ┆ 1977 ┆ 2021 │
+│ children_born           ┆ 妻 30-34               ┆ 10  ┆ 1977 ┆ 2021 │
+│ children_born           ┆ 妻 35-39               ┆ 10  ┆ 1977 ┆ 2021 │
+│ children_born           ┆ 妻 40-44               ┆ 10  ┆ 1977 ┆ 2021 │
+│ children_born           ┆ 妻 45-49               ┆ 10  ┆ 1977 ┆ 2021 │
+│ children_born           ┆ 総数                   ┆ 10  ┆ 1977 ┆ 2021 │
+│ completed_fertility     ┆ 妻の生まれ年 1890-1895 ┆ 1   ┆ 1950 ┆ 1950 │
+│ completed_fertility     ┆ 妻の生まれ年 1895-1900 ┆ 1   ┆ 1950 ┆ 1950 │
+│ completed_fertility     ┆ 妻の生まれ年 1900-1905 ┆ 1   ┆ 1950 ┆ 1950 │
+│ completed_fertility     ┆ 妻の生まれ年 1910-1915 ┆ 1   ┆ 1960 ┆ 1960 │
+│ completed_fertility     ┆ 妻の生まれ年 1920-1925 ┆ 1   ┆ 1970 ┆ 1970 │
+│ completed_fertility     ┆ 妻の生まれ年 1927-1932 ┆ 1   ┆ 1977 ┆ 1977 │
+│ completed_fertility     ┆ 妻の生まれ年 1932-1937 ┆ 1   ┆ 1982 ┆ 1982 │
+│ completed_fertility     ┆ 妻の生まれ年 1937-1942 ┆ 1   ┆ 1987 ┆ 1987 │
+│ completed_fertility     ┆ 妻の生まれ年 1942-1947 ┆ 1   ┆ 1992 ┆ 1992 │
+│ completed_fertility     ┆ 妻の生まれ年 1947-1952 ┆ 1   ┆ 1997 ┆ 1997 │
+│ completed_fertility     ┆ 妻の生まれ年 1952-1957 ┆ 1   ┆ 2002 ┆ 2002 │
+│ completed_fertility     ┆ 妻の生まれ年 1955-1960 ┆ 1   ┆ 2005 ┆ 2005 │
+│ completed_fertility     ┆ 妻の生まれ年 1960-1965 ┆ 1   ┆ 2010 ┆ 2010 │
+│ completed_fertility     ┆ 妻の生まれ年 1965-1970 ┆ 1   ┆ 2015 ┆ 2015 │
+│ completed_fertility     ┆ 妻の生まれ年 1971-1976 ┆ 1   ┆ 2021 ┆ 2021 │
+│ completed_parity_share  ┆ 1人                    ┆ 15  ┆ 1950 ┆ 2021 │
+│ completed_parity_share  ┆ 2人                    ┆ 15  ┆ 1950 ┆ 2021 │
+│ completed_parity_share  ┆ 3人                    ┆ 15  ┆ 1950 ┆ 2021 │
+│ completed_parity_share  ┆ 4人以上                ┆ 15  ┆ 1950 ┆ 2021 │
+│ completed_parity_share  ┆ 無子                   ┆ 15  ┆ 1950 ┆ 2021 │
+│ desired_children_single ┆ 未婚女性               ┆ 9   ┆ 1982 ┆ 2021 │
+│ desired_children_single ┆ 未婚男性               ┆ 9   ┆ 1982 ┆ 2021 │
+│ ideal_children          ┆ 夫婦                   ┆ 10  ┆ 1977 ┆ 2021 │
+│ ideal_children          ┆ 夫婦（妻35歳未満）     ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children        ┆ 妻 20-24               ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children        ┆ 妻 25-29               ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children        ┆ 妻 30-34               ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children        ┆ 妻 35-39               ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children        ┆ 妻 40-44               ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children        ┆ 妻 45-49               ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children        ┆ 総数                   ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children_pdf    ┆ 夫婦                   ┆ 10  ┆ 1977 ┆ 2021 │
+│ planned_children_pdf    ┆ 夫婦（妻35歳未満）     ┆ 10  ┆ 1977 ┆ 2021 │
+└─────────────────────────┴────────────────────────┴─────┴──────┴──────┘
+shape: (21, 4)
+┌─────────┬─────┬───────────┬───────────┐
+│ source  ┆ sex ┆ age_class ┆ countries │
+│ ---     ┆ --- ┆ ---       ┆ ---       │
+│ str     ┆ str ┆ str       ┆ u32       │
+╞═════════╪═════╪═══════════╪═══════════╡
+│ eb2006  ┆ F   ┆ total     ┆ 25        │
+│ eb2006  ┆ M   ┆ total     ┆ 25        │
+│ eb2006  ┆ T   ┆ 15-24     ┆ 25        │
+│ eb2006  ┆ T   ┆ 25-39     ┆ 25        │
+│ eb2006  ┆ T   ┆ 40-54     ┆ 25        │
+│ eb2006  ┆ T   ┆ 55+       ┆ 25        │
+│ eb2006  ┆ T   ┆ total     ┆ 29        │
+│ eb2011  ┆ F   ┆ 15-24     ┆ 27        │
+│ eb2011  ┆ F   ┆ 25-39     ┆ 27        │
+│ eb2011  ┆ F   ┆ 40-54     ┆ 27        │
+│ eb2011  ┆ F   ┆ 55+       ┆ 27        │
+│ eb2011  ┆ F   ┆ total     ┆ 27        │
+│ eb2011  ┆ M   ┆ 15-24     ┆ 27        │
+│ eb2011  ┆ M   ┆ 25-39     ┆ 27        │
+│ eb2011  ┆ M   ┆ 40-54     ┆ 27        │
+│ eb2011  ┆ M   ┆ 55+       ┆ 27        │
+│ eb2011  ┆ M   ┆ total     ┆ 27        │
+│ ggs2020 ┆ F   ┆ 18-29     ┆ 11        │
+│ ggs2020 ┆ F   ┆ 30-39     ┆ 11        │
+│ ggs2020 ┆ F   ┆ 40-49     ┆ 11        │
+│ ggs2020 ┆ F   ┆ total     ┆ 11        │
+└─────────┴─────┴───────────┴───────────┘
+
+== V1: norms (N) vs constraints (C) — main ==
+  excluded (latest TFR >= 1.6): ['FRA']; only one ideal point: ['BGR', 'HRV', 'MDA', 'NOR', 'ROU']
+    AUT: eb2006:T25-39@2006=1.456, eb2011:F25-39@2011=1.790, ggs2020:F30-39@2022=2.210
+    BEL: eb2006:T25-39@2006=2.268, eb2011:F25-39@2011=2.320
+    CYP: eb2006:T25-39@2006=2.770, eb2011:F25-39@2011=2.700
+    CZE: eb2006:T25-39@2006=1.969, eb2011:F25-39@2011=1.930, ggs2020:F30-39@2020=2.120
+    DEU: eb2006:T25-39@2006=2.080, eb2011:F25-39@2011=2.040, ggs2020:F30-39@2021=2.320
+    DNK: eb2006:T25-39@2006=2.453, eb2011:F25-39@2011=2.620, ggs2020:F30-39@2021=2.360
+    ESP: eb2006:T25-39@2006=2.029, eb2011:F25-39@2011=2.080
+    EST: eb2006:T25-39@2006=2.362, eb2011:F25-39@2011=2.500, ggs2020:F30-39@2021=2.370
+    FIN: eb2006:T25-39@2006=2.478, eb2011:F25-39@2011=2.470, ggs2020:F30-39@2021=2.100
+    GBR: eb2006:T25-39@2006=2.367, eb2011:F25-39@2011=2.270, ggs2020:F30-39@2022=2.200
+    GRC: eb2006:T25-39@2006=2.400, eb2011:F25-39@2011=2.210
+    HUN: eb2006:T25-39@2006=2.083, eb2011:F25-39@2011=1.990
+    IRL: eb2006:T25-39@2006=2.675, eb2011:F25-39@2011=2.660
+    ITA: eb2006:T25-39@2006=1.979, eb2011:F25-39@2011=1.930
+    JPN: planned_children:総数@1977=2.170, planned_children:総数@1982=2.200, planned_children:総数@1987=2.230, planned_children:総数@1992=2.180, planned_children:総数@1997=2.160, planned_children:総数@2002=2.130, planned_children:総数@2005=2.110, planned_children:総数@2010=2.080, planned_children:総数@2015=2.010, planned_children:総数@2021=1.950
+    LTU: eb2006:T25-39@2006=2.117, eb2011:F25-39@2011=2.240
+    LUX: eb2006:T25-39@2006=2.201, eb2011:F25-39@2011=2.230
+    LVA: eb2006:T25-39@2006=2.336, eb2011:F25-39@2011=2.450
+    MLT: eb2006:T25-39@2006=2.101, eb2011:F25-39@2011=2.060
+    NLD: eb2006:T25-39@2006=2.139, eb2011:F25-39@2011=2.170, ggs2020:F30-39@2022=2.130
+    POL: eb2006:T25-39@2006=2.220, eb2011:F25-39@2011=2.120
+    PRT: eb2006:T25-39@2006=2.101, eb2011:F25-39@2011=2.070
+    SVK: eb2006:T25-39@2006=2.092, eb2011:F25-39@2011=1.970
+    SVN: eb2006:T25-39@2006=2.283, eb2011:F25-39@2011=2.380
+    SWE: eb2006:T25-39@2006=2.500, eb2011:F25-39@2011=2.380
+  iso3  first(yr ideal TFR gap)        last(yr ideal TFR gap)         d_ideal d_gap  TFR_latest type
+  AUT  2006 1.456 1.410 +0.046   2022 2.210 1.410 +0.800   +0.754 +0.754  1.310  C (constraint)
+  BEL  2006 2.268 1.800 +0.468   2011 2.320 1.810 +0.510   +0.052 +0.042  1.440  mixed
+  CYP  2006 2.770 1.509 +1.261   2011 2.700 1.360 +1.340   -0.070 +0.079  1.380  C (constraint)
+  CZE  2006 1.969 1.340 +0.629   2020 2.120 1.740 +0.380   +0.151 -0.249  1.360  mixed
+  DEU  2006 2.080 1.330 +0.750   2021 2.320 1.580 +0.740   +0.240 -0.010  1.360  mixed
+  DNK  2006 2.453 1.850 +0.603   2021 2.360 1.720 +0.640   -0.093 +0.037  1.470  C (constraint)
+  ESP  2006 2.029 1.360 +0.669   2011 2.080 1.340 +0.740   +0.051 +0.071  1.100  mixed
+  EST  2006 2.362 1.580 +0.782   2021 2.370 1.610 +0.760   +0.008 -0.022  1.180  mixed
+  FIN  2006 2.478 1.840 +0.638   2021 2.100 1.460 +0.640   -0.378 +0.002  1.250  mixed
+  GBR  2006 2.367 1.820 +0.547   2022 2.200 1.560 +0.640   -0.167 +0.093  1.551  C (constraint)
+  GRC  2006 2.400 1.400 +1.000   2011 2.210 1.400 +0.810   -0.190 -0.190  1.240  mixed
+  HUN  2006 2.083 1.340 +0.743   2011 1.990 1.230 +0.760   -0.093 +0.017  1.410  mixed
+  IRL  2006 2.675 1.910 +0.765   2011 2.660 2.030 +0.630   -0.015 -0.135  1.470  mixed
+  ITA  2006 1.979 1.370 +0.609   2011 1.930 1.420 +0.510   -0.049 -0.099  1.180  mixed
+  JPN  1977 2.170 1.800 +0.370   2021 1.950 1.300 +0.650   -0.220 +0.280  1.150  N (norm)
+  LTU  2006 2.117 1.330 +0.787   2011 2.240 1.550 +0.690   +0.123 -0.097  1.110  mixed
+  LUX  2006 2.201 1.650 +0.551   2011 2.230 1.520 +0.710   +0.029 +0.159  1.250  C (constraint)
+  LVA  2006 2.336 1.460 +0.876   2011 2.450 1.330 +1.120   +0.114 +0.244  1.240  C (constraint)
+  MLT  2006 2.101 1.360 +0.741   2011 2.060 1.450 +0.610   -0.041 -0.131  1.010  mixed
+  NLD  2006 2.139 1.720 +0.419   2022 2.130 1.490 +0.640   -0.009 +0.221  1.430  mixed
+  POL  2006 2.220 1.270 +0.950   2011 2.120 1.330 +0.790   -0.100 -0.160  1.140  mixed
+  PRT  2006 2.101 1.370 +0.731   2011 2.070 1.350 +0.720   -0.031 -0.011  1.410  mixed
+  SVK  2006 2.092 1.250 +0.842   2011 1.970 1.450 +0.520   -0.122 -0.322  1.460  mixed
+  SVN  2006 2.283 1.310 +0.973   2011 2.380 1.560 +0.820   +0.097 -0.153  1.520  mixed
+  SWE  2006 2.500 1.850 +0.650   2011 2.380 1.900 +0.480   -0.120 -0.170  1.430  mixed
+  counts: {'N': 1, 'C': 6, 'mixed': 18} of 25 -> V1 majority: differs
+  latest ideal < 2.0: 4 ['HUN', 'ITA', 'JPN', 'SVK']; >= 2.2: 14 ['AUT', 'BEL', 'CYP', 'DEU', 'DNK', 'EST', 'GBR', 'GRC', 'IRL', 'LTU', 'LUX', 'LVA', 'SVN', 'SWE']
+  Japan, ideal (couples) shown alongside the planned number:
+  iso3  first(yr ideal TFR gap)        last(yr ideal TFR gap)         d_ideal d_gap  TFR_latest type
+  JPN  1977 2.610 1.800 +0.810   2021 2.250 1.300 +0.950   -0.360 +0.140  1.150  C (constraint)
+
+-- V1 robustness (pre-registered) --
+  thresholds N<2.0 gap>=0.5: {'N': 1, 'C': 7, 'mixed': 17} -> differs
+  thresholds N<2.0 gap>=0.6: {'N': 1, 'C': 6, 'mixed': 18} -> differs
+  thresholds N<2.0 gap>=0.8: {'N': 1, 'C': 3, 'mixed': 21} -> differs
+  thresholds N<2.1 gap>=0.5: {'N': 1, 'C': 7, 'mixed': 17} -> differs
+  thresholds N<2.1 gap>=0.6: {'N': 1, 'C': 6, 'mixed': 18} -> differs
+  thresholds N<2.1 gap>=0.8: {'N': 1, 'C': 3, 'mixed': 21} -> differs
+  thresholds N<2.2 gap>=0.5: {'N': 2, 'C': 7, 'mixed': 16} -> differs
+  thresholds N<2.2 gap>=0.6: {'N': 2, 'C': 6, 'mixed': 17} -> differs
+  thresholds N<2.2 gap>=0.8: {'N': 2, 'C': 3, 'mixed': 20} -> differs
+  EU general ideal (EB2006 T25-39 -> EB2011 F25-39): {'N': 1, 'C': 4, 'mixed': 20} -> differs; JPN=N; changed types: ['AUT:mixed', 'CYP:mixed', 'EST:C', 'GBR:mixed']
+  iso3  first(yr ideal TFR gap)        last(yr ideal TFR gap)         d_ideal d_gap  TFR_latest type
+  AUT  2006 1.461 1.410 +0.051   2011 1.940 1.430 +0.510   +0.479 +0.459  1.310  mixed
+  BEL  2006 2.251 1.800 +0.451   2011 2.130 1.810 +0.320   -0.121 -0.131  1.440  mixed
+  CYP  2006 2.844 1.509 +1.335   2011 2.280 1.360 +0.920   -0.564 -0.415  1.380  mixed
+  CZE  2006 1.918 1.340 +0.578   2011 1.890 1.430 +0.460   -0.028 -0.118  1.360  mixed
+  DEU  2006 2.159 1.330 +0.829   2011 1.960 1.390 +0.570   -0.199 -0.259  1.360  mixed
+  DNK  2006 2.385 1.850 +0.535   2011 2.480 1.750 +0.730   +0.095 +0.195  1.470  C (constraint)
+  ESP  2006 2.073 1.360 +0.713   2011 2.070 1.340 +0.730   -0.003 +0.017  1.100  mixed
+  EST  2006 2.454 1.580 +0.874   2011 2.580 1.610 +0.970   +0.126 +0.096  1.180  C (constraint)
+  FIN  2006 2.591 1.840 +0.751   2011 2.430 1.830 +0.600   -0.161 -0.151  1.250  mixed
+  GBR  2006 2.475 1.820 +0.655   2011 2.300 1.910 +0.390   -0.175 -0.265  1.551  mixed
+  GRC  2006 2.430 1.400 +1.030   2011 2.280 1.400 +0.880   -0.150 -0.150  1.240  mixed
+  HUN  2006 2.143 1.340 +0.803   2011 1.990 1.230 +0.760   -0.153 -0.043  1.410  mixed
+  IRL  2006 2.688 1.910 +0.778   2011 2.650 2.030 +0.620   -0.038 -0.158  1.470  mixed
+  ITA  2006 1.950 1.370 +0.580   2011 1.930 1.420 +0.510   -0.020 -0.070  1.180  mixed
+  JPN  1977 2.170 1.800 +0.370   2021 1.950 1.300 +0.650   -0.220 +0.280  1.150  N (norm)
+  LTU  2006 2.212 1.330 +0.882   2011 2.240 1.550 +0.690   +0.028 -0.192  1.110  mixed
+  LUX  2006 2.246 1.650 +0.596   2011 2.240 1.520 +0.720   -0.006 +0.124  1.250  C (constraint)
+  LVA  2006 2.422 1.460 +0.962   2011 2.420 1.330 +1.090   -0.002 +0.128  1.240  C (constraint)
+  MLT  2006 1.956 1.360 +0.596   2011 1.810 1.450 +0.360   -0.146 -0.236  1.010  mixed
+  NLD  2006 2.242 1.720 +0.522   2011 2.220 1.760 +0.460   -0.022 -0.062  1.430  mixed
+  POL  2006 2.223 1.270 +0.953   2011 2.060 1.330 +0.730   -0.163 -0.223  1.140  mixed
+  PRT  2006 2.120 1.370 +0.750   2011 1.950 1.350 +0.600   -0.170 -0.150  1.410  mixed
+  SVK  2006 2.100 1.250 +0.850   2011 2.080 1.450 +0.630   -0.020 -0.220  1.460  mixed
+  SVN  2006 2.320 1.310 +1.010   2011 2.380 1.560 +0.820   +0.060 -0.190  1.520  mixed
+  SWE  2006 2.408 1.850 +0.558   2011 2.270 1.900 +0.370   -0.138 -0.188  1.430  mixed
+  JP ideal of wives < 35 (couples): {'N': 0, 'C': 7, 'mixed': 18} -> differs; JPN=C; changed types: ['JPN:C']
+  JP planned of wives < 35 (PDF): {'N': 0, 'C': 6, 'mixed': 19} -> differs; JPN=mixed; changed types: ['JPN:mixed']
+  JP planned from PDF (couples): {'N': 0, 'C': 6, 'mixed': 19} -> differs; JPN=mixed; changed types: ['JPN:mixed']
+  JP ideal (couples) instead of planned: {'N': 0, 'C': 7, 'mixed': 18} -> differs; JPN=C; changed types: ['JPN:C']
+  EB2006 women all ages instead of both sexes 25-39: {'N': 3, 'C': 3, 'mixed': 19} -> differs; JPN=N; changed types: ['CYP:mixed', 'DNK:mixed', 'ESP:N', 'GBR:mixed', 'SVK:N']
+
+== V2: first births (childlessness) or later births (one-child) — main window ==
+  European countries without all four orders in 2010 (not evaluable): ['DNK', 'FRA']
+  iso3  window     TFR(Σorders)        1st-order TFR        ΔΣ      1st share  type
+  CZE  2010->2024  1.500->1.350   0.724->0.643   -0.150    53.6%   childlessness
+  DEU  2010->2017  1.389->1.572   0.693->0.746   +0.184      n/a   no_decline
+  ESP  2010->2024  1.356->1.106   0.733->0.570   -0.251    65.1%   childlessness
+  FIN  2010->2024  1.876->1.256   0.784->0.553   -0.619    37.2%   one_child
+  HUN  2010->2024  1.240->1.363   0.601->0.625   +0.123      n/a   no_decline
+  ISL  2010->2024  2.193->1.572   0.839->0.632   -0.621    33.3%   one_child
+  ITA  2010->2024  1.428->1.176   0.721->0.582   -0.252    55.2%   childlessness
+  NLD  2010->2024  1.791->1.433   0.841->0.663   -0.358    49.8%   mixed
+  NOR  2010->2024  1.958->1.447   0.868->0.636   -0.511    45.3%   mixed
+  POL  2010->2024  1.412->1.086   0.703->0.526   -0.326    54.6%   childlessness
+  SWE  2010->2024  1.993->1.426   0.891->0.635   -0.566    45.2%   mixed
+  JPN  2010->2024  1.390->1.140   0.680->0.550   -0.250    52.0%   childlessness
+  KOR  2010->2025  1.230->0.800   0.620->0.499   -0.430    28.1%   one_child
+  counts: {'childlessness': 5, 'one_child': 3, 'mixed': 3} of 11 declining -> V2 majority: differs; median first share 49.8% -> lead: later
+  long window (JPN, KOR):
+  iso3  window     TFR(Σorders)        1st-order TFR        ΔΣ      1st share  type
+  JPN  1990->2024  1.550->1.140   0.660->0.550   -0.410    26.8%   one_child
+  KOR  1990->2025  1.570->0.800   0.843->0.499   -0.770    44.6%   mixed
+  subset latest TFR < 1.6: n=11 -> differs
+  KOR 1990: births total 649738, known order 649714 (unknown 24)
+  KOR 2010: births total 470171, known order 467136 (unknown 3035)
+  KOR 2025: births total 254341, known order 254213 (unknown 128)
+  HUN unknown-order TFR 2010 0.000 -> 2024 0.035
+  POL unknown-order TFR 2010 0.000 -> 2024 0.035
+  SWE unknown-order TFR 2010 0.001 -> 2024 0.003
+-- V2 robustness: start year --
+  start 2005: not evaluable ['DEU']
+  iso3  window     TFR(Σorders)        1st-order TFR        ΔΣ      1st share  type
+  CZE  2005->2024  1.286->1.350   0.631->0.643   +0.064      n/a   no_decline
+  DNK  2005->2024  1.754->1.477   0.784->0.653   -0.277    47.4%   mixed
+  ESP  2005->2024  1.336->1.106   0.754->0.570   -0.231    79.8%   childlessness
+  FIN  2005->2024  1.803->1.256   0.764->0.553   -0.547    38.5%   one_child
+  FRA  2005->2024  1.935->1.610   1.129->0.719   -0.325   126.0%   childlessness
+  HUN  2005->2024  1.304->1.363   0.606->0.625   +0.059      n/a   no_decline
+  ISL  2005->2024  2.065->1.572   0.799->0.632   -0.494    33.8%   one_child
+  ITA  2005->2024  1.323->1.176   0.674->0.582   -0.147    63.1%   childlessness
+  NLD  2005->2024  1.689->1.433   0.794->0.663   -0.256    51.2%   childlessness
+  NOR  2005->2024  1.829->1.447   0.793->0.636   -0.383    41.0%   mixed
+  POL  2005->2024  1.250->1.086   0.613->0.526   -0.164    53.5%   childlessness
+  SWE  2005->2024  1.763->1.426   0.798->0.635   -0.337    48.4%   mixed
+  JPN  2005->2024  1.250->1.140   0.620->0.550   -0.110    63.6%   childlessness
+  KOR  2005->2025  1.090->0.800   0.564->0.499   -0.290    22.3%   one_child
+  start 2005: {'childlessness': 6, 'one_child': 3, 'mixed': 3} -> differs; median share 49.8% -> lead later
+  start 2015: not evaluable []
+  iso3  window     TFR(Σorders)        1st-order TFR        ΔΣ      1st share  type
+  CZE  2015->2024  1.552->1.350   0.779->0.643   -0.202    67.0%   childlessness
+  DEU  2015->2017  1.513->1.572   0.744->0.746   +0.060      n/a   no_decline
+  DNK  2015->2024  1.726->1.477   0.789->0.653   -0.249    54.9%   childlessness
+  ESP  2015->2024  1.310->1.106   0.698->0.570   -0.204    62.7%   childlessness
+  FIN  2015->2024  1.652->1.256   0.684->0.553   -0.396    33.0%   one_child
+  FRA  2015->2024  1.953->1.610   0.834->0.719   -0.343    33.6%   one_child
+  HUN  2015->2024  1.422->1.363   0.686->0.625   -0.059   103.9%   childlessness
+  ISL  2015->2024  1.815->1.572   0.704->0.632   -0.244    29.4%   one_child
+  ITA  2015->2024  1.350->1.176   0.655->0.582   -0.174    42.4%   mixed
+  NLD  2015->2024  1.664->1.433   0.755->0.663   -0.230    40.0%   mixed
+  NOR  2015->2024  1.741->1.447   0.751->0.636   -0.294    39.2%   one_child
+  POL  2015->2024  1.298->1.086   0.635->0.526   -0.212    51.9%   childlessness
+  SWE  2015->2024  1.861->1.426   0.786->0.635   -0.435    34.5%   one_child
+  JPN  2015->2024  1.460->1.140   0.710->0.550   -0.320    50.0%   childlessness
+  KOR  2015->2025  1.240->0.800   0.648->0.499   -0.440    33.9%   one_child
+  start 2015: {'childlessness': 6, 'one_child': 6, 'mixed': 2} -> differs; median share 41.2% -> lead later
+-- V2 auxiliary: OECD SF2.5 childlessness (%), 1955 -> 1975 cohort --
+  CAN: 16.4 -> 18.8 (+2.4 pt)
+  CZE: 5.9 -> 11.7 (+5.8 pt)
+  DEU: 16.0 -> 20.0 (+4.0 pt)
+  DNK: 14.3 -> 13.1 (-1.2 pt)
+  EST: 6.1 -> 13.1 (+7.0 pt)
+  HUN: 8.3 -> 17.0 (+8.7 pt)
+  IRL: 12.4 -> 17.1 (+4.7 pt)
+  JPN: 11.9 -> 28.3 (+16.4 pt)
+  LTU: 5.6 -> 14.0 (+8.4 pt)
+  NLD: 17.1 -> 16.9 (-0.2 pt)
+  NOR: 11.8 -> 11.4 (-0.4 pt)
+  PRT: 2.9 -> 8.8 (+5.9 pt)
+  SWE: 12.8 -> 12.9 (+0.1 pt)
+  USA: 16.3 -> 10.3 (-6.0 pt)
+  n=14, median rise +4.4 pt
+  JPN all cohorts: 1955=11.9, 1960=16.6, 1963=20.1, 1964=19.8, 1965=22.1, 1970=26.9, 1975=28.3
+
+== V3: cohort recovery (completed at 45) ==
+  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  CF1960-CF1975  type
+  CZE  2.090  2.034  1.793  1.290        1.130 (1999)          +0.663      +0.242      recovery
+  DNK  1.912  1.883  1.957  1.800        1.380 (1983)          +0.577      -0.074      recovery
+  ESP    n/a  1.775  1.373  1.330        1.130 (1998)          +0.243      +0.402      quantitative
+  FIN  1.856  1.942  1.895  1.800        1.590 (1987)          +0.305      +0.047      recovery
+  HUN  1.972  2.019  1.737  1.310        1.270 (2003)          +0.467      +0.282      recovery
+  ISL  2.671  2.455  2.221  2.050        1.920 (1986)          +0.301      +0.235      recovery
+  ITA  1.858  1.691  1.434  1.330        1.190 (1995)          +0.244      +0.257      neither
+  NLD  1.897  1.861  1.782  1.710        1.470 (1983)          +0.312      +0.079      recovery
+  NOR  2.104  2.088  2.013  1.840        1.660 (1983)          +0.353      +0.075      recovery
+  POL    n/a    n/a  1.623  1.240        1.220 (2003)          +0.403        n/a      recovery
+  SWE    n/a  2.053  1.963  1.770        1.500 (1998)          +0.463      +0.090      recovery
+  JPN  2.027  1.845  1.455  1.260        1.260 (2005)          +0.195      +0.391      quantitative
+  types: {'recovery': 9, 'quantitative': 2, 'both': 0, 'neither': 1} -> recovered (majority recovery/both): True (9/12)
+-- V3 robustness: truncation age 40 (and Japan 49) --
+  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  CF1960-CF1975  type
+  CZE  2.085  2.026  1.765  1.290        1.130 (1999)          +0.635      +0.260      recovery
+  DNK  1.899  1.863  1.919  1.800        1.380 (1983)          +0.539      -0.056      recovery
+  ESP    n/a  1.752  1.319  1.330        1.130 (1998)          +0.189      +0.433      quantitative
+  FIN  1.831  1.911  1.850  1.800        1.590 (1987)          +0.260      +0.061      neither
+  HUN  1.962  2.007  1.703  1.310        1.270 (2003)          +0.433      +0.304      recovery
+  ISL  2.640  2.416  2.179  2.050        1.920 (1986)          +0.259      +0.237      neither
+  ITA  1.840  1.666  1.381  1.330        1.190 (1995)          +0.191      +0.284      neither
+  NLD  1.884  1.841  1.750  1.710        1.470 (1983)          +0.280      +0.091      neither
+  NOR  2.090  2.065  1.975  1.840        1.660 (1983)          +0.315      +0.090      recovery
+  POL    n/a    n/a  1.600  1.240        1.220 (2003)          +0.380        n/a      recovery
+  SWE    n/a  2.025  1.914  1.770        1.500 (1998)          +0.414      +0.110      recovery
+  JPN  2.021  1.834  1.420  1.260        1.260 (2005)          +0.160      +0.414      quantitative
+  age 40: recovered=(False, 6)
+  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  CF1960-CF1975  type
+  JPN  2.028  1.846  1.456  1.260        1.260 (2005)          +0.196      +0.390      quantitative
+-- V3 robustness (not pre-registered, reported for transparency): vs TFR at age 30 only --
+  CZE: CF1975 − TFR(2005) = +0.503
+  DNK: CF1975 − TFR(2005) = +0.157
+  ESP: CF1975 − TFR(2005) = +0.043
+  FIN: CF1975 − TFR(2005) = +0.095
+  HUN: CF1975 − TFR(2005) = +0.427
+  ISL: CF1975 − TFR(2005) = +0.171
+  ITA: CF1975 − TFR(2005) = +0.104
+  NLD: CF1975 − TFR(2005) = +0.072
+  NOR: CF1975 − TFR(2005) = +0.173
+  POL: CF1975 − TFR(2005) = +0.383
+  SWE: CF1975 − TFR(2005) = +0.193
+  JPN: CF1975 − TFR(2005) = +0.195
+  >= 0.3: 3/12
+-- V3 robustness (post hoc, reviewer): period min over 1995-2020 (1975 cohort aged 20-45) --
+  iso3  CF1950  CF1960  CF1975  TFR@1975+30  min TFR (yr, window)  CF1975-min  CF1960-CF1975  type
+  CZE  2.090  2.034  1.793  1.290        1.130 (1999)          +0.663      +0.242      recovery
+  DNK  1.912  1.883  1.957  1.800        1.670 (2013)          +0.287      -0.074      neither
+  ESP    n/a  1.775  1.373  1.330        1.130 (1998)          +0.243      +0.402      quantitative
+  FIN  1.856  1.942  1.895  1.800        1.350 (2019)          +0.545      +0.047      recovery
+  HUN  1.972  2.019  1.737  1.310        1.230 (2011)          +0.507      +0.282      recovery
+  ISL  2.671  2.455  2.221  2.050        1.710 (2017)          +0.511      +0.235      recovery
+  ITA  1.858  1.691  1.434  1.330        1.190 (1995)          +0.244      +0.257      neither
+  NLD  1.897  1.861  1.782  1.710        1.530 (1995)          +0.252      +0.079      neither
+  NOR  2.104  2.088  2.013  1.840        1.480 (2020)          +0.533      +0.075      recovery
+  POL    n/a    n/a  1.623  1.240        1.220 (2003)          +0.403        n/a      recovery
+  SWE    n/a  2.053  1.963  1.770        1.500 (1998)          +0.463      +0.090      recovery
+  JPN  2.027  1.845  1.455  1.260        1.260 (2005)          +0.195      +0.391      quantitative
+  1995-2020 window: recovered=(True, 7)
+
+== V4: overall ==
+  V1 majority: differs; V2 majority: differs; V3 recovered: True
+  verdict on part4's final hypothesis (norm collapse + postponement): differs
+  FINAL STANCE (pre-registered pattern, literal): 2 人未満への低下は国で異なり、日本は規範型・オーストリア・キプロス・デンマーク・英国・ルクセンブルク・ラトビアは阻害型であり、低下の主役は第 2 子以降の減少である。コーホートで見ると回復している。
+  FRAMED STANCE (pattern with brackets filled by the results): 2 人未満への低下は国で異なる（25 か国中 18 か国はどちらの型でもない）。日本は予定の取り方で規範型かどちらでもないかが変わり、予定の低下は諦めと区別できない。低下の主役は第 1 子と第 2 子以降がほぼ半々（第 1 子寄与率の中央値 49.8%）で、地域で逆になる（チェコ・スペイン・イタリア・ポーランド・日本（2010 年以降）は第 1 子、フィンランド・アイスランド・オランダ・ノルウェー・スウェーデン・韓国は第 2 子以降）。コーホートで見るとチェコ・デンマーク・フィンランド・ハンガリー・アイスランド・オランダ・ノルウェー・ポーランド・スウェーデンは回復、スペイン・イタリア・日本は回復しておらず、「回復している」かどうかは比べる窓と打ち切り年齢に左右される（回復型は 45 歳・1980–2005 年の最小値で 9/12、1995–2020 年の最小値で 7/12、2005 年の値だけと比べると 3/12、40 歳打ち切りで 6/12）。
+-- V4 cross-tab: V1 type x V2 type (2010 window; JPN/KOR long window in brackets) --
+  AUT: V1 C; V2 n/a
+  BEL: V1 mixed; V2 n/a
+  CYP: V1 C; V2 n/a
+  CZE: V1 mixed; V2 childlessness
+  DEU: V1 mixed; V2 no_decline
+  DNK: V1 C; V2 n/a
+  ESP: V1 mixed; V2 childlessness
+  EST: V1 mixed; V2 n/a
+  FIN: V1 mixed; V2 one_child
+  GBR: V1 C; V2 n/a
+  GRC: V1 mixed; V2 n/a
+  HUN: V1 mixed; V2 no_decline
+  IRL: V1 mixed; V2 n/a
+  ISL: V1 n/a (no ideal series); V2 one_child
+  ITA: V1 mixed; V2 childlessness
+  JPN: V1 N; V2 childlessness [one_child]
+  KOR: V1 n/a (no ideal series); V2 one_child [mixed]
+  LTU: V1 mixed; V2 n/a
+  LUX: V1 C; V2 n/a
+  LVA: V1 C; V2 n/a
+  MLT: V1 mixed; V2 n/a
+  NLD: V1 mixed; V2 mixed
+  NOR: V1 n/a (no ideal series); V2 mixed
+  POL: V1 mixed; V2 childlessness
+  PRT: V1 mixed; V2 n/a
+  SVK: V1 mixed; V2 n/a
+  SVN: V1 mixed; V2 n/a
+  SWE: V1 mixed; V2 mixed
+-- V4 under the V1/V2 robustness variants --
+  N<2.0 gap>=0.5: V1 differs -> differs
+  N<2.0 gap>=0.6: V1 differs -> differs
+  N<2.0 gap>=0.8: V1 differs -> differs
+  N<2.1 gap>=0.5: V1 differs -> differs
+  N<2.1 gap>=0.6: V1 differs -> differs
+  N<2.1 gap>=0.8: V1 differs -> differs
+  N<2.2 gap>=0.5: V1 differs -> differs
+  N<2.2 gap>=0.6: V1 differs -> differs
+  N<2.2 gap>=0.8: V1 differs -> differs
+  V2 start 2005: V2 differs -> differs
+  V2 start 2015: V2 differs -> differs
+
+== Exploratory (not pre-registered; outside the verdict) ==
+-- E1: V1 restricted to countries whose latest ideal is from the 2020s (GGS) or Japan --
+  iso3  first(yr ideal TFR gap)        last(yr ideal TFR gap)         d_ideal d_gap  TFR_latest type
+  AUT  2006 1.456 1.410 +0.046   2022 2.210 1.410 +0.800   +0.754 +0.754  1.310  C (constraint)
+  CZE  2006 1.969 1.340 +0.629   2020 2.120 1.740 +0.380   +0.151 -0.249  1.360  mixed
+  DEU  2006 2.080 1.330 +0.750   2021 2.320 1.580 +0.740   +0.240 -0.010  1.360  mixed
+  DNK  2006 2.453 1.850 +0.603   2021 2.360 1.720 +0.640   -0.093 +0.037  1.470  C (constraint)
+  EST  2006 2.362 1.580 +0.782   2021 2.370 1.610 +0.760   +0.008 -0.022  1.180  mixed
+  FIN  2006 2.478 1.840 +0.638   2021 2.100 1.460 +0.640   -0.378 +0.002  1.250  mixed
+  GBR  2006 2.367 1.820 +0.547   2022 2.200 1.560 +0.640   -0.167 +0.093  1.551  C (constraint)
+  JPN  1977 2.170 1.800 +0.370   2021 1.950 1.300 +0.650   -0.220 +0.280  1.150  N (norm)
+  NLD  2006 2.139 1.720 +0.419   2022 2.130 1.490 +0.640   -0.009 +0.221  1.430  mixed
+  E1: ('differs', {'N': 1, 'C': 3, 'mixed': 5})
+-- E2: Japan, unmarried women's desired number (1982 -> 2021) under the V1 rule --
+  iso3  first(yr ideal TFR gap)        last(yr ideal TFR gap)         d_ideal d_gap  TFR_latest type
+  JPN  1982 2.280 1.770 +0.510   2021 1.790 1.300 +0.490   -0.490 -0.020  1.150  N (norm)
+  unmarried men: 1982=2.33, 1987=2.30, 1992=2.23, 1997=2.15, 2002=2.05, 2005=2.07, 2010=2.04, 2015=1.91, 2021=1.82
+-- E3: Japan, married couples' completed (T04-23) vs all women (T04-11 at 45) --
+  cohort 妻の生まれ年 1952-1957: couples 2.20; all women at 45 (cohort 1952) 2.005
+  cohort 妻の生まれ年 1955-1960: couples 2.15; all women at 45 (cohort 1955) 1.976
+  cohort 妻の生まれ年 1960-1965: couples 2.01; all women at 45 (cohort 1960) 1.845
+  cohort 妻の生まれ年 1965-1970: couples 1.86; all women at 45 (cohort 1965) 1.601
+  cohort 妻の生まれ年 1971-1976: couples 1.81; all women at 45 (cohort 1971) 1.439
+shape: (25, 3)
+┌─────────────┬─────────┬───────┐
+│ survey_year ┆ group   ┆ value │
+│ ---         ┆ ---     ┆ ---   │
+│ i64         ┆ str     ┆ f64   │
+╞═════════════╪═════════╪═══════╡
+│ 2002        ┆ 1人     ┆ 9.3   │
+│ 2002        ┆ 2人     ┆ 53.7  │
+│ 2002        ┆ 3人     ┆ 28.9  │
+│ 2002        ┆ 4人以上 ┆ 4.0   │
+│ 2002        ┆ 無子    ┆ 4.2   │
+│ 2005        ┆ 1人     ┆ 11.1  │
+│ 2005        ┆ 2人     ┆ 50.3  │
+│ 2005        ┆ 3人     ┆ 29.0  │
+│ 2005        ┆ 4人以上 ┆ 3.8   │
+│ 2005        ┆ 無子    ┆ 5.7   │
+│ 2010        ┆ 1人     ┆ 13.8  │
+│ 2010        ┆ 2人     ┆ 52.0  │
+│ 2010        ┆ 3人     ┆ 23.6  │
+│ 2010        ┆ 4人以上 ┆ 3.1   │
+│ 2010        ┆ 無子    ┆ 7.5   │
+│ 2015        ┆ 1人     ┆ 18.1  │
+│ 2015        ┆ 2人     ┆ 51.3  │
+│ 2015        ┆ 3人     ┆ 18.2  │
+│ 2015        ┆ 4人以上 ┆ 2.5   │
+│ 2015        ┆ 無子    ┆ 9.9   │
+│ 2021        ┆ 1人     ┆ 19.4  │
+│ 2021        ┆ 2人     ┆ 52.8  │
+│ 2021        ┆ 3人     ┆ 16.0  │
+│ 2021        ┆ 4人以上 ┆ 1.9   │
+│ 2021        ┆ 無子    ┆ 9.9   │
+└─────────────┴─────────┴───────┘
+-- E4: OECD SF2.5 Chart B, 1975 cohort: childlessness vs completed fertility --
+  n=20: Spearman -0.613, Pearson -0.670
+shape: (20, 3)
+┌──────┬─────────────────────┬─────────────────────┐
+│ iso3 ┆ childless_share_pct ┆ completed_fertility │
+│ ---  ┆ ---                 ┆ ---                 │
+│ str  ┆ f64                 ┆ f64                 │
+╞══════╪═════════════════════╪═════════════════════╡
+│ PRT  ┆ 8.8                 ┆ 1.636               │
+│ USA  ┆ 10.3                ┆ 2.203               │
+│ NOR  ┆ 11.4                ┆ 2.04                │
+│ CZE  ┆ 11.7                ┆ 1.821               │
+│ ISL  ┆ 11.7                ┆ 2.232               │
+│ SWE  ┆ 12.9                ┆ 1.959               │
+│ DNK  ┆ 13.1                ┆ 1.961               │
+│ EST  ┆ 13.1                ┆ 1.858               │
+│ LTU  ┆ 14.0                ┆ 1.699               │
+│ SVN  ┆ 14.6                ┆ 1.682               │
+│ NLD  ┆ 16.9                ┆ 1.766               │
+│ HUN  ┆ 17.0                ┆ 1.785               │
+│ IRL  ┆ 17.1                ┆ 2.094               │
+│ CAN  ┆ 18.8                ┆ 1.802               │
+│ FIN  ┆ 19.8                ┆ 1.898               │
+│ POL  ┆ 19.9                ┆ 1.671               │
+│ AUT  ┆ 20.1                ┆ 1.66                │
+│ ITA  ┆ 22.5                ┆ 1.449               │
+│ ESP  ┆ 23.9                ┆ 1.401               │
+│ JPN  ┆ 28.3                ┆ 1.443               │
+└──────┴─────────────────────┴─────────────────────┘
+-- E5: Japan and Korea, first-order TFR level by year --
+  1990: JPN 1st 0.660 2nd+ 0.890 | KOR 1st 0.843 2nd+ 0.727
+  2000: JPN 1st 0.660 2nd+ 0.690 | KOR 1st 0.699 2nd+ 0.781
+  2005: JPN 1st 0.620 2nd+ 0.630 | KOR 1st 0.564 2nd+ 0.526
+  2010: JPN 1st 0.680 2nd+ 0.710 | KOR 1st 0.620 2nd+ 0.610
+  2015: JPN 1st 0.710 2nd+ 0.750 | KOR 1st 0.648 2nd+ 0.592
+  2020: JPN 1st 0.630 2nd+ 0.700 | KOR 1st 0.460 2nd+ 0.380
+  2024: JPN 1st 0.550 2nd+ 0.590 | KOR 1st 0.460 2nd+ 0.290
