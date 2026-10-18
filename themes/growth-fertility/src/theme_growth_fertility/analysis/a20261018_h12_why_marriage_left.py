@@ -114,6 +114,7 @@ EXTERNAL = (
 )
 TYPE_JA = {"will": "意思の低下", "reach": "到達の失敗", "women": "女性側の評価の低下"}
 TYPE_ORDER = ("will", "reach", "women")
+K3_UNDETERMINED = "判定不能（第 2 条件は不成立、第 1 条件「結婚に利点がある」は測定不能）"
 
 
 # ---------------------------------------------------------------- pure helpers (tested)
@@ -196,9 +197,22 @@ def rank_types(sizes: Mapping[str, float], established: Iterable[str]) -> list[t
     return sorted(rows, key=lambda kv: (-kv[1], TYPE_ORDER.index(kv[0])))
 
 
+FRACTIONS = (
+    (1 / 10, "10 分の 1"),
+    (1 / 5, "5 分の 1"),
+    (1 / 4, "4 分の 1"),
+    (1 / 3, "3 分の 1"),
+    (1 / 2, "半分"),
+    (2 / 3, "3 分の 2"),
+    (3 / 4, "4 分の 3"),
+    (1.0, "全部"),
+)
+
+
 def wari(rate: float) -> str:
-    n = round(rate * 10)
-    return "1 割未満" if n == 0 else f"約 {n} 割"
+    """Nearest simple fraction with the percentage, e.g. 0.252 -> '約 4 分の 1（25%）'."""
+    _, name = min(FRACTIONS, key=lambda f: abs(f[0] - rate))
+    return f"約 {name}（{100 * rate:.0f}%）"
 
 
 def final_stance(ranked: Sequence[tuple[str, float]], rate: float) -> str:
@@ -325,13 +339,20 @@ def k4(
     *,
     net_override: float | None = None,
     upper: bool = False,
+    upper_numerator_only: bool = False,
+    single_year: bool = False,
 ) -> Fill:
     c0 = couples(att, *base)
     c1 = couples(att, *end)
     y0, y1 = PERIOD_YEARS[(str(base[0]), base[1])], PERIOD_YEARS[(str(end[0]), end[1])]
-    n0, n1 = period_mean(n_by_year, *y0), period_mean(n_by_year, *y1)
+    if single_year:  # survey years' single-year counts instead of July-June means
+        n0, n1 = n_by_year[y0[1]], n_by_year[y1[1]]
+    else:
+        n0, n1 = period_mean(n_by_year, *y0), period_mean(n_by_year, *y1)
     net1 = (net_override if net_override is not None else c1.get(NET, 0.0)) / 100
     moved = c1[OMIAI] / 100 if upper else 0.0
+    if upper_numerator_only:  # design literal: add agency (all 2021b omiai) to the filler only
+        net1 += c1[OMIAI] / 100
     return fill(sum(c0[k] for k in LOST) / 100, sum(c1[k] for k in LOST) / 100, net1, n0, n1, moved)
 
 
@@ -441,7 +462,11 @@ def compute(d: Mapping[str, pl.DataFrame]) -> H12Result:
             k4(att, n, (Y0, ""), (Y1, P16B), upper=True),
         ),
     ]
-    sens: list[tuple[str, Fill]] = [("upper (agency incl.)", robust[3].k4)]
+    sens: list[tuple[str, Fill]] = [
+        ("upper (agency incl.)", robust[3].k4),
+        ("upper literal", k4(att, n, (Y0, ""), (Y1, P16B), upper_numerator_only=True)),
+        ("single-year counts", k4(att, n, (Y0, ""), (Y1, P16B), single_year=True)),
+    ]
     for key, _label, share in EXTERNAL:
         sens.append((key, k4(att, n, (Y0, ""), (Y1, P16B), net_override=share)))
     return H12Result(main, robust, sens, n)
@@ -618,6 +643,8 @@ def section_k3(d: Mapping[str, pl.DataFrame], res: H12Result) -> None:
 
 
 def section_k4(res: H12Result) -> None:
+    status = "成立" if "women" in res.main.types else K3_UNDETERMINED
+    print(f"\n  K3 status: {status}")
     print("\n== K4 fill rate ==")
     f = res.main.k4
     print(f"  wife first marriages, annual mean: base {f.n0:,.0f}, 2021b {f.n1:,.0f}")
@@ -863,7 +890,9 @@ def fig_k4(res: H12Result, path: Path) -> None:
     items = [("main: IPSS 2018/7-21/6 internet 13.6%", res.main.k4.rate)]
     items += [(r.label, r.k4.rate) for r in res.robust if r.label.startswith(("R2", "R3"))]
     labels = {
-        "upper (agency incl.)": "upper: + all 'arranged/agency' 2021b",
+        "upper (agency incl.)": "upper: all 2021b 'arranged/agency' moved to filler",
+        "upper literal": "upper (design literal): + agency to filler only",
+        "single-year counts": "single-year counts (1982, 2021)",
         "cfa2024": "Children & Families Agency 2024: 25.1%",
         "recruit2024": "Recruit Bridal 2024: 11.4%",
         "meiji2025": "Meiji Yasuda 2025: 30.4%",

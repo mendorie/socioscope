@@ -278,7 +278,8 @@ def fig5_fill(res: h12.H12Result, path: Path) -> list[tuple[str, float]]:
     sens = dict(res.k4_sens)
     items = [
         ("本体（出生動向基本調査、ネット 13.6%）", res.main.k4.rate),
-        ("上限（見合い・相談所を全部ネット側へ）", sens["upper (agency incl.)"].rate),
+        ("上限（見合い・相談所を損失から除き補填へ）", sens["upper (agency incl.)"].rate),
+        ("上限（見合い・相談所を補填に足すだけ）", sens["upper literal"].rate),
         ("こども家庭庁 2024（アプリ 25.1%）", sens["cfa2024"].rate),
         ("リクルート 2024（ネット系 11.4%）", sens["recruit2024"].rate),
         ("明治安田 2025（アプリ 30.4%）", sens["meiji2025"].rate),
@@ -297,7 +298,7 @@ def fig5_fill(res: h12.H12Result, path: Path) -> list[tuple[str, float]]:
     ax.set_xlabel("ネットで出会った結婚 ÷ 見合い・職場経由で減った結婚（年あたり件数、%）")
     base._style(ax)
     fig.suptitle(
-        "見合い・職場で減った結婚のうち、ネットが補ったのは 2〜5 割（本体は 25%）",
+        "見合い・職場で減った結婚のうち、ネットが補ったのは約 4 分の 1（25%）",
         fontsize=11,
         x=0.01,
         ha="left",
@@ -379,7 +380,8 @@ def run(data_dir: Path, fig_dir: Path) -> list[tuple[str, str]]:
         (
             "h12s05_fill_rate.png",
             f"見合い・職場経由で減った結婚は年 {m.loss:,.0f} 件、ネット経由は年 {m.filled:,.0f} 件で、補填率は "  # noqa: E501
-            f"{100 * m.rate:.0f}%（事前の基準で「部分的」）。感度の 4 版は "
+            f"{h12.wari(m.rate)}（事前の基準で「部分的」。CI は未算出）。"
+            "終点を 2015/7〜18/6 にすると 15% で「補われていない」に変わる。感度の各版は "
             + "、".join(f"{100 * r:.0f}%" for _, r in items[1:])
             + "。",
         )

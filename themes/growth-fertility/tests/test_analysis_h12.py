@@ -69,7 +69,7 @@ def test_rank_and_final_stance() -> None:
     s = h12.final_stance(h12.rank_types({"reach": 34.1, "will": 9.9}, {"reach"}), 0.27)
     assert s.startswith("結婚が外れた背景は到達の失敗が主で（変化幅 34.1 ポイント）")
     assert "意思の低下・女性側の評価の低下は従である" in s
-    assert s.endswith("ネット経由が補ったのは約 3 割である")
+    assert s.endswith("ネット経由が補ったのは約 4 分の 1（27%）である")
     none = h12.final_stance([], 0.1)
     assert none.startswith("意思も到達も評価も、測った指標では大きく動いていない")
 
@@ -79,3 +79,8 @@ def test_pooled_share() -> None:
     p, lo, hi = h12.pooled(df)
     assert p == pytest.approx(70.0)
     assert lo < 70 < hi
+
+
+def test_wari_nearest_fraction() -> None:
+    assert h12.wari(0.252) == "約 4 分の 1（25%）"
+    assert h12.wari(0.56) == "約 半分（56%）"

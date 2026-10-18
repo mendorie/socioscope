@@ -131,11 +131,15 @@ first_marriages_wife (T06-01): 1977 750,756, 1978 722,577, 1979 715,551, 1980 70
     2021: male 4.7/43.5 (sum 48.2); female 36.3/55.3 (sum 91.6)
   econ female 1987->2021 = +14.0; K3 女性側型 = False
 
+  K3 status: 判定不能（第 2 条件は不成立、第 1 条件「結婚に利点がある」は測定不能）
+
 == K4 fill rate ==
   wife first marriages, annual mean: base 713,920, 2021b 462,495
   loss (omiai+work) = 249,916/yr; filled (net) = 62,899/yr; rate = 0.252 -> 部分的
   sensitivity:
     upper (agency incl.): loss 291,540, filled 104,524, rate 0.359 -> 部分的
+    upper literal: loss 249,916, filled 104,524, rate 0.418 -> 部分的
+    single-year counts: loss 258,541, filled 56,818, rate 0.220 -> 部分的
     cfa2024: loss 249,916, filled 116,086, rate 0.465 -> 部分的
     recruit2024: loss 249,916, filled 52,724, rate 0.211 -> 部分的
     meiji2025: loss 249,916, filled 140,598, rate 0.563 -> 補われている
@@ -144,29 +148,29 @@ first_marriages_wife (T06-01): 1977 750,756, 1978 722,577, 1979 715,551, 1980 70
   types established: ['到達の失敗']
   sizes (points): {will: 9.9, reach: 34.1, women: -14.0}
   K4: 0.252 -> 部分的
-  final stance: 結婚が外れた背景は到達の失敗が主で（変化幅 34.1 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 3 割である
+  final stance: 結婚が外れた背景は到達の失敗が主で（変化幅 34.1 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 4 分の 1（25%）である
 
 == Robustness (pre-registered list) ==
   R1 ages 25-34 (K1/K2; K3 no age split)
     K1: male 94.6 -> 77.7 (-16.9, CI overlap=False); female 86.4 -> 81.3 (-5.1, CI overlap=True)
     K2 rise: male +27.8; female +27.7
     K4: loss 249,916 filled 62,899 rate 0.252 -> 部分的
-    types: ['到達の失敗']; stance: 結婚が外れた背景は到達の失敗が主で（変化幅 27.7 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 3 割である
+    types: ['到達の失敗']; stance: 結婚が外れた背景は到達の失敗が主で（変化幅 27.7 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 4 分の 1（25%）である
   R2 start 1987 (K1/K2/K4)
     K1: male 91.8 -> 81.4 (-10.4, CI overlap=False); female 92.9 -> 84.3 (-8.6, CI overlap=False)
     K2 rise: male +23.5; female +24.7
     K4: loss 220,693 filled 62,899 rate 0.285 -> 部分的
-    types: ['到達の失敗']; stance: 結婚が外れた背景は到達の失敗が主で（変化幅 23.5 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 3 割である
+    types: ['到達の失敗']; stance: 結婚が外れた背景は到達の失敗が主で（変化幅 23.5 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 4 分の 1（29%）である
   R3 end 16a 2015/7-2018/6 (K4 only)
     K1: male 95.9 -> 81.4 (-14.5, CI overlap=False); female 94.2 -> 84.3 (-9.9, CI overlap=False)
     K2 rise: male +35.3; female +34.1
     K4: loss 202,768 filled 30,611 rate 0.151 -> 補われていない
-    types: ['到達の失敗']; stance: 結婚が外れた背景は到達の失敗が主で（変化幅 34.1 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 2 割である
+    types: ['到達の失敗']; stance: 結婚が外れた背景は到達の失敗が主で（変化幅 34.1 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 5 分の 1（15%）である
   R5 upper bound: all 16b omiai = marriage agency (K4)
     K1: male 95.9 -> 81.4 (-14.5, CI overlap=False); female 94.2 -> 84.3 (-9.9, CI overlap=False)
     K2 rise: male +35.3; female +34.1
     K4: loss 291,540 filled 104,524 rate 0.359 -> 部分的
-    types: ['到達の失敗']; stance: 結婚が外れた背景は到達の失敗が主で（変化幅 34.1 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 4 割である
+    types: ['到達の失敗']; stance: 結婚が外れた背景は到達の失敗が主で（変化幅 34.1 ポイント）、意思の低下・女性側の評価の低下は従である。見合い・職場経由で失われた結婚のうち、ネット経由が補ったのは約 3 分の 1（36%）である
 
 == Exploratory (not pre-registered; not used for the verdict) ==
   E1 no-partner split by wish to date (2_1_2, 18-34; asked from 2010): want / not want / NA
