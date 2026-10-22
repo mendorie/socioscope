@@ -21,6 +21,10 @@
 | OECD Data Explorer（IDD 等） | 所得分配（IDD）、出生率 | SDMX API | 同上 | 候補 |
 | Maddison Project / Penn World Table | 長期 GDP 系列 | Excel/CSV | 要確認 | 候補（戦後長期） |
 | Our World in Data | 整形済み系列（出典明記） | CSV / grapher API | CC BY | 候補（検証用） |
+| Merida（9914.TW）年報・四半期財報（Specialized 持分法） | 自社 IR ページは robots 許可だが PDF 実体は `merida-cdn.m-c-g.net`（robots 全面 Disallow）。FY2015–2022 は MOPS/doc.twse（Disallow）のみ | — | 開示書類 | **保留**（robots 方針の判断待ち） |
+| Halfords（HFD.L）プレリリース PDF | Cycling 売上（FY25– £m、FY19–24 は構成比 × Retail 売上）、粗利率なし | `halfordscompany.com/media/<id>/<file>.pdf`（robots 許可、静的一覧） | 開示書類 | 候補 |
+| Accell Group 年報（Wayback） | 2017（EN）・2018（NL）・2021（EN、2017–2021 売上 5 年表）のみ完全。他は 1 MB 切れ | `web.archive.org/web/<ts>id_/…` | 開示書類 | 候補（限定） |
+| Bike24（BIKE.DE）IR | EQS の SPA、API は JWT 認証 → 鍵なし取得不可 | — | — | **不可** |
 | 台湾 MOPS 月次営業収入 JSON API | Giant・Merida・KMC・Ideal Bike の月次売上（NT$ 千）2014-01〜 | `POST mops.twse.com.tw/mops/api/t05st10_ifrs`（JSON、キー不要） | 公開開示（出典表示） | **採用**（bicycle-industry H10、2026-10-22） |
 | SEC EDGAR（Fox Factory 10-K、Specialty Sports Group） | 自転車部品セグメント売上 FY2018– | FilingSummary.xml → R ページ（連絡先付き UA が必須: `SOCIOSCOPE_SEC_CONTACT`） | パブリックドメイン | 候補（未結線。連絡先未設定のためスキップ） |
 | 総務省 社会生活基本調査 時系列統計表 | スポーツ種類別 行動者率（男女 × 年齢階級 × 1986–2021、サイクリング含む 23 種目） | e-Stat `statInfId=000032229293&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（bicycle-industry H11、2026-10-22） |
