@@ -22,8 +22,8 @@
 | Maddison Project / Penn World Table | 長期 GDP 系列 | Excel/CSV | 要確認 | 候補（戦後長期） |
 | Our World in Data | 整形済み系列（出典明記） | CSV / grapher API | CC BY | 候補（検証用） |
 | Merida（9914.TW）連結財務報告 Q4（Specialized 持分法） | FY2023–2025 の Q4 報告 PDF（各報告に前期あり → FY2022–2025）。自社 IR ページは robots 許可、PDF 実体は `merida-cdn.m-c-g.net`（robots 全面 Disallow → **ADR 0006 の例外**）。FY2022 以前の報告は自社サイトに無い | `merida-cdn.m-c-g.net/merida-v2/media-raw/countries/zh-tw/financial-report/<file>.pdf` | 開示書類（出典表示） | **採用**（bicycle-industry H14、2026-10-22、ユーザー承認） |
-| Halfords（HFD.L）プレリリース PDF | Cycling 売上（FY25– £m、FY19–24 は構成比 × Retail 売上）、粗利率なし | `halfordscompany.com/media/<id>/<file>.pdf`（robots 許可、静的一覧） | 開示書類 | 候補 |
-| Accell Group 年報（Wayback） | 2017（EN）・2018（NL）・2021（EN、2017–2021 売上 5 年表）のみ完全。他は 1 MB 切れ | `web.archive.org/web/<ts>id_/…` | 開示書類 | 候補（限定） |
+| Halfords（HFD.L）通期決算発表 PDF | Retail 売上・Cycling 構成比（FY2015–24）・Cycling 売上 £m（FY2025–）。粗利率は年により様式が違い未採用 | `www.halfordscompany.com/media/<id>/<file>.pdf`（robots 許可、投資家ページに静的リンク） | 開示書類（出典表示） | **採用**（bicycle-industry R7 補足、2026-10-22） |
+| Accell Group 年報（Wayback） | グループ売上 2010–2021（2017 年報の 8 年表＋2021 年報の 5 年表）。2015・16・19・20 の年報は Wayback で 1 MB 切れ | `web.archive.org/web/<ts>id_/<原 URL>` | 開示書類（出典表示） | **採用（限定）**（bicycle-industry R7 補足、2026-10-22） |
 | Bike24（BIKE.DE）IR | EQS の SPA、API は JWT 認証 → 鍵なし取得不可 | — | — | **不可** |
 | 台湾 MOPS 月次営業収入 JSON API | Giant・Merida・KMC・Ideal Bike の月次売上（NT$ 千）2014-01〜 | `POST mops.twse.com.tw/mops/api/t05st10_ifrs`（JSON、キー不要） | 公開開示（出典表示） | **採用**（bicycle-industry H10、2026-10-22） |
 | SEC EDGAR（Fox Factory 10-K、Specialty Sports Group） | 自転車部品セグメント売上 FY2018– | FilingSummary.xml → R ページ（連絡先付き UA が必須: `SOCIOSCOPE_SEC_CONTACT`） | パブリックドメイン | 候補（未結線。連絡先未設定のためスキップ） |
@@ -538,6 +538,20 @@
 - ライセンス・利用規約（確認 2026-10-22）: 会社の公開開示文書（著作権は会社）。引用・研究目的で出典表示。raw 非コミット（manifest のみ）、再配布しない。
 - 取得方法: `theme_bicycle_industry.merida`（`DOCS`/`url`/`raw_name`、`parse_pages`（正規表現、5 指標のどれかが無ければ ValueError）、`build_mart`（当年の報告を優先、翌年と食い違えば `restated_next_year`））＋ `pipeline._fetch_merida/_stage_merida/_mart_merida`。年 1 回（Q4 報告の公表後、3 月末）。
 - 既知の欠損・断絶: FY2022 以前の報告は自社サイトに無い（doc.twse は robots 全面 Disallow で使わない）。持分法損益は関連企業全体の行。NT$ 建て（為替換算差額を含む）。CDN が 403 を返すようになれば従う（ADR 0006）。
+
+### Halfords 通期決算発表 PDF（bicycle-industry R7 補足: 英国小売の Cycling 売上）
+- URL / API: `https://www.halfordscompany.com/investor-hub/results-reports-and-presentations/`（robots.txt: `Allow: /`、`/*?*` のみ Disallow）に静的リンクされた Preliminary Results PDF。`theme_bicycle_industry.halfords.DOCS` に FY2015–FY2026 の 12 本のパス（`/media/<id>/<file>.pdf`）。UA は既定で 200。
+- 対象・粒度: £m。Retail 売上（53 週決算の FY2015・2020・2026 は 52 週列）、Cycling 構成比（% of Retail revenue、小数 1 桁、FY2015–2024）、Cycling 売上（FY2025 以降 £m 開示）。FY2015–2024 の Cycling £m は Retail × 構成比で導出（`derived`）。
+- ライセンス・利用規約（確認 2026-10-22）: RNS 公開開示（著作権は会社）。引用・研究目的で出典表示。raw 非コミット。
+- 取得方法: `theme_bicycle_industry.halfords`（`url`/`raw_name`、`parse_pages`（年により表の様式が違うため正規表現 3 種、fail-closed）、`build_mart`）＋ `pipeline._fetch/_stage/_mart_pdf_source(HALFORDS)`。年 1 回（6 月の通期発表後）。
+- 既知の欠損・断絶: 粗利率は Retail／Group、%／£m が年で混在するため未採用。FY2024 の本文「Cycling 38% of Retail」と表 35.4% の不一致（表を採用）。Cycling は自転車以外（用品・整備）を含む。
+
+### Accell Group 年報 PDF（bicycle-industry R7 補足: 欧州 e-bike メーカーのコロナ前基準線）— Wayback Machine
+- URL / API: 本体サイトに年報は無く、年次マイクロサイト `annualreport20YY.accell-group.com` は消滅。Wayback の `https://web.archive.org/web/<ts>id_/<原 URL>`（`id_` = 原本をそのまま返す）。2017 年報 EN 全文（ts 20181112021717、17.5 MB）と 2021 年報 EN（ts 20240104114552、29.3 MB。20220817 のキャプチャは切れている）。Wayback の 1 MB 切れは Content-Length では分からず、`%%EOF` と pypdf で確認した。
+- 対象・粒度: グループ売上 €m。2017 年報の 8 年表（2010–2017、小数 1 桁）と 2021 年報の 5 年表（2017–2021、整数）。2017 年は 2017 年報を優先し、2021 年報の値を `restated_later` に残す。
+- ライセンス・利用規約（確認 2026-10-22）: 公開開示（著作権は会社）。Internet Archive 経由の取得は研究目的の引用。raw 非コミット。
+- 取得方法: `theme_bicycle_industry.accell`（`DOCS`（ts, 原 URL）、`url`/`raw_name`、`parse_pages`、`build_mart`）＋ `pipeline._fetch/_stage/_mart_pdf_source(ACCELL)`。更新なし（2022 年に非上場化）。
+- 既知の欠損・断絶: 2015・2016・2019・2020 の年報は Wayback で 1 MB 切れ。セグメント（自転車／部品）や e-bike 比率は年報本文にあるが未採用。2022 年以降の開示なし。
 
 ## 記録テンプレート（ソース採用時）
 ```
