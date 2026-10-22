@@ -40,6 +40,25 @@ COMMODITIES: dict[str, str] = {
 FLOWS: dict[str, str] = {"M": "import", "X": "export"}
 YEARS: tuple[int, ...] = tuple(range(2010, 2025))
 
+# ---- 原産国別（H8）: 輸入国 5 × 相手国（中国・台湾）× 2015–2024、輸入のみ
+PARTNERS: dict[int, str] = {156: "CHN", 490: "TWN", 0: "WLD"}
+ORIGIN_REPORTERS: tuple[int, ...] = (392, 842, 276, 528, 826)
+ORIGIN_YEARS: tuple[int, ...] = tuple(range(2015, 2025))
+
+
+def origin_url(year: int) -> str:
+    reporters = ",".join(str(c) for c in ORIGIN_REPORTERS)
+    cmds = ",".join(COMMODITIES)
+    partners = ",".join(str(c) for c in PARTNERS if c != 0)
+    return (
+        f"{BASE}?reporterCode={reporters}&period={year}&cmdCode={cmds}"
+        f"&flowCode=M&partnerCode={partners}"
+    )
+
+
+def origin_raw_name(year: int) -> str:
+    return f"comtrade_origin_{year}.json"
+
 
 def url(year: int) -> str:
     reporters = ",".join(str(c) for c in REPORTERS)
@@ -59,12 +78,13 @@ class Parsed:
     skipped: list[str] = field(default_factory=list)
 
 
-def parse(payload: bytes, year: int) -> Parsed:
+def parse(payload: bytes, year: int, *, partners: bool = False) -> Parsed:
     """preview JSON → long 行。期待した形でなければ ValueError。
 
     行: iso3, reporter_code, year, flow(import/export), hs(8712/871160/8714), product, qty(台、
     無ければ None), qty_unit_code, net_wgt_kg, value_usd(primaryValue), source。
-    知らない報告国・品目・フローの行は落として skipped に出す。
+    `partners=True` のとき（原産国別ファイル）は `partner`（CHN/TWN）列を足し、相手国は世界計以外。
+    知らない報告国・品目・フロー・相手国の行は落として skipped に出す。
     """
     try:
         doc = json.loads(payload)
@@ -87,9 +107,16 @@ def parse(payload: bytes, year: int) -> Parsed:
         if rc not in REPORTERS or cmd not in COMMODITIES or flow not in FLOWS:
             skipped.append(f"unexpected row reporter={rc} cmd={cmd} flow={flow}")
             continue
-        if str(d["period"]) != str(year) or int(d["partnerCode"]) != 0:
-            msg = f"row period/partner mismatch: {d['period']}/{d['partnerCode']} (want {year}/0)"
+        partner_code = int(d["partnerCode"])
+        if str(d["period"]) != str(year):
+            msg = f"row period mismatch: {d['period']} (want {year})"
             raise ValueError(msg)
+        if not partners and partner_code != 0:
+            msg = f"row partner mismatch: {partner_code} (want world = 0)"
+            raise ValueError(msg)
+        if partners and partner_code not in PARTNERS:
+            skipped.append(f"unexpected partner {partner_code}")
+            continue
         qty = d.get("qty")
         unit = int(d.get("qtyUnitCode", -1))
         out.append(
@@ -105,6 +132,7 @@ def parse(payload: bytes, year: int) -> Parsed:
                 "net_wgt_kg": float(d["netWgt"]) if d.get("netWgt") is not None else None,
                 "value_usd": float(d["primaryValue"]),
                 "source": SOURCE,
+                **({"partner": PARTNERS[partner_code]} if partners else {}),
             }
         )
     return Parsed(rows=out, skipped=skipped)
@@ -121,6 +149,53 @@ def build_mart(staged: list[dict[str, object]]) -> list[dict[str, object]]:
         k = tuple(r[c] for c in MART_KEY)
         if k in seen:
             msg = f"duplicate trade key {k}"
+            raise ValueError(msg)
+        seen.add(k)
+    return out
+
+
+ORIGIN_MART_KEY: tuple[str, ...] = ("iso3", "year", "hs", "partner")
+
+
+def build_origin_mart(
+    origin_rows: list[dict[str, object]], world_rows: list[dict[str, object]]
+) -> list[dict[str, object]]:
+    """原産国別 mart: 中国・台湾の行に、世界計（WLD）と「その他（OTH）= 世界 − 中国 − 台湾」を足す。
+
+    世界計は `staged/comtrade/bicycle_trade`（flow=import）から取る。台数は片方でも欠ければ None。
+    """
+    out: list[dict[str, object]] = [dict(r) for r in origin_rows]
+    by_key: dict[tuple[object, object, object, object], dict[str, object]] = {
+        (r["iso3"], r["year"], r["hs"], r["partner"]): r for r in origin_rows
+    }
+    for w in world_rows:
+        if w["flow"] != "import":
+            continue
+        iso3, year, hs = w["iso3"], w["year"], w["hs"]
+        chn, twn = by_key.get((iso3, year, hs, "CHN")), by_key.get((iso3, year, hs, "TWN"))
+        if chn is None and twn is None:
+            continue
+        both = chn is not None and twn is not None
+        parts = [r for r in (chn, twn) if r is not None]
+        qtys = [w["qty"], *(r["qty"] for r in parts)]
+        oth_qty: float | None = None
+        if both and all(isinstance(q, int | float) for q in qtys):
+            nums = [float(q) for q in qtys if isinstance(q, int | float)]
+            oth_qty = nums[0] - sum(nums[1:])
+        oth_val: float | None = None
+        if both:
+            vals = [float(str(r["value_usd"])) for r in parts]
+            oth_val = float(str(w["value_usd"])) - sum(vals)
+        out.append({**w, "partner": "WLD"})
+        out.append(
+            {**w, "partner": "OTH", "qty": oth_qty, "net_wgt_kg": None, "value_usd": oth_val}
+        )
+    out.sort(key=lambda r: tuple(str(r[c]) for c in ORIGIN_MART_KEY))
+    seen: set[tuple[object, ...]] = set()
+    for r in out:
+        k = tuple(r[c] for c in ORIGIN_MART_KEY)
+        if k in seen:
+            msg = f"duplicate origin key {k}"
             raise ValueError(msg)
         seen.add(k)
     return out

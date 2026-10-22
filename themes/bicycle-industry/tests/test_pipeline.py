@@ -76,7 +76,7 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     assert result.written == ()
     assert all("raw missing (run fetch)" in s for s in result.skipped)
     n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
-    n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1  # +1 census
+    n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1 + len(comtrade.ORIGIN_YEARS)
     assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
