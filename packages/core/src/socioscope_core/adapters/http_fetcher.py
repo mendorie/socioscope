@@ -37,6 +37,12 @@ class HttpxFetcher:
         )
 
     def fetch(self, url: str) -> bytes:
+        return self._do(url, None)
+
+    def post_json(self, url: str, body: Mapping[str, object]) -> bytes:
+        return self._do(url, dict(body))
+
+    def _do(self, url: str, body: dict[str, object] | None) -> bytes:
         if not url.startswith(("https://", "http://")):
             msg = f"unsupported URL scheme: {url}"
             raise FetchError(msg)
@@ -45,18 +51,24 @@ class HttpxFetcher:
         if host in self._ua_by_host:
             headers["User-Agent"] = self._ua_by_host[host]
         try:
-            resp = self._get_with_backoff(url, headers)
+            resp = self._with_backoff(url, headers, body)
             resp.raise_for_status()
         except httpx.HTTPError as e:
             msg = f"fetch failed: {url} ({type(e).__name__})"
             raise FetchError(msg) from e
         return resp.content
 
-    def _get_with_backoff(self, url: str, headers: dict[str, str]) -> httpx.Response:
+    def _with_backoff(
+        self, url: str, headers: dict[str, str], body: dict[str, object] | None
+    ) -> httpx.Response:
         """Retry 429 (Too Many Requests) honouring Retry-After (default 2 s, doubling)."""
         delay = 2.0
         for attempt in range(1, self._rate_limit_attempts + 1):
-            resp = self._client.get(url, headers=headers)
+            resp = (
+                self._client.get(url, headers=headers)
+                if body is None
+                else self._client.post(url, headers=headers, json=body)
+            )
             if resp.status_code != 429 or attempt == self._rate_limit_attempts:
                 return resp
             retry_after = resp.headers.get("Retry-After")

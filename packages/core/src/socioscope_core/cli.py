@@ -36,15 +36,25 @@ def discover_themes() -> dict[str, Pipeline]:
     return found
 
 
+def _user_agents_by_host(settings: Settings) -> dict[str, str]:
+    """Browser UA for hosts that block bots; an identified UA for SEC EDGAR when a contact is set.
+
+    SEC asks for a User-Agent naming the requester; without SOCIOSCOPE_SEC_CONTACT sec.gov
+    answers 403 and the pipeline reports the source as skipped."""
+    out = dict.fromkeys(settings.browser_ua_hosts, settings.browser_user_agent)
+    if settings.sec_contact:
+        for host in ("www.sec.gov", "data.sec.gov"):
+            out[host] = f"socioscope/0.1 ({settings.sec_contact})"
+    return out
+
+
 def build_context(settings: Settings, sources: frozenset[str] | None = None) -> Context:
     data = settings.data_dir
     key = settings.anthropic_api_key.get_secret_value() if settings.anthropic_api_key else None
     return Context(
         fetcher=HttpxFetcher(
             user_agent=settings.user_agent,
-            user_agent_by_host=dict.fromkeys(
-                settings.browser_ua_hosts, settings.browser_user_agent
-            ),
+            user_agent_by_host=_user_agents_by_host(settings),
         ),
         raw=FilesystemRawStore(data / "raw"),
         tables=ParquetTableStore(data),

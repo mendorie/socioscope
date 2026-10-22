@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     browser_ua_hosts: list[str] = Field(
         default=["www.meti.go.jp"], alias="SOCIOSCOPE_BROWSER_UA_HOSTS"
     )
+    # SEC EDGAR requires a User-Agent that identifies the requester (name + contact). Left unset,
+    # sec.gov answers 403 and the pipeline reports the source as skipped (fail-closed).
+    sec_contact: str | None = Field(default=None, alias="SOCIOSCOPE_SEC_CONTACT")
     browser_user_agent: str = Field(
         default=(
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "

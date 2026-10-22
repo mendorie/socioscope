@@ -4,18 +4,22 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shakai, shimano
+from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shakai, shimano, tw_mops
 from theme_bicycle_industry.pipeline import (
     BLS_TABLE,
     CENSUS_MART,
     CENSUS_TABLE,
     COMTRADE_MART,
     COMTRADE_TABLE,
+    COMTRADE_TAIWAN_MART,
+    COMTRADE_TAIWAN_TABLE,
     CPI_MART,
     CPI_TABLE,
     HICP_TABLE,
     METI_MART,
     METI_TABLE,
+    MOPS_MART,
+    MOPS_TABLE,
     PANEL_COLUMNS,
     PANEL_TABLE,
     PRICES_MART,
@@ -79,6 +83,7 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     assert all("raw missing (run fetch)" in s for s in result.skipped)
     n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
     n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1 + len(comtrade.ORIGIN_YEARS) + 1
+    n_other += len(comtrade.TAIWAN_YEARS) + 1  # taiwan exports + 'mops: raw missing'
     assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
@@ -143,6 +148,8 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
         CPI_TABLE,
         CENSUS_TABLE,
         SHAKAI_TABLE,
+        COMTRADE_TAIWAN_TABLE,
+        MOPS_TABLE,
     ):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
@@ -332,3 +339,77 @@ def test_shakai_fetch_stage_mart_end_to_end() -> None:
         if r["sport"] == "サイクリング" and r["sex"] == "total" and r["age"] == "total"
     }
     assert cyc[2021] == 8.2
+
+
+# ---- Taiwan exports + MOPS
+
+
+def test_mops_fetch_stage_mart_end_to_end_with_json_post() -> None:
+    ok = (FIXTURES / "mops_9921_2019_06.json").read_bytes()
+    empty = (FIXTURES / "mops_9921_2013_06_empty.json").read_bytes()
+    responses = {
+        FakeFetcher.post_key(tw_mops.URL, tw_mops.body("9921", 2019, 6)): ok,
+        FakeFetcher.post_key(tw_mops.URL, tw_mops.body("9921", 2014, 1)): empty,
+    }
+    ctx = Context(
+        fetcher=FakeFetcher(responses),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({tw_mops.SOURCE}),
+    )
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert set(fetched.written) == {
+        f"{THEME}/tw_mops/mops_9921_2019_06.json",
+        f"{THEME}/tw_mops/mops_9921_2014_01.json",
+    }
+    assert sum("no fake response" in s for s in fetched.skipped) == len(tw_mops.requests()) - 2
+    staged = PIPELINE.run(Stage.STAGE, ctx)
+    assert staged.written == (MOPS_TABLE,)
+    assert any("1 company-months without data" in s for s in staged.skipped)
+    assert MOPS_MART in PIPELINE.run(Stage.MART, ctx).written
+    mart = ctx.tables.read_table(MOPS_MART)
+    assert (
+        len(mart) == 1 and mart[0]["period"] == "2019-06" and mart[0]["revenue_ntd_k"] == 4881737.0
+    )
+
+
+def test_taiwan_exports_stage_and_mart_add_other_destinations() -> None:
+    import json
+
+    doc = json.loads((FIXTURES / "comtrade_2023_sample.json").read_bytes())
+    base = next(x for x in doc["data"] if x["reporterCode"] == 392 and x["cmdCode"] == "8712")
+    rows = []
+    for partner, qty, val in (
+        (392, 63461.0, 51.2e6),
+        (842, 457488.0, 458.8e6),
+        (276, 50000.0, 60e6),
+        (528, 90000.0, 140e6),
+        (826, 70000.0, 80e6),
+        (0, 1356048.0, 1390e6),
+    ):
+        rows.append(
+            {
+                **base,
+                "reporterCode": 490,
+                "flowCode": "X",
+                "partnerCode": partner,
+                "qty": qty,
+                "primaryValue": val,
+            }
+        )
+    payload = json.dumps({"data": rows}).encode()
+    ctx = Context(
+        fetcher=FakeFetcher({comtrade.taiwan_url(2023): payload}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({"un_comtrade_taiwan"}),
+    )
+    assert PIPELINE.run(Stage.FETCH, ctx).written == (
+        f"{THEME}/un_comtrade_taiwan/comtrade_taiwan_exports_2023.json",
+    )
+    assert PIPELINE.run(Stage.STAGE, ctx).written == (COMTRADE_TAIWAN_TABLE,)
+    assert COMTRADE_TAIWAN_MART in PIPELINE.run(Stage.MART, ctx).written
+    mart = {r["partner"]: r for r in ctx.tables.read_table(COMTRADE_TAIWAN_MART)}
+    assert set(mart) == {"JPN", "USA", "DEU", "NLD", "GBR", "WLD", "OTH"}
+    assert mart["OTH"]["qty"] == pytest.approx(1356048.0 - (63461 + 457488 + 50000 + 90000 + 70000))
+    assert mart["JPN"]["iso3"] == "TWN" and mart["JPN"]["flow"] == "export"

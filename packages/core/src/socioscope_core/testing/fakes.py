@@ -1,6 +1,7 @@
 """In-memory fakes for classical (state-based) tests. Importable by every theme's tests."""
 
-from collections.abc import Sequence
+import json
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import TypeVar
 
@@ -27,6 +28,19 @@ class FakeFetcher:
             msg = f"no fake response for {url}"
             raise FetchError(msg)
         return self.responses[url]
+
+    @staticmethod
+    def post_key(url: str, body: Mapping[str, object]) -> str:
+        """Key under which a fake POST response is stored: url + '#' + canonical JSON body."""
+        return f"{url}#{json.dumps(body, sort_keys=True, ensure_ascii=False)}"
+
+    def post_json(self, url: str, body: Mapping[str, object]) -> bytes:
+        key = self.post_key(url, body)
+        self.requested.append(key)
+        if key not in self.responses:
+            msg = f"no fake response for {key}"
+            raise FetchError(msg)
+        return self.responses[key]
 
 
 class InMemoryRawStore:
