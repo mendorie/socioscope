@@ -5,9 +5,11 @@ import pytest
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
 from theme_bicycle_industry import (
+    accell,
     census,
     comtrade,
     cpi,
+    halfords,
     merida,
     meti,
     prices,
@@ -16,6 +18,7 @@ from theme_bicycle_industry import (
     tw_mops,
 )
 from theme_bicycle_industry.pipeline import (
+    ACCELL,
     BLS_TABLE,
     CENSUS_MART,
     CENSUS_TABLE,
@@ -25,6 +28,7 @@ from theme_bicycle_industry.pipeline import (
     COMTRADE_TAIWAN_TABLE,
     CPI_MART,
     CPI_TABLE,
+    HALFORDS,
     HICP_TABLE,
     MERIDA_MART,
     MERIDA_TABLE,
@@ -96,7 +100,7 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
     n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1 + len(comtrade.ORIGIN_YEARS) + 1
     n_other += len(comtrade.TAIWAN_YEARS) + 1  # taiwan exports + 'mops: raw missing'
-    n_other += len(merida.DOCS)
+    n_other += len(merida.DOCS) + len(halfords.DOCS) + len(accell.DOCS)
     assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
@@ -164,6 +168,8 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
         COMTRADE_TAIWAN_TABLE,
         MOPS_TABLE,
         MERIDA_TABLE,
+        HALFORDS.table,
+        ACCELL.table,
     ):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
@@ -458,3 +464,24 @@ def test_merida_fetch_rejects_non_pdf_and_stage_reports_unreadable_raw() -> None
         f"{MERIDA_TABLE}: staged table missing (run stage)" in PIPELINE.run(Stage.MART, ctx).skipped
     )
     assert MERIDA_MART not in PIPELINE.run(Stage.MART, ctx).written
+
+
+# ---- Halfords / Accell（PDF ソース共通の結線）
+
+
+def test_pdf_sources_fail_closed_on_html_and_missing_raw() -> None:
+    ctx = Context(
+        fetcher=FakeFetcher({halfords.url(2020): HTML_BLOCK, accell.url(2017): HTML_BLOCK}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({halfords.SOURCE, accell.SOURCE}),
+    )
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert fetched.written == ()
+    assert "halfords_prelims_fy2020.pdf: non-PDF payload" in fetched.skipped
+    assert "accell_annual_report_2017.pdf: non-PDF payload" in fetched.skipped
+    staged = PIPELINE.run(Stage.STAGE, ctx)
+    assert staged.written == () and any("raw missing" in s for s in staged.skipped)
+    marted = PIPELINE.run(Stage.MART, ctx)
+    assert f"{HALFORDS.table}: staged table missing (run stage)" in marted.skipped
+    assert HALFORDS.mart not in marted.written and ACCELL.mart not in marted.written

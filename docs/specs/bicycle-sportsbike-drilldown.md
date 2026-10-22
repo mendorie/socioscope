@@ -31,7 +31,7 @@
 - 仮説（事前登録）:
   - H13（セールは粗利率に出る）: Bike24 の粗利率は特需期より特需後に低く、在庫回転は遅い。判定: 2023–24 の粗利率平均 − 2021–22 平均 ≤ −2pt で整合。
   - H14: Specialized（Merida 持分法）の利益は特需後に赤字または特需期の 3 割以下。
-- 成果物: `bike24.py`・`halfords.py`（PDF）、`merida_equity.py`、R7 report。
+- 成果物: `halfords.py`・`accell.py`（PDF）、`merida.py`、R7 report（`bike24.py` は取り下げ）。
 
 ### Phase 3 の調査結果（2026-10-22）と判断待ち
 - **Merida 年報・四半期財報**: 自社 IR ページ（merida-bikes.com、robots 許可）から PDF にリンクするが、PDF の実体はすべて `merida-cdn.m-c-g.net` にあり、その robots.txt は全面 Disallow。FY2015–2022 は自社サイトに無く MOPS/doc.twse（同じく Disallow）だけ。→ **H14（Specialized の持分法損益）は現行ルールでは取得不可。** 到達性確認で読めた FY2023・2024 の値（SBC の持分法損失、関連当事者売上の比率）は manifest 無しのため mart に入れない。CDN の robots を「資産ホストの一般設定」として例外扱いにするかは人の判断（設計判断 → ADR 候補）。
@@ -43,6 +43,7 @@
 
 ### Phase 3 の結果（R7、2026-10-22）
 - `themes/bicycle-industry/reports/2026-10-22-r7-specialized.md`。H14 (a) 整合: Merida が認識した持分法損益（関連企業全体。SBC 単独は開示なし → 事前登録からの逸脱として記録、SBC は関連企業帳簿価額の 98%）は FY2022 +624 百万 NT$ → FY2023 −685、FY2024 −4,065、FY2025 +92（FY2022 の 14.8%）。(b) 整合: SBC 集団向け売上 FY2022 → 2025 −42.4%、全体 −27.7%、SBC 以外 +4.1%。
+- 補足（Halfords・Accell、2026-10-22 追加、記述のみ）: Halfords Cycling 売上（FY2019 = 100）は特需 FY2021 145 → 特需後 FY2023–26 平均 94、FY2026 98。コロナ前は年率 +7.0%。Accell は 2019 → 2021 +24、以降観測不可。
 - 所見: 上場 OEM（Giant・Merida）が「2019 年末未満の売上」で止まっているのに対し、Specialized は 2 年連続の損失と帳簿価額の減少（FY2024 −2,883 百万）というより深い調整を示す。ただし尺度が違い、1 社 1 系列。
 
 ## Phase 4 — 日本のスポーツ車本丸（JBPI 復旧後）: R8

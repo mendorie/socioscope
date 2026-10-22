@@ -8,9 +8,11 @@ still run (design/themes/bicycle-industry.md lists the adoption order).
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
 from theme_bicycle_industry import (
+    accell,
     census,
     comtrade,
     cpi,
+    halfords,
     merida,
     meti,
     prices,
@@ -63,6 +65,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_taiwan(ctx, written, skipped)
     written, skipped = _fetch_mops(ctx, written, skipped)
     written, skipped = _fetch_merida(ctx, written, skipped)
+    written, skipped = _fetch_pdf_source(ctx, written, skipped, HALFORDS)
+    written, skipped = _fetch_pdf_source(ctx, written, skipped, ACCELL)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -80,6 +84,8 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_taiwan(ctx, written, skipped)
     written, skipped = _stage_mops(ctx, written, skipped)
     written, skipped = _stage_merida(ctx, written, skipped)
+    written, skipped = _stage_pdf_source(ctx, written, skipped, HALFORDS)
+    written, skipped = _stage_pdf_source(ctx, written, skipped, ACCELL)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -97,6 +103,8 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_taiwan(ctx, written, skipped)
     written, skipped = _mart_mops(ctx, written, skipped)
     written, skipped = _mart_merida(ctx, written, skipped)
+    written, skipped = _mart_pdf_source(ctx, written, skipped, HALFORDS)
+    written, skipped = _mart_pdf_source(ctx, written, skipped, ACCELL)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -936,4 +944,109 @@ def _mart_merida(
         return written, skipped
     ctx.tables.write_table(MERIDA_MART, merida.build_mart(staged))
     written.append(MERIDA_MART)
+    return written, skipped
+
+
+# ---- Halfords 決算発表 PDF / Accell 年報 PDF（Wayback）: R7 補足（PDF ソース共通の結線）
+
+from dataclasses import dataclass as _dataclass  # noqa: E402
+from typing import Any as _Any  # noqa: E402
+
+
+@_dataclass(frozen=True)
+class PdfSource:
+    source: str
+    license: str
+    keys: tuple[int, ...]
+    url: _Any
+    raw_name: _Any
+    parse: _Any
+    build_mart: _Any
+    table: str
+    mart: str
+
+
+HALFORDS = PdfSource(
+    source=halfords.SOURCE,
+    license=halfords.LICENSE,
+    keys=tuple(sorted(halfords.DOCS)),
+    url=halfords.url,
+    raw_name=halfords.raw_name,
+    parse=halfords.parse,
+    build_mart=halfords.build_mart,
+    table="staged/halfords/cycling_revenue",
+    mart="marts/halfords_cycling",
+)
+ACCELL = PdfSource(
+    source=accell.SOURCE,
+    license=accell.LICENSE,
+    keys=tuple(sorted(accell.DOCS)),
+    url=accell.url,
+    raw_name=accell.raw_name,
+    parse=accell.parse,
+    build_mart=accell.build_mart,
+    table="staged/accell/net_turnover",
+    mart="marts/accell_turnover",
+)
+
+
+def _fetch_pdf_source(
+    ctx: Context, written: list[str], skipped: list[str], src: PdfSource
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(src.source):
+        return written, skipped
+    for key in src.keys:
+        url, name = src.url(key), src.raw_name(key)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        if not payload.startswith(b"%PDF"):
+            skipped.append(f"{name}: non-PDF payload")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME, source=src.source, name=name, url=url, license=src.license, payload=payload
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_pdf_source(
+    ctx: Context, written: list[str], skipped: list[str], src: PdfSource
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(src.source):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    staged_any = False
+    for key in src.keys:
+        name = src.raw_name(key)
+        payload = ctx.raw.get(theme=THEME, source=src.source, name=name)
+        if payload is None:
+            skipped.append(f"{name}: raw missing (run fetch)")
+            continue
+        try:
+            parsed = src.parse(payload, key)
+        except ValueError as e:
+            skipped.append(f"{name}: layout not recognised ({e})")
+            continue
+        rows.extend(parsed.rows)
+        skipped.extend(parsed.skipped)
+        staged_any = True
+    if staged_any:
+        ctx.tables.write_table(src.table, rows)
+        written.append(src.table)
+    return written, skipped
+
+
+def _mart_pdf_source(
+    ctx: Context, written: list[str], skipped: list[str], src: PdfSource
+) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(src.table)
+    except FileNotFoundError:
+        skipped.append(f"{src.table}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(src.mart, src.build_mart(staged))
+    written.append(src.mart)
     return written, skipped

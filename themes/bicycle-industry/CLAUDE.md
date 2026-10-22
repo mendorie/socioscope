@@ -30,10 +30,14 @@ src/theme_bicycle_industry/
   merida.py     Merida 連結財務報告 PDF（Q4、ADR 0006 の例外で `merida-cdn.m-c-g.net` から）: `DOCS` FY2023–2025 → ファイル名、`url`/`raw_name`、
                 `pdf_text`、`parse_pages`（売上・持分法損益・SBC 帳簿価額・関連企業合計・SBC 集団向け売上を当期・前期で読む、fail-closed）、
                 `build_mart`（当年の報告を優先、翌年と食い違えば `restated_next_year`）
+  halfords.py   Halfords 通期決算発表 PDF（FY2015–2026）: `DOCS`/`url`/`raw_name`、`parse_pages`（Retail 売上・Cycling 構成比・Cycling £m を
+                年ごとの様式（3 種の正規表現）で読む、53 週は 52 週列、fail-closed）、`build_mart`
+  accell.py     Accell 年報 PDF（Wayback `id_`、2017・2021）: `DOCS`（ts, 原 URL）、`parse_pages`（8 年表・5 年表）、`build_mart`（`restated_later`）
+  pipeline.py   （追加）`PdfSource` ＋ `_fetch/_stage/_mart_pdf_source`: PDF 1 文書 1 キーのソースの共通結線（HALFORDS / ACCELL）
   comtrade.py   （追加）H9: `taiwan_url`/`parse_taiwan`/`build_taiwan_mart`（reporter 490 の輸出、仕向地別 ＋ OTH）
   <source>.py   （予定）edgar.py Fox Factory（要 SOCIOSCOPE_SEC_CONTACT）/ customs.py 貿易統計 CSV / kakei.py 家計調査（支出金額のみ）/
                 jbpi.py JBPI PDF / shimano.py EDINET PDF / census_jp.py 経済センサス
-  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）、a20261022_r4_pullforward_origin.py（H7 先食い・H8 原産国別、図 5 枚）、a20261022_r6_participation.py（H11 高齢化・非補充、図 2 枚）、a20261022_r5_world_cycle.py（H9 台湾輸出・H10 在庫サイクルの位相、図 3 枚）、a20261022_r7_specialized.py（H14 Specialized 持分法、図 2 枚）
+  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）、a20261022_r4_pullforward_origin.py（H7 先食い・H8 原産国別、図 5 枚）、a20261022_r6_participation.py（H11 高齢化・非補充、図 2 枚）、a20261022_r5_world_cycle.py（H9 台湾輸出・H10 在庫サイクルの位相、図 3 枚）、a20261022_r7_specialized.py（H14 Specialized 持分法 ＋ 補足 Halfords・Accell、図 3 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          fixtures/（実レスポンスの縮約）＋ Fake による状態テスト
@@ -65,6 +69,10 @@ tests/          fixtures/（実レスポンスの縮約）＋ Fake による状�
 | `marts/tw_bicycle_monthly_revenue` | 〃 | iso3(TWN) ＋ staged と同列。612 行（2014-01–2026-09、2026-10-22 取得） |
 | `staged/merida/specialized_equity` | fy×metric×doc_fy（long） | fy, doc_fy, metric（revenue / equity_method_share / sbc_carrying_amount / associates_carrying_total / sbc_group_sales）, value_ntd_k, source(`merida_ir`)。3 報告 × 当期・前期 |
 | `marts/merida_specialized` | fy×metric | iso3(TWN), company(Merida), fy, metric, value_ntd_k, restated_next_year, doc_fy, source。20 行（FY2022–2025、2026-10-22 取得、食い違い 0） |
+| `staged/halfords/cycling_revenue` | fy×metric | fy, doc_fy, metric（retail_revenue / cycling_mix / cycling_revenue）, value, unit（GBP_m / pct_of_retail）, derived（bool）, source(`halfords_ir`) |
+| `marts/halfords_cycling` | 〃 | iso3(GBR), company(Halfords) ＋ staged と同列。34 行（FY2015–2026、2026-10-22 取得） |
+| `staged/accell/net_turnover` | year×report_year | year, report_year(2017/2021), metric(net_turnover), value_eur_m, source(`accell_ar`) |
+| `marts/accell_turnover` | year | iso3(NLD), company(Accell) ＋ staged と同列 ＋ restated_later。12 行（2010–2021、2026-10-22 取得） |
 | `marts/bicycle_industry_panel` | iso3×year×product×metric×source（long） | iso3, year, product（bicycle_total / e_assist / sports / city / parts / car_kei / car_registered / moto_lt125 / moto_126_250 / moto_251p …）, metric（units / value_jpy / value_usd / price_index / avg_price_jpy …）, value, source。**未作成**（行が 0 の Parquet は列を持たず DuckDB が読めないため、行ができるまで書かない） |
 
 ## テーマ固有の規約

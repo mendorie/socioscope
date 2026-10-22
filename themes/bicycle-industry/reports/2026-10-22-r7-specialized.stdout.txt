@@ -44,4 +44,43 @@
 - (b) を FY2022 → FY2024 で: SBC 向け -50.8%、全体 -19.9% → 整合
 - (b) を FY2023 → FY2025（底からの回復）で: SBC 向け +12.1%、全体 -1.8%
 
-figures: /Users/taku/Desktop/codes/socioscope/themes/bicycle-industry/reports/figures/r7_equity_share.png, /Users/taku/Desktop/codes/socioscope/themes/bicycle-industry/reports/figures/r7_sbc_index.png
+## 補足: 英国小売 1 社・欧州メーカー 1 社の特需前後（記述のみ、仮説なし）
+- mart: marts/halfords_cycling（34 行）、marts/accell_turnover（12 行）
+
+### Halfords（英国）Cycling 売上: FY2019 = 100（FY は 3 月末。FY2021 = 2020-04〜2021-03）
+| FY | Retail 売上 £m | Cycling 構成比 % | Cycling 売上 £m | 導出 | 指数 |
+|---|---|---|---|---|---|
+| 2015 | 857.9 | 34.4 | 295.1 | 構成比×Retail | 76 |
+| 2016 | 868.5 | 34.3 | 297.9 | 構成比×Retail | 77 |
+| 2017 | 938.4 | 38.0 | 356.6 | 構成比×Retail | 92 |
+| 2018 | 977.2 | 39.0 | 381.1 | 構成比×Retail | 98 |
+| 2019 | 977.2 | 39.6 | 387.0 | 構成比×Retail | 100 |
+| 2020 | 950.6 | 41.6 | 395.4 | 構成比×Retail | 102 |
+| 2021 | 1,039.8 | 53.9 | 560.5 | 構成比×Retail | 145 |
+| 2022 | 1,001.6 | 40.6 | 406.6 | 構成比×Retail | 105 |
+| 2023 | 979.6 | 38.0 | 372.2 | 構成比×Retail | 96 |
+| 2024 | 997.1 | 35.4 | 353.0 | 構成比×Retail | 91 |
+| 2025 | 1,004.9 | 開示 £m | 356.3 | 開示値 | 92 |
+| 2026 | 1,039.3 | 開示 £m | 378.9 | 開示値 | 98 |
+- 3 局面の平均（FY2019 = 100）: コロナ前 FY2019–20 101、特需 FY2021–22 125、特需後 FY2023–26 94
+- 特需後の最新（FY2026）98。特需ピーク（FY2021）145。事後追加（探索的）: FY2015 → FY2019 の年率 +7.0%。
+- 注: FY2015–2024 は Retail 売上 × 構成比（小数 1 桁 %）の導出で、丸め誤差 ±0.05pt（£0.5m 程度）を含む。FY2024 の本文は「Cycling 38% of Retail」と書くが表は 35.4%（表を採用）。FY2015・2020・2026 は 53 週決算で 52 週ベースの列を使った。
+
+### Accell（オランダ）グループ売上 €m: 2019 = 100（2022 年に非上場化、以降は開示なし）
+| 年 | 売上 €m | 指数 |
+|---|---|---|
+| 2010 | 577.2 | 52 |
+| 2011 | 628.5 | 57 |
+| 2012 | 772.5 | 70 |
+| 2013 | 849.0 | 76 |
+| 2014 | 882.4 | 79 |
+| 2015 | 986.4 | 89 |
+| 2016 | 1,048.2 | 94 |
+| 2017 | 1,068.5 | 96 |
+| 2018 | 1,094.0 | 98 |
+| 2019 | 1,111.0 | 100 |
+| 2020 | 1,296.0 | 117 |
+| 2021 | 1,377.0 | 124 |
+- 事後追加（探索的）: 2010 → 2019 の年率 +7.5%、2019 → 2021 +24（2 年で）。特需後（2022–）は観測できない。
+
+figures: /Users/taku/Desktop/codes/socioscope/themes/bicycle-industry/reports/figures/r7_equity_share.png, /Users/taku/Desktop/codes/socioscope/themes/bicycle-industry/reports/figures/r7_sbc_index.png, /Users/taku/Desktop/codes/socioscope/themes/bicycle-industry/reports/figures/r7_europe_index.png

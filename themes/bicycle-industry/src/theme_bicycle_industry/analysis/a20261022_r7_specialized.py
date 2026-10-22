@@ -13,7 +13,13 @@
     uv run python themes/bicycle-industry/src/theme_bicycle_industry/analysis/\\
         a20261022_r7_specialized.py [--data-dir data] [--fig-dir …]
 
-純粋ヘルパ（judge_h14a, change, judge_h14b）は tests/test_analysis_r7.py で検証する。
+補足（記述のみ・仮説なし、設計書「R7 補足」で指標を固定）: Halfords（英国小売）の Cycling 売上
+（£m、FY2019 = 100）を 3 局面（コロナ前 FY2019–20、特需 FY2021–22、特需後 FY2023–26）に並べ、
+Accell（欧州 e-bike メーカー）の売上（€m、2019 = 100、2010–2021）を並べる。
+入力は data/marts/{halfords_cycling, accell_turnover}.parquet。
+
+純粋ヘルパ（judge_h14a, change, judge_h14b, index_to, regime_means）は
+tests/test_analysis_r7.py で検証する。
 """
 
 from __future__ import annotations
@@ -70,6 +76,30 @@ def judge_h14b(sbc_change: float, total_change: float) -> str:
     if math.isnan(sbc_change) or math.isnan(total_change):
         return "判定不能"
     return "整合" if sbc_change < total_change else "不支持"
+
+
+def index_to(series: Mapping[int, float], base_year: int) -> dict[int, float]:
+    base = series.get(base_year)
+    if base is None or base == 0:
+        return {}
+    return {y: v / base * 100 for y, v in sorted(series.items())}
+
+
+REGIMES: dict[str, tuple[int, int]] = {
+    "コロナ前 FY2019–20": (2019, 2020),
+    "特需 FY2021–22": (2021, 2022),
+    "特需後 FY2023–26": (2023, 2026),
+}
+
+
+def regime_means(
+    series: Mapping[int, float], regimes: Mapping[str, tuple[int, int]] = REGIMES
+) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for name, (a, b) in regimes.items():
+        xs = [series[y] for y in range(a, b + 1) if y in series]
+        out[name] = sum(xs) / len(xs) if xs else math.nan
+    return out
 
 
 def by_fy(m: pl.DataFrame, metric: str) -> dict[int, float]:
@@ -155,6 +185,44 @@ def fig_index(data: Mapping[str, Mapping[int, float]], path: Path, source: str) 
     _style(ax)
     fig.text(0.01, 0.01, f"出典: {source}", fontsize=7, color=MUTED, ha="left", va="bottom")
     fig.tight_layout(rect=(0, 0.03, 1, 1))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
+
+
+def fig_europe(hal: Mapping[int, float], acc: Mapping[int, float], path: Path, source: str) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.8))
+    for ax, (name, s, base, span) in zip(
+        axes,
+        [
+            ("Halfords Cycling 売上（英国小売、FY は 3 月末）", hal, 2019, (2020.5, 2022.5)),
+            ("Accell グループ売上（欧州 e-bike メーカー、暦年）", acc, 2019, (2019.5, 2021.5)),
+        ],
+        strict=True,
+    ):
+        idx = index_to(s, base)
+        xs = sorted(idx)
+        ax.plot(xs, [idx[x] for x in xs], color=SERIES[0], linewidth=2, marker="o", markersize=3.5)
+        ax.annotate(
+            f"{idx[xs[-1]]:.0f}",
+            (xs[-1], idx[xs[-1]]),
+            textcoords="offset points",
+            xytext=(5, -3),
+            fontsize=8,
+            color=INK,
+        )
+        ax.axhline(100, color=MUTED, linewidth=0.8, linestyle="--")
+        ax.axvspan(*span, color="#f2f2f2", zorder=0)
+        ax.set_title(name, fontsize=9, color=INK, loc="left")
+        ax.set_ylabel(f"{base} = 100", fontsize=8, color=INK)
+        _style(ax)
+    fig.text(0.01, 0.01, f"出典: {source}", fontsize=7, color=MUTED, ha="left", va="bottom")
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=160)
     plt.close(fig)
@@ -281,13 +349,86 @@ def main(argv: Sequence[str] | None = None) -> None:
     s25, t25 = change(sbc_sales, 2023, 2025), change(rev, 2023, 2025)
     print(f"- (b) を FY2023 → FY2025（底からの回復）で: SBC 向け {s25:+.1%}、全体 {t25:+.1%}")
 
+    # ---- 補足: 欧州小売・メーカーの特需前後（記述のみ）
+    hal = pl.read_parquet(args.data_dir / "marts" / "halfords_cycling.parquet")
+    acc = pl.read_parquet(args.data_dir / "marts" / "accell_turnover.parquet")
+    cyc = {
+        int(r["fy"]): float(r["value"])
+        for r in hal.filter(pl.col("metric") == "cycling_revenue").iter_rows(named=True)
+    }
+    retail = {
+        int(r["fy"]): float(r["value"])
+        for r in hal.filter(pl.col("metric") == "retail_revenue").iter_rows(named=True)
+    }
+    mix = {
+        int(r["fy"]): float(r["value"])
+        for r in hal.filter(pl.col("metric") == "cycling_mix").iter_rows(named=True)
+    }
+    derived = {
+        int(r["fy"]): bool(r["derived"])
+        for r in hal.filter(pl.col("metric") == "cycling_revenue").iter_rows(named=True)
+    }
+    turnover = {int(r["year"]): float(r["value_eur_m"]) for r in acc.iter_rows(named=True)}
+    print("\n## 補足: 英国小売 1 社・欧州メーカー 1 社の特需前後（記述のみ、仮説なし）")
+    print(
+        f"- mart: marts/halfords_cycling（{hal.height} 行）、"
+        f"marts/accell_turnover（{acc.height} 行）"
+    )
+    print(
+        "\n### Halfords（英国）Cycling 売上: FY2019 = 100"
+        "（FY は 3 月末。FY2021 = 2020-04〜2021-03）"
+    )
+    print("| FY | Retail 売上 £m | Cycling 構成比 % | Cycling 売上 £m | 導出 | 指数 |")
+    print("|---|---|---|---|---|---|")
+    ci = index_to(cyc, 2019)
+    for fy in sorted(cyc):
+        mx = f"{mix[fy]:.1f}" if fy in mix else "開示 £m"
+        print(
+            f"| {fy} | {retail[fy]:,.1f} | {mx} | {cyc[fy]:,.1f} "
+            f"| {'構成比×Retail' if derived[fy] else '開示値'} | {ci[fy]:.0f} |"
+        )
+    rm = regime_means(ci)
+    print("- 3 局面の平均（FY2019 = 100）: " + "、".join(f"{k} {v:.0f}" for k, v in rm.items()))
+    print(
+        f"- 特需後の最新（FY2026）{ci[2026]:.0f}。特需ピーク（FY2021）{ci[2021]:.0f}。"
+        f"事後追加（探索的）: FY2015 → FY2019 の年率 {(cyc[2019] / cyc[2015]) ** 0.25 - 1:+.1%}。"
+    )
+    print(
+        "- 注: FY2015–2024 は Retail 売上 × 構成比（小数 1 桁 %）の導出で、丸め誤差 ±0.05pt"
+        "（£0.5m 程度）を含む。FY2024 の本文は「Cycling 38% of Retail」と書くが"
+        "表は 35.4%（表を採用）。"
+        "FY2015・2020・2026 は 53 週決算で 52 週ベースの列を使った。"
+    )
+    print(
+        "\n### Accell（オランダ）グループ売上 €m: 2019 = 100（2022 年に非上場化、以降は開示なし）"
+    )
+    ai = index_to(turnover, 2019)
+    print("| 年 | 売上 €m | 指数 |")
+    print("|---|---|---|")
+    for y in sorted(turnover):
+        print(f"| {y} | {turnover[y]:,.1f} | {ai[y]:.0f} |")
+    print(
+        f"- 事後追加（探索的）: 2010 → 2019 の年率 "
+        f"{(turnover[2019] / turnover[2010]) ** (1 / 9) - 1:+.1%}、"
+        f"2019 → 2021 {ai[2021] - 100:+.0f}（2 年で）。特需後（2022–）は観測できない。"
+    )
+    fig_europe(
+        cyc,
+        turnover,
+        args.fig_dir / "r7_europe_index.png",
+        "Halfords 決算発表 FY2015–26、Accell 年報 2017・2021（Wayback）",
+    )
+
     fig_share(share, args.fig_dir / "r7_equity_share.png", src)
     fig_index(
         {"Merida 売上（全体）": rev, "SBC 集団向け売上": sbc_sales, "SBC 帳簿価額": carry},
         args.fig_dir / "r7_sbc_index.png",
         src,
     )
-    print(f"\nfigures: {args.fig_dir / 'r7_equity_share.png'}, {args.fig_dir / 'r7_sbc_index.png'}")
+    print(
+        f"\nfigures: {args.fig_dir / 'r7_equity_share.png'}, {args.fig_dir / 'r7_sbc_index.png'}, "
+        f"{args.fig_dir / 'r7_europe_index.png'}"
+    )
 
 
 if __name__ == "__main__":
