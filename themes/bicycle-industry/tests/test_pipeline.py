@@ -6,6 +6,7 @@ from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
 from theme_bicycle_industry import (
     accell,
+    auto_moto,
     census,
     comtrade,
     cpi,
@@ -31,6 +32,8 @@ from theme_bicycle_industry.pipeline import (
     CPI_TABLE,
     HALFORDS,
     HICP_TABLE,
+    JADA,
+    JAIA,
     JBPI_DOMESTIC,
     JBPI_POS,
     MERIDA_MART,
@@ -46,6 +49,7 @@ from theme_bicycle_industry.pipeline import (
     SHAKAI_TABLE,
     SHIMANO_TABLE,
     THEME,
+    ZENKEI,
     build_panel,
 )
 from theme_bicycle_industry.wiring import PIPELINE
@@ -105,6 +109,7 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     n_other += len(comtrade.TAIWAN_YEARS) + 1  # taiwan exports + 'mops: raw missing'
     n_other += len(merida.DOCS) + len(halfords.DOCS) + len(accell.DOCS)
     n_other += len(jbpi.DOMESTIC_DOCS) + len(jbpi.POS_DOCS)
+    n_other += len(auto_moto.ZENKEI_DOCS) + len(auto_moto.JADA_DOCS) + len(auto_moto.JAIA_DOCS)
     assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
@@ -176,6 +181,9 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
         ACCELL.table,
         JBPI_DOMESTIC.table,
         JBPI_POS.table,
+        ZENKEI.table,
+        JADA.table,
+        JAIA.table,
     ):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
@@ -505,3 +513,15 @@ def test_jbpi_sources_fail_closed_on_html() -> None:
     assert "jbpi_domestic_2023_2025_dec.pdf: non-PDF payload" in fetched.skipped
     assert "jbpi_pos_annual_2025.pdf: non-PDF payload" in fetched.skipped
     assert JBPI_DOMESTIC.mart not in PIPELINE.run(Stage.MART, ctx).written
+
+
+def test_xls_sources_reject_html_payload() -> None:
+    ctx = Context(
+        fetcher=FakeFetcher({auto_moto.JAIA_DOCS["pricerange"]: HTML_BLOCK}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({auto_moto.SOURCE_JAIA}),
+    )
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert fetched.written == () and "jaia_pricerange_year.xls: non-xls payload" in fetched.skipped
+    assert JAIA.mart not in PIPELINE.run(Stage.MART, ctx).written
