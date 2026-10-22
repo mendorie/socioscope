@@ -35,3 +35,35 @@ def test_http_error_and_bad_scheme_raise_fetch_error() -> None:
         f.fetch("https://example.org/missing")
     with pytest.raises(FetchError, match="unsupported URL scheme"):
         f.fetch("ftp://example.org/x")
+
+
+def test_retries_429_with_retry_after_then_succeeds() -> None:
+    calls: list[int] = []
+    waits: list[float] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        if len(calls) < 3:
+            return httpx.Response(429, headers={"Retry-After": "3"})
+        return httpx.Response(200, content=b"ok")
+
+    f = HttpxFetcher(user_agent="t", transport=httpx.MockTransport(handler), sleep=waits.append)
+    assert f.fetch("https://example.org/x") == b"ok"
+    assert len(calls) == 3 and waits == [3.0, 3.0]
+
+
+def test_gives_up_on_429_after_the_configured_attempts() -> None:
+    waits: list[float] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429)
+
+    f = HttpxFetcher(
+        user_agent="t",
+        transport=httpx.MockTransport(handler),
+        rate_limit_attempts=3,
+        sleep=waits.append,
+    )
+    with pytest.raises(FetchError, match="HTTPStatusError"):
+        f.fetch("https://example.org/x")
+    assert waits == [2.0, 4.0]  # default back-off doubles when no Retry-After

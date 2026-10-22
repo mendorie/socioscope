@@ -11,8 +11,12 @@ src/theme_bicycle_industry/
                 （「実数表」の時間軸コード→ Period、2430 自転車・2400 自動車の行を long に。品目は NFKC 正規化名で同定、
                 必須品目欠落・ヘッダ不一致・非 xlsx は ValueError）、`build_mart`（mapped 系列のみ、最新 report_year 優先、
                 月次 12 本そろう年は `cy_from_months` 年計を追加、キー重複は ValueError）
+  comtrade.py   UN Comtrade preview API: `REPORTERS`（9 か国、TWN=490）/`COMMODITIES`（8712/871160/8714）/`YEARS` 2010–2024、
+                `url(year)`、`parse(payload, year)`（期間・相手国不一致は ValueError、未知の報告国・品目は skipped）、`build_mart`
+  prices.py     Eurostat HICP CP0711/0712/0713（JSON-stat、`hicp_url`/`parse_hicp`）と US BLS CPI（`BLS_SERIES`×`BLS_RANGES`、
+                `bls_url`/`parse_bls`。"-" は skipped）、`build_mart`（2 ソースを 1 つの long 表に、キー重複は ValueError）
   <source>.py   （予定）customs.py 貿易統計 CSV / cpi.py・kakei.py e-Stat Excel /
-                jbpi.py JBPI PDF / shimano.py EDINET PDF / comtrade.py / hicp.py / bls.py / census_jp.py 経済センサス
+                jbpi.py JBPI PDF / shimano.py EDINET PDF / census_jp.py 経済センサス
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          fixtures/（実レスポンスの縮約）＋ Fake による状態テスト
@@ -23,7 +27,12 @@ tests/          fixtures/（実レスポンスの縮約）＋ Fake による状�
 |---|---|---|
 | `staged/meti/seidou_annual` | survey×item×measure×period×report_year（long） | survey_no, industry(bicycle/motor_vehicle), item_no, item_code, product_ja, product_en, product（`meti.PRODUCTS` のキー、未知は NULL）, measure_ja, measure（`meti.MEASURES`、未知は NULL）, unit, period_type(month/cy/fy/quarter), period, year, value, value_flag(""/X/***/missing), report_year, source(`meti_seidou`)。5 年報を結合（改定前の値も残る） |
 | `marts/meti_production` | industry×product×measure×period_type×period | iso3(JPN), industry, product（bicycle_light / bicycle_e_assist / bicycle_other / wheelchair_manual / wheelchair_electric / car_kei / car_small / car_standard / moto_le50 / moto_51_125 / moto_126_250 / moto_gt250）, measure（production_qty / production_value / receipts_qty / sales_qty / sales_value / other_shipments_qty / inventory_qty）, unit, period_type（＋ `cy_from_months`）, period, year, value, value_flag, report_year, source。7,332 行（2026-10-22 取得: 月次 2021-01–2025-12、暦年 2017–2023、年計 2021–2025） |
-| `marts/bicycle_industry_panel` | iso3×year×product×metric×source（long） | iso3, year, product（bicycle_total / e_assist / sports / city / parts / car_kei / car_registered / moto_lt125 / moto_126_250 / moto_251p …）, metric（units / value_jpy / value_usd / price_index / avg_price_jpy …）, value, source。現在は空 |
+| `staged/comtrade/bicycle_trade` | iso3×year×flow×hs | iso3, reporter_code, year, flow(import/export), hs(8712/871160/8714), product(bicycle_complete/ebike_motor_only/bicycle_parts), qty（台、無ければ NULL）, qty_unit_code, net_wgt_kg, value_usd, source(`un_comtrade`) |
+| `marts/bicycle_trade` | 〃 | staged と同列。`iso3, year, flow, hs` でソート・一意（608 行、9 か国 × 2010–2024、2026-10-22 取得） |
+| `staged/eurostat/hicp_cp071x` | geo×coicop×month | iso3（EU27/EA20 は疑似コード）, geo, series(cars/motorcycles/bicycles), series_id(CP0711/…), period(YYYY-MM), year, month, value, base("2015=100"), source(`eurostat_hicp`) |
+| `staged/bls/cpi_vehicles` | series×month | 同列。iso3=USA, geo=US, series(sports_vehicles_incl_bicycles/new_vehicles), series_id(CUUR0000SERC01/SETA01), base("1982-84=100"), source(`bls_cpi`) |
+| `marts/price_indices` | source×geo×series_id×period | 両 staged を結合。キー順ソート・一意（8,210 行: HICP 2005-01–2025-12 13 geo、BLS 2006-01–2026-09、2026-10-22 取得）。基準年が違うので比較は再基準化して行う |
+| `marts/bicycle_industry_panel` | iso3×year×product×metric×source（long） | iso3, year, product（bicycle_total / e_assist / sports / city / parts / car_kei / car_registered / moto_lt125 / moto_126_250 / moto_251p …）, metric（units / value_jpy / value_usd / price_index / avg_price_jpy …）, value, source。**未作成**（行が 0 の Parquet は列を持たず DuckDB が読めないため、行ができるまで書かない） |
 
 ## テーマ固有の規約
 - 「スポーツ車」の定義はソースごとに違う（JBPI 車種分類・POS 小売分類）。`product` に出典別の値を使い、混ぜない。
