@@ -4,12 +4,17 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_bicycle_industry import meti
+from theme_bicycle_industry import comtrade, meti, prices
 from theme_bicycle_industry.pipeline import (
+    BLS_TABLE,
+    COMTRADE_MART,
+    COMTRADE_TABLE,
+    HICP_TABLE,
     METI_MART,
     METI_TABLE,
     PANEL_COLUMNS,
     PANEL_TABLE,
+    PRICES_MART,
     THEME,
     build_panel,
 )
@@ -19,6 +24,9 @@ FIXTURES = Path(__file__).parent / "fixtures"
 F2025 = (FIXTURES / "meti_h2daa2025k_sample.xlsx").read_bytes()
 F2021 = (FIXTURES / "meti_h2daa2021k_sample.xlsx").read_bytes()
 HTML_BLOCK = b"<!DOCTYPE html><html><body>403</body></html>"
+COMTRADE = (FIXTURES / "comtrade_2023_sample.json").read_bytes()
+HICP = (FIXTURES / "hicp_midx_sample.json").read_bytes()
+BLS = (FIXTURES / "bls_serc01_sample.json").read_bytes()
 
 
 def make_ctx(responses: dict[str, bytes] | None = None) -> Context:
@@ -38,7 +46,9 @@ def test_fetch_stores_each_available_annual_xlsx_with_license_and_reports_the_re
 
     assert result.written == (f"{THEME}/meti_seidou/h2daa2025k.xlsx",)
     assert "h2daa2024k.xlsx: non-xlsx payload (blocked or moved?)" in result.skipped
-    assert sum("no fake response" in s for s in result.skipped) == len(meti.YEARS) - 2
+    assert (
+        sum("no fake response" in s and "h2daa" in s for s in result.skipped) == len(meti.YEARS) - 2
+    )
     recs = ctx.raw.records()
     assert [r.name for r in recs] == ["h2daa2025k.xlsx"]
     assert "政府標準利用規約" in recs[0].license and recs[0].url == meti.annual_url(2025)
@@ -60,7 +70,8 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     result = PIPELINE.run(Stage.STAGE, ctx)
     assert result.written == ()
     assert all("raw missing (run fetch)" in s for s in result.skipped)
-    assert len(result.skipped) == len(meti.YEARS)
+    n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
+    assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + 1 + n_bls
     assert ctx.tables.list_tables() == []
 
 
@@ -115,7 +126,8 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
     ctx = make_ctx()
     result = PIPELINE.run(Stage.MART, ctx)
     assert result.written == ()
-    assert f"{METI_TABLE}: staged table missing (run stage)" in result.skipped
+    for table in (METI_TABLE, COMTRADE_TABLE, HICP_TABLE, BLS_TABLE):
+        assert f"{table}: staged table missing (run stage)" in result.skipped
 
 
 def test_build_panel_sorts_by_key_and_keeps_only_panel_columns() -> None:
@@ -154,3 +166,52 @@ def test_build_panel_rejects_duplicate_keys() -> None:
     }
     with pytest.raises(ValueError, match="duplicate panel key"):
         build_panel([row, dict(row)])
+
+
+# ---- Comtrade + price indices
+
+
+def test_comtrade_and_prices_fetch_stage_mart_end_to_end() -> None:
+    responses = {comtrade.url(2023): COMTRADE, prices.hicp_url(): HICP}
+    responses[prices.bls_url("CUUR0000SERC01", 2016, 2025)] = BLS
+    ctx = Context(
+        fetcher=FakeFetcher(responses),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({comtrade.SOURCE, prices.HICP_SOURCE, prices.BLS_SOURCE}),
+    )
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert set(fetched.written) == {
+        f"{THEME}/un_comtrade/comtrade_2023.json",
+        f"{THEME}/eurostat_hicp/{prices.HICP_RAW_NAME}",
+        f"{THEME}/bls_cpi/bls_CUUR0000SERC01_2016_2025.json",
+    }
+    licenses = {r.source: r.license for r in ctx.raw.records()}
+    assert "UN Comtrade" in licenses["un_comtrade"] and "Eurostat" in licenses["eurostat_hicp"]
+    assert "パブリックドメイン" in licenses["bls_cpi"]
+
+    staged = PIPELINE.run(Stage.STAGE, ctx)
+    assert set(staged.written) == {COMTRADE_TABLE, HICP_TABLE, BLS_TABLE}
+    assert any("comtrade_2010.json: raw missing" in s for s in staged.skipped)
+    assert all("h2daa" not in s for s in staged.skipped)  # meti is filtered out by --only
+
+    marted = PIPELINE.run(Stage.MART, ctx)
+    assert set(marted.written) == {COMTRADE_MART, PRICES_MART}
+    trade = ctx.tables.read_table(COMTRADE_MART)
+    assert {r["iso3"] for r in trade} == {"JPN", "DEU", "TWN"} and all(
+        r["year"] == 2023 for r in trade
+    )
+    px = ctx.tables.read_table(PRICES_MART)
+    assert {r["source"] for r in px} == {"eurostat_hicp", "bls_cpi"}
+
+
+def test_comtrade_fetch_rejects_non_json_without_touching_raw() -> None:
+    ctx = Context(
+        fetcher=FakeFetcher({comtrade.url(2023): HTML_BLOCK}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({comtrade.SOURCE}),
+    )
+    result = PIPELINE.run(Stage.FETCH, ctx)
+    assert result.written == () and ctx.raw.records() == []
+    assert "comtrade_2023.json: non-JSON payload" in result.skipped

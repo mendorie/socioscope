@@ -29,9 +29,9 @@
 | シマノ（7309）有価証券報告書・決算短信 | 自転車部品／釣具 セグメント売上・営業利益、地域別売上、四半期 | EDINET PDF 直リンク（`disclosure2dl.edinet-fsa.go.jp/searchdocument/pdf/<docID>.pdf`、EDINET コード E02257、キー不要。docID は検索ページから手で控える）／TDnet iXBRL（`www2.jpx.co.jp/disc/73090/…`）。shimano.com IR は非ブラウザ UA に 403。EDINET API はキー登録要のため使わない | 開示書類（引用可、著作権は会社） | 候補（bicycle-industry ⑦） |
 | あさひ（3333）月次営業速報 PDF | 全社・既存店 売上・客数・客単価、店舗数（月次） | TDnet PDF（`www2.jpx.co.jp/disc/33330/<id>.pdf`、URL は一覧 API 有料のため検索で解決） | 開示書類 | 候補（bicycle-industry、小売の補助） |
 | 総務省・経産省 経済センサス-活動調査 産業小分類「自転車小売業」 | 事業所数・従業者数・年間商品販売額（経営組織別、売場面積規模別、市区町村別）。2016・2021 | e-Stat `toukei=00200553` Excel（令和 3 年 総括表第 3 表 000040032842、第 1 表 000040032840、第 6 表 000040032845；平成 28 年 000031676907） | 政府標準利用規約 2.0 | 候補（bicycle-industry ⑧、ニッチ小売の代理） |
-| UN Comtrade preview API | HS 8712・871160・8714（細分含む）・8703・8711 の輸出入 数量・金額、全報告国、年次・月次。台湾は reporter 490 | `comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=…&period=…&cmdCode=…&flowCode=X|M`（キー不要、≤500 行/呼び出し、1 期間/呼び出し、並列で 429 → 逐次＋待ち。確認 2026-10-22） | UN Comtrade 利用条件: 非商用・出典表示で利用可、バルク再配布は制限 → raw 非コミット | 候補（bicycle-industry ④） |
-| Eurostat HICP `prc_hicp_minr`（旧 `prc_hicp_midx`） | COICOP CP0711 自動車・CP0712 二輪・CP0713 自転車 の価格指数（2015=100）、EU27＋各国、月次 1996– | dissemination API JSON-stat（キー不要）。`prc_hicp_midx` は廃止予定、`minr` の次元名は構造 API で確認してから実装 | Eurostat copyright notice（出典表示で再利用可） | 候補（bicycle-industry ⑤） |
-| US BLS CPI | `CUUR0000SERC01`（自転車を含むスポーツ用車両）、`CUUR0000SETA01`（新車）。二輪は 2000 年で終了 | `api.bls.gov/publicAPI/v1|v2/timeseries/data/<series>`（v2 はキー無し 25 回/日、10 年/回） | パブリックドメイン | 候補（bicycle-industry ⑤） |
+| UN Comtrade preview API | HS 8712 完成自転車・871160 電動二輪・8714 部品 の輸出入 数量（台。8714 と一部の報告国・年は数量なし）・純重量・金額 USD、報告国 9（JPN USA DEU NLD FRA GBR ITA CHN TWN=490）× 2010–2024、相手国 世界計 | `comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=…&period=<年>&cmdCode=8712,871160,8714&flowCode=M,X&partnerCode=0`（キー不要、1 期間/呼び出し、≤500 行。逐次でも 429 が返るので `HttpxFetcher` が Retry-After で再試行） | UN Comtrade 利用条件: 非商用・出典表示で利用可、バルク再配布は制限 → raw 非コミット（確認 2026-10-22） | **採用**（bicycle-industry ④、2026-10-22） |
+| Eurostat HICP `prc_hicp_midx` | COICOP CP0711 自動車・CP0712 二輪・CP0713 自転車 の価格指数（2015=100）、EU27・EA20・DE FR NL IT ES BE AT DK SE PL UK CH、月次 2005-01–2025-12 | dissemination API JSON-stat 1 リクエスト（キー不要）。「廃止・`prc_hicp_minr` に置換」表示だが配信中。`minr` は次元名が違う（COICOP 2018）ため未切替 | Eurostat copyright notice（出典表示で再利用可、確認 2026-10-22） | **採用**（bicycle-industry ⑤、2026-10-22） |
+| US BLS CPI | `CUUR0000SERC01`（Sports vehicles including bicycles）、`CUUR0000SETA01`（New vehicles）、1982-84=100、月次 2006-01–。二輪は 2000 年で終了、自転車単独の品目はない | `api.bls.gov/publicAPI/v2/timeseries/data/<series>?startyear=&endyear=`（GET、キー無しで 10 年/リクエスト・25 リクエスト/日。6 リクエスト） | パブリックドメイン（確認 2026-10-22） | **採用**（bicycle-industry ⑤、2026-10-22） |
 | ZIV（独 二輪産業協会）市場データ PDF | 独 販売台数（e-bike／従来車）、平均価格、売上、生産・輸出入、在庫、2015–2025 | `ziv-zweirad.de/marktdaten-archiv/`（46 PDF、英語版あり。例 `wp-content/uploads/2026/03/Market-Data-Bicycle-Industry-2025.pdf`） | 著作権 ZIV → 引用のみ、PDF 非再配布 | 候補（bicycle-industry ⑩） |
 | TWSE OpenAPI 上場企業月次売上 | Giant（9921）・Merida（9914）の月次売上・前年比（当月分のみ → 毎月スナップショット、過去分は MOPS） | `openapi.twse.com.tw/v1/opendata/t187ap05_L`（JSON、キー不要。確認 2026-10-22） | 政府資料開放授權條款 v1（台湾、出典表示） | 候補（bicycle-industry ⑩） |
 | Fox Factory（FOXF）10-K | 自転車（Specialty Sports Group）売上・比率 | SEC EDGAR XBRL / HTML（キー不要、UA 必須） | パブリックドメイン | 候補（bicycle-industry、補助） |
@@ -462,6 +462,20 @@
 - ライセンス・利用規約（確認 2026-10-22）: `meti.go.jp/main/rules.html` 経済産業省ウェブサイト利用規約 = 政府標準利用規約（第 2.0 版）準拠、出典表示で商用含め利用可。raw は非コミット（既定）。出典: 経済産業省「経済産業省生産動態統計年報 機械統計編」。
 - 取得方法: `theme_bicycle_industry.meti`（URL 組み立て・xlsx → long 行 `parse`・`build_mart`）＋ `pipeline._fetch_meti/_stage_meti/_mart_meti`。**www.meti.go.jp は非ブラウザ UA に 403**（robots.txt も 403。一覧 HTML は 202 でボット判定）→ `socioscope_core.config.Settings.browser_ua_hosts`（既定 `["www.meti.go.jp"]`）に載せたホストだけ `HttpxFetcher` が汎用ブラウザ UA を送る。5 ファイル逐次、年 1 回（年報は翌年 4 月頃）。
 - 既知の欠損・断絶・定義変更: 品目番号は年で振り直される（2024 年にトラック細分が変更）ため、品目は NFKC 正規化した品目名で同定（`meti.PRODUCTS`、必須 5 品目が欠けると fail-closed）。同じ系列×期間が複数年報にあるときは最新の年報を採る（改定反映）。「その他」自転車にスポーツ車・ミニサイクル・子供車が混在し分離不可。原付一種は 2400 の「二輪自動車 ≤50 ml」。
+
+### UN Comtrade preview API（bicycle-industry ④: 自転車関連 HS の輸出入）
+- URL / API: `https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=392,842,276,528,250,826,380,156,490&period=<年>&cmdCode=8712,871160,8714&flowCode=M,X&partnerCode=0`（年ごと 1 JSON、2010–2024 の 15 リクエスト、各 ~48 行）。preview は 1 期間/呼び出し・≤500 行。逐次呼び出しでも 429（Retry-After 2 s 前後）→ `HttpxFetcher` が Retry-After を守って最大 5 回再試行する。登録キー（無料）の tier は使わない。
+- 対象・粒度: 報告国 × 年 × HS（8712 完成自転車、871160 電動機のみの二輪＝ e-bike と原付・電動バイクが混在、8714 部品）× フロー（M 輸入 / X 輸出）、相手国 世界計。列: `qty`（台。`qtyUnitCode` −1 の行は None。8714 は数量なし、DEU 2010・2012–2014、USA 2014、CHN 2015–2017、TWN 2012 の 8712 も数量なし）、`net_wgt_kg`、`value_usd`（primaryValue = 輸入 CIF / 輸出 FOB）。台湾は reporterCode 490（Other Asia, nes）。
+- ライセンス・利用規約（確認 2026-10-22）: UN Comtrade Terms of Use — 非商用・出典表示で利用可、バルク再配布は制限。raw は非コミット、staged/marts は出典「UN Comtrade Database」を明記。
+- 取得方法: `theme_bicycle_industry.comtrade`（`url(year)`・`parse(payload, year)`（期間・相手国不一致は ValueError、知らない報告国・品目は skipped）・`build_mart`）＋ `pipeline._fetch_comtrade/_stage_comtrade/_mart_comtrade`。年 1 回。
+- 既知の欠損・断絶・定義変更: 871160 は HS2017 から（2016 以前は 871190 に含まれ系列が切れる）。数量欠損は上記。`isReported=false, isAggregate=true` の行（UN 推計を含む）をそのまま使う。
+
+### Eurostat HICP `prc_hicp_midx` と US BLS CPI（bicycle-industry ⑤: 自転車・自動車・二輪の価格指数）
+- URL / API: HICP `https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_midx?format=JSON&lang=EN&unit=I15&coicop=CP0711&coicop=CP0712&coicop=CP0713&geo=…&sinceTimePeriod=2005-01`（JSON-stat 2.0、1 リクエスト ~8 千値、キー不要）。BLS `https://api.bls.gov/publicAPI/v2/timeseries/data/<series>?startyear=<y1>&endyear=<y2>`（GET、キー無し 10 年/リクエスト、2 系列 × 3 区間 = 6 リクエスト）。
+- 対象・粒度: HICP = CP0711 自動車 / CP0712 二輪 / CP0713 自転車、2015=100、EU27_2020・EA20・DE FR NL IT ES BE AT DK SE PL UK CH（US は geo にあるが CP071x の値なし）、月次 2005-01–2025-12。BLS = `CUUR0000SERC01`（Sports vehicles including bicycles、自転車単独の品目はない）と `CUUR0000SETA01`（New vehicles）、1982-84=100、月次 2006-01–2026-09（2025-10 は未公表 "-" → 落とす）。米国の二輪 CPI は 2000 年で終了。
+- ライセンス・利用規約（確認 2026-10-22）: Eurostat copyright notice（出典表示で商用含め再利用可）、BLS はパブリックドメイン。raw 非コミット（既定）。
+- 取得方法: `theme_bicycle_industry.prices`（`hicp_url`/`parse_hicp`（次元順 freq/unit/coicop/geo/time と unit=I15 を検査、疎な値は欠損）、`bls_url`/`parse_bls`（REQUEST_SUCCEEDED 以外は ValueError）、`build_mart`）＋ `pipeline._fetch_prices/_stage_prices/_mart_prices`。mart `marts/price_indices` は両ソースを 1 つの long 表に（基準年が違うので `base` 列で区別、比較は再基準化して行う）。
+- 既知の欠損・断絶・定義変更: `prc_hicp_midx` は「廃止・`prc_hicp_minr` に置換」と表示（2026-02 更新で 2025-12 まで配信）。`minr` は COICOP 2018 で次元名が違うため、構造を確認して切り替える（追跡項目）。HICP はヘドニック調整済みでセールの深さは直接は捉えない。
 
 ## 記録テンプレート（ソース採用時）
 ```
