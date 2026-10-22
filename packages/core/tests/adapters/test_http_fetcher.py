@@ -67,3 +67,23 @@ def test_gives_up_on_429_after_the_configured_attempts() -> None:
     with pytest.raises(FetchError, match="HTTPStatusError"):
         f.fetch("https://example.org/x")
     assert waits == [2.0, 4.0]  # default back-off doubles when no Retry-After
+
+
+def test_post_json_sends_body_and_host_user_agent() -> None:
+    seen: list[tuple[str, str, bytes]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.method, request.headers["User-Agent"], request.content))
+        return httpx.Response(200, content=b'{"ok": true}')
+
+    f = HttpxFetcher(
+        user_agent="t",
+        transport=httpx.MockTransport(handler),
+        user_agent_by_host={"mops.example": "browser"},
+    )
+    assert (
+        f.post_json("https://mops.example/api", {"companyId": "9921", "year": "108"})
+        == b'{"ok": true}'
+    )
+    method, ua, body = seen[0]
+    assert method == "POST" and ua == "browser" and b'"companyId"' in body

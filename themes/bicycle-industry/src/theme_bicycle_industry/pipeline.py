@@ -7,7 +7,7 @@ still run (design/themes/bicycle-industry.md lists the adoption order).
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shakai, shimano
+from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shakai, shimano, tw_mops
 
 THEME = "bicycle-industry"
 PANEL_TABLE = "marts/bicycle_industry_panel"
@@ -50,6 +50,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_cpi(ctx, written, skipped)
     written, skipped = _fetch_census(ctx, written, skipped)
     written, skipped = _fetch_shakai(ctx, written, skipped)
+    written, skipped = _fetch_taiwan(ctx, written, skipped)
+    written, skipped = _fetch_mops(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -64,6 +66,8 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_cpi(ctx, written, skipped)
     written, skipped = _stage_census(ctx, written, skipped)
     written, skipped = _stage_shakai(ctx, written, skipped)
+    written, skipped = _stage_taiwan(ctx, written, skipped)
+    written, skipped = _stage_mops(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -78,6 +82,8 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_cpi(ctx, written, skipped)
     written, skipped = _mart_census(ctx, written, skipped)
     written, skipped = _mart_shakai(ctx, written, skipped)
+    written, skipped = _mart_taiwan(ctx, written, skipped)
+    written, skipped = _mart_mops(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -690,4 +696,158 @@ def _mart_shakai(
         return written, skipped
     ctx.tables.write_table(SHAKAI_MART, shakai.build_mart(staged))
     written.append(SHAKAI_MART)
+    return written, skipped
+
+
+# ---- UN Comtrade 台湾輸出（H9）: reporter 490 × 仕向地 × 2015–2024 ---------------------------
+
+COMTRADE_TAIWAN_SOURCE = "un_comtrade_taiwan"
+COMTRADE_TAIWAN_TABLE = "staged/comtrade/taiwan_exports"
+COMTRADE_TAIWAN_MART = "marts/taiwan_bicycle_exports"
+
+
+def _fetch_taiwan(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(COMTRADE_TAIWAN_SOURCE):
+        return written, skipped
+    for year in comtrade.TAIWAN_YEARS:
+        url = comtrade.taiwan_url(year)
+        name = comtrade.taiwan_raw_name(year)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        if not payload.lstrip().startswith(b"{"):
+            skipped.append(f"{name}: non-JSON payload")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=COMTRADE_TAIWAN_SOURCE,
+            name=name,
+            url=url,
+            license=comtrade.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_taiwan(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(COMTRADE_TAIWAN_SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    staged_any = False
+    for year in comtrade.TAIWAN_YEARS:
+        name = comtrade.taiwan_raw_name(year)
+        payload = ctx.raw.get(theme=THEME, source=COMTRADE_TAIWAN_SOURCE, name=name)
+        if payload is None:
+            skipped.append(f"{name}: raw missing (run fetch)")
+            continue
+        try:
+            parsed = comtrade.parse_taiwan(payload, year=year)
+        except ValueError as e:
+            skipped.append(f"{name}: layout not recognised ({e})")
+            continue
+        rows.extend(parsed.rows)
+        skipped.extend(f"{name}: {s}" for s in parsed.skipped)
+        staged_any = True
+    if staged_any:
+        ctx.tables.write_table(COMTRADE_TAIWAN_TABLE, rows)
+        written.append(COMTRADE_TAIWAN_TABLE)
+    return written, skipped
+
+
+def _mart_taiwan(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(COMTRADE_TAIWAN_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{COMTRADE_TAIWAN_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(COMTRADE_TAIWAN_MART, comtrade.build_taiwan_mart(staged))
+    written.append(COMTRADE_TAIWAN_MART)
+    return written, skipped
+
+
+# ---- 台湾 MOPS 月次売上（H10）: Giant・Merida・KMC・Ideal × 2014–2026、JSON POST ------------------  # noqa: E501
+# One POST per company-month (tw_mops.requests()). A month before coverage returns code 200
+# without data; it is stored (the API's answer is the evidence) and staged as no row.
+
+MOPS_TABLE = "staged/tw_mops/monthly_revenue"
+MOPS_MART = "marts/tw_bicycle_monthly_revenue"
+
+
+def _fetch_mops(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(tw_mops.SOURCE):
+        return written, skipped
+    for cid, year, month in tw_mops.requests():
+        name = tw_mops.raw_name(cid, year, month)
+        try:
+            payload = ctx.fetcher.post_json(tw_mops.URL, tw_mops.body(cid, year, month))
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        if not payload.lstrip().startswith(b"{"):
+            skipped.append(f"{name}: non-JSON payload")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=tw_mops.SOURCE,
+            name=name,
+            url=f"{tw_mops.URL}#companyId={cid}&year={tw_mops.roc_year(year)}&month={month}",
+            license=tw_mops.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_mops(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(tw_mops.SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    staged_any = False
+    empty = 0
+    for cid, year, month in tw_mops.requests():
+        name = tw_mops.raw_name(cid, year, month)
+        payload = ctx.raw.get(theme=THEME, source=tw_mops.SOURCE, name=name)
+        if payload is None:
+            continue
+        try:
+            parsed = tw_mops.parse(payload, cid, year, month)
+        except ValueError as e:
+            skipped.append(f"{name}: layout not recognised ({e})")
+            continue
+        rows.extend(parsed.rows)
+        empty += len(parsed.skipped)
+        staged_any = True
+    if staged_any:
+        ctx.tables.write_table(MOPS_TABLE, rows)
+        written.append(MOPS_TABLE)
+        if empty:
+            skipped.append(
+                f"mops: {empty} company-months without data (before coverage / not yet published)"
+            )
+    else:
+        skipped.append("mops: raw missing (run fetch)")
+    return written, skipped
+
+
+def _mart_mops(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(MOPS_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{MOPS_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(MOPS_MART, tw_mops.build_mart(staged))
+    written.append(MOPS_MART)
     return written, skipped

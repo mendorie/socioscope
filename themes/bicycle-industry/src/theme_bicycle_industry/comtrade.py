@@ -46,6 +46,111 @@ ORIGIN_REPORTERS: tuple[int, ...] = (392, 842, 276, 528, 826)
 ORIGIN_YEARS: tuple[int, ...] = tuple(range(2015, 2025))
 
 
+# ---- 台湾の完成車輸出（H9）: reporter 490 × 仕向地 × 2015–2024、輸出のみ
+TAIWAN_REPORTER = 490
+TAIWAN_PARTNERS: dict[int, str] = {
+    392: "JPN",
+    842: "USA",
+    276: "DEU",
+    528: "NLD",
+    826: "GBR",
+    0: "WLD",
+}
+TAIWAN_COMMODITIES: dict[str, str] = {"8712": "bicycle_complete", "871160": "ebike_motor_only"}
+TAIWAN_YEARS: tuple[int, ...] = tuple(range(2015, 2025))
+
+
+def taiwan_url(year: int) -> str:
+    cmds = ",".join(TAIWAN_COMMODITIES)
+    partners = ",".join(str(c) for c in TAIWAN_PARTNERS)
+    return (
+        f"{BASE}?reporterCode={TAIWAN_REPORTER}&period={year}&cmdCode={cmds}"
+        f"&flowCode=X&partnerCode={partners}"
+    )
+
+
+def taiwan_raw_name(year: int) -> str:
+    return f"comtrade_taiwan_exports_{year}.json"
+
+
+def parse_taiwan(payload: bytes, year: int) -> Parsed:
+    """台湾輸出ファイル → 行 (iso3=TWN, year, flow=export, hs, product, partner, qty, net_wgt_kg,
+    value_usd, source)。期間不一致は ValueError、知らない相手国・品目は skipped。"""
+    try:
+        doc = json.loads(payload)
+    except ValueError as e:
+        msg = "payload is not JSON"
+        raise ValueError(msg) from e
+    data = doc.get("data") if isinstance(doc, dict) else None
+    if not isinstance(data, list):
+        msg = f"unexpected Comtrade payload: {str(doc)[:120]!r}"
+        raise ValueError(msg)
+    out: list[dict[str, object]] = []
+    skipped: list[str] = []
+    for d in data:
+        if int(d["reporterCode"]) != TAIWAN_REPORTER or str(d["flowCode"]) != "X":
+            skipped.append(f"unexpected reporter/flow {d['reporterCode']}/{d['flowCode']}")
+            continue
+        if str(d["period"]) != str(year):
+            msg = f"row period mismatch: {d['period']} (want {year})"
+            raise ValueError(msg)
+        cmd, partner = str(d["cmdCode"]), int(d["partnerCode"])
+        if cmd not in TAIWAN_COMMODITIES or partner not in TAIWAN_PARTNERS:
+            skipped.append(f"unexpected cmd/partner {cmd}/{partner}")
+            continue
+        qty = d.get("qty")
+        unit = int(d.get("qtyUnitCode", -1))
+        out.append(
+            {
+                "iso3": "TWN",
+                "year": year,
+                "flow": "export",
+                "hs": cmd,
+                "product": TAIWAN_COMMODITIES[cmd],
+                "partner": TAIWAN_PARTNERS[partner],
+                "qty": float(qty) if qty is not None and unit != -1 else None,
+                "net_wgt_kg": float(d["netWgt"]) if d.get("netWgt") is not None else None,
+                "value_usd": float(d["primaryValue"]),
+                "source": SOURCE,
+            }
+        )
+    return Parsed(rows=out, skipped=skipped)
+
+
+TAIWAN_MART_KEY: tuple[str, ...] = ("year", "hs", "partner")
+
+
+def build_taiwan_mart(staged: list[dict[str, object]]) -> list[dict[str, object]]:
+    """仕向地別に加え、OTH（= WLD − 5 か国）を足す。キー順ソート、重複は ValueError。"""
+    out = [dict(r) for r in staged]
+    by: dict[tuple[object, object], dict[str, dict[str, object]]] = {}
+    for r in staged:
+        by.setdefault((r["year"], r["hs"]), {})[str(r["partner"])] = r
+    for parts in by.values():
+        w = parts.get("WLD")
+        named = [parts[k] for k in TAIWAN_PARTNERS.values() if k != "WLD" and k in parts]
+        if w is None or len(named) != len(TAIWAN_PARTNERS) - 1:
+            continue
+        qtys = [w["qty"], *(r["qty"] for r in named)]
+        oth_qty = None
+        if all(isinstance(q, int | float) for q in qtys):
+            nums = [float(q) for q in qtys if isinstance(q, int | float)]
+            oth_qty = nums[0] - sum(nums[1:])
+        oth_val = float(str(w["value_usd"])) - sum(float(str(r["value_usd"])) for r in named)
+        out.append(
+            {**w, "partner": "OTH", "qty": oth_qty, "net_wgt_kg": None, "value_usd": oth_val}
+        )
+    out.sort(key=lambda r: tuple(str(r[c]) for c in TAIWAN_MART_KEY))
+    seen: set[tuple[object, ...]] = set()
+    for r in out:
+        k = tuple(r[c] for c in TAIWAN_MART_KEY)
+        if k in seen:
+            msg = f"duplicate taiwan key {k}"
+            raise ValueError(msg)
+        seen.add(k)
+    return out
+
+
 def origin_url(year: int) -> str:
     reporters = ",".join(str(c) for c in ORIGIN_REPORTERS)
     cmds = ",".join(COMMODITIES)

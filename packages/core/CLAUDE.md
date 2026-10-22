@@ -11,17 +11,17 @@ src/socioscope_core/
     llm_cache.py    LLM 構造化キャッシュのキー（sha256(model|schema_version|prompt)）と行スキーマ
     note_export.py  report（Markdown）→ note.com 貼り付け用の Markdown/HTML（純粋関数。表→箇条書き、画像→【画像を挿入】）
   ports/       Protocol
-    fetcher.py      SourceFetcher: fetch(url) -> bytes
+    fetcher.py      SourceFetcher: fetch(url) -> bytes / post_json(url, body) -> bytes（本文に問い合わせを置く API 用）
     structurer.py   Structurer: structure(prompt, schema) -> BaseModel
     store.py        TableStore: write_table(name, rows) / read_table(name) / list_tables()
                     RawStore: put(theme, source, name, payload) -> RawRecord（manifest 追記込み）
   adapters/    Port 実装（外部依存はここだけ）
-    http_fetcher.py       HttpxFetcher（User-Agent、タイムアウト、リトライ）
+    http_fetcher.py       HttpxFetcher（User-Agent、ホスト別 UA、429 の Retry-After 再試行、タイムアウト、リトライ。GET と JSON POST）
     filesystem_raw.py     FilesystemRawStore（data/raw/<theme>/<source>/<name> + manifest.jsonl 追記）
     parquet_store.py      ParquetTableStore（data/<layer>/... .parquet。polars 経由）
     duckdb_catalog.py     build_catalog(db_path, data_dir): staged.* / marts.* の view を張る
     claude_structurer.py  ClaudeStructurer（anthropic messages.parse + data/llm_cache/*.jsonl）
-  config.py    Settings（env: ANTHROPIC_API_KEY, SOCIOSCOPE_LLM_MODEL, SOCIOSCOPE_DATA_DIR）
+  config.py    Settings（env: ANTHROPIC_API_KEY, SOCIOSCOPE_LLM_MODEL, SOCIOSCOPE_DATA_DIR, SOCIOSCOPE_BROWSER_UA_HOSTS, SOCIOSCOPE_SEC_CONTACT）
   cli.py       typer: themes / run <theme> <stage> / db build / db query / note-draft <report.md> [--embed-images --figures DIR] [--paste-script --figure-base-url URL]（→ exports/note/、gitignore）。結線はここだけ
 tests/
   （Fake は src/socioscope_core/testing/fakes.py に置く: テーマのテストからも import できるようにするため）

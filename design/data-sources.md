@@ -21,6 +21,8 @@
 | OECD Data Explorer（IDD 等） | 所得分配（IDD）、出生率 | SDMX API | 同上 | 候補 |
 | Maddison Project / Penn World Table | 長期 GDP 系列 | Excel/CSV | 要確認 | 候補（戦後長期） |
 | Our World in Data | 整形済み系列（出典明記） | CSV / grapher API | CC BY | 候補（検証用） |
+| 台湾 MOPS 月次営業収入 JSON API | Giant・Merida・KMC・Ideal Bike の月次売上（NT$ 千）2014-01〜 | `POST mops.twse.com.tw/mops/api/t05st10_ifrs`（JSON、キー不要） | 公開開示（出典表示） | **採用**（bicycle-industry H10、2026-10-22） |
+| SEC EDGAR（Fox Factory 10-K、Specialty Sports Group） | 自転車部品セグメント売上 FY2018– | FilingSummary.xml → R ページ（連絡先付き UA が必須: `SOCIOSCOPE_SEC_CONTACT`） | パブリックドメイン | 候補（未結線。連絡先未設定のためスキップ） |
 | 総務省 社会生活基本調査 時系列統計表 | スポーツ種類別 行動者率（男女 × 年齢階級 × 1986–2021、サイクリング含む 23 種目） | e-Stat `statInfId=000032229293&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（bicycle-industry H11、2026-10-22） |
 | 経産省 生産動態統計（機械統計）年報 | 自転車（軽快車／電動アシスト車／その他／車いす）と自動車（軽・小型・普通乗用車、排気量別二輪）の生産・受入・販売・出荷その他・月末在庫 数量・金額、月次（2021–2025 年報）＋暦年 2017–2023・年度・四半期（2021–2023 年報）。1 ファイル＝全品目 | METI 直置き xlsx（`…/08_seidou/nenpo/<YYYY>/h2daa<YYYY>k.xlsx`、appId 不要）。**非ブラウザ UA は 403** → `Settings.browser_ua_hosts` でこのホストだけブラウザ UA。2007–2020 は業種別 .xls（未対応） | 経産省 利用規約＝政府標準利用規約 2.0 準拠（出典表示、確認 2026-10-22） | **採用**（bicycle-industry ①、2026-10-22） |
 | 財務省 貿易統計（e-Stat 配信 CSV、品別国別表） | HS 8712 完成自転車・8714 部品・8711.60 電動二輪・8703 乗用車・8711 二輪の輸出入 数量・金額、国別、月次 1988–・年次 | e-Stat `toukei=00350300`、`file-download?statInfId=…&fileKind=1`（appId 不要）。月次 statInfId は一覧ページから解決が必要。税関サイトの検索も CSV 可（≤3,000 行、Shift_JIS） | 政府標準利用規約 2.0（e-Stat）／税関サイトは公共データ利用規約 PDL1.0（確認 2026-10-22） | 候補（bicycle-industry ②） |
@@ -513,6 +515,17 @@
 - 取得方法: `theme_bicycle_industry.shakai`（`URL`/`RAW_NAME`、`parse`（スポーツ名行と西暦行から列を組み立て、総数／男／女 × 年齢階級の行を long に。必須種目・シート・男女×年齢の欠落は ValueError）、`build_mart`）＋ `pipeline._fetch_shakai/_stage_shakai/_mart_shakai`。5 年に 1 回（次は 2026 年調査、2027 年公表）。
 - 既知の欠損・断絶・定義変更: サイクリングは 2001 年に集計なし、1986・1991 は総数と 10–14 歳なし。2021 年に種目区分が変更（ゲートボール削除、グラウンドゴルフ・ヨガ追加。サイクリングの定義は不変）。2011 年は東日本大震災で一部地域を除く。年齢の上限は 70 歳以上（詳細表は 75／85 歳以上）。行動者数（千人）は別表。
 - 補助候補（未採用）: 笹川スポーツ財団 スポーツライフ・データ（サイクリング 年 1 回以上の実施率は版ページの HTML 文中のみ、週 1 回以上・年代別は有料）。日本雑誌協会 印刷証明付部数は『サイクルスポーツ』『BiCYCLE CLUB』を収録していない（H12 取り下げ）。
+
+### 台湾 MOPS 月次営業収入 JSON API（bicycle-industry H10: Giant・Merida・KMC・Ideal Bike）
+- URL / API: `POST https://mops.twse.com.tw/mops/api/t05st10_ifrs`、本文 `{"companyId": "<4 桁>", "dataType": "2", "subsidiaryCompanyId": "", "year": "<民國年>", "month": "<1–12>"}`（JSON、キー不要）。`dataType` が "2" 以外だと最新月だけ返る。収録は民國 103 年（2014 年）1 月から。1 社 1 月 1 リクエスト（4 社 × 2014–2026 = 624 件、2026-10-22 取得。429 なし）。`mops.twse.com.tw/robots.txt` は 404（方針なし）。**旧 `mopsov.twse.com.tw`（全社月次 HTML）と `doc.twse.com.tw`（年報 PDF）は robots.txt が全面 Disallow のため使わない。**
+- 対象・粒度: 巨大 9921（Giant）、美利達 9914（Merida）、桂盟 5306（KMC、チェーン）、愛地雅 8933（Ideal Bike、OEM）。`本月`（当月営業収入、NT$ 千）、`去年同期`、`本年累計`。応答の `result.data` は `[ラベル, 値]` の配列。
+- ライセンス・利用規約（確認 2026-10-22）: 臺灣證券交易所の公開開示（上場企業の月次営業収入）。政府資料開放授權條款 v1 の公開情報として出典表示で利用。raw 非コミット。
+- 取得方法: `theme_bicycle_industry.tw_mops`（`body`/`raw_name`/`requests`、`parse`（未収録月は行なし、`yymm` 不一致は ValueError）、`build_mart`）＋ `pipeline._fetch_mops/_stage_mops/_mart_mops`（`SourceFetcher.post_json` を使う）。月 1 回（各月 10 日の公表後）。
+- 既知の欠損・断絶: 2013 年以前は JSON API に無い。連結ベース（海外工場を含む）で、台湾からの輸出とは一致しない。
+
+### UN Comtrade 台湾輸出（bicycle-industry H9: reporter 490 × 仕向地）
+- URL / API: `…/preview/C/A/HS?reporterCode=490&period=<年>&cmdCode=8712,871160&flowCode=X&partnerCode=392,842,276,528,826,0`（年ごと 1 JSON、2015–2024）。mart で OTH（= 世界 − 5 か国）を足す。
+- 既知の欠損: 871160 は 2017 年から。台湾の完成車輸出は 2015 → 2019 に半減しており（生産の海外移転）、世界需要の代理としては弱い（R5 で明記）。
 
 ## 記録テンプレート（ソース採用時）
 ```
