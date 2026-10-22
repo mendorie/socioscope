@@ -7,7 +7,7 @@
 |---|---|---|
 | `wealth-population-distribution` | 戦後、資本主義の進展とともに富の偏りは極端化しているのか（世界各国・日本） | 分析中（WID.world 取得〜mart 実装済み（46 か国）。H1 report: `themes/wealth-population-distribution/reports/2026-10-04-h1-ushape.md`。H2 用に OECD SDMX（最高税率・社会支出・税収）fetch〜mart 実装済み（OECD 38）。H2 report（限定・関連のみ）: `.../2026-10-04-h2-institutions.md`。**総括（一般向け・日本語）**: `.../2026-10-05-summary-wealth-population-distribution.md`） |
 | `growth-fertility` | 経済成長と出生率の関係は国間・国内（所得階層）でフラクタルか | H1〜H3b report 済み（`themes/growth-fertility/reports/2026-10-04-h1-income-tfr.md`, `...-h2-growth-shocks.md`, `...-h3-jp-income-class.md`, `...-h3b-age-adjusted.md`）。**総括（一般読者向け・日本語・図 13 枚）**: `themes/growth-fertility/reports/2026-10-05-summary-growth-fertility.md`。データ: World Bank WDI、e-Stat 国民生活基礎調査・就業構造基本調査 fetch〜mart 実装済み |
-| `bicycle-industry` | 日本および世界の自転車産業はどのような状況か（実用層と趣味層の分化、部品供給、小売構造。自動車・二輪との対比） | 設計済み（`design/themes/bicycle-industry.md`、H1〜H6 事前登録、2026-10-22）。データソース調査済み（`design/data-sources.md`）。①生産動態統計（自転車・自動車・二輪、2017–2025）、④UN Comtrade（9 か国 2010–2024）、⑤Eurostat HICP・BLS CPI、⑦シマノ 有報（FY2013–2025）fetch〜mart 実装済み（`marts/meti_production`, `bicycle_trade`, `price_indices`, `shimano_segments`） |
+| `bicycle-industry` | 日本および世界の自転車産業はどのような状況か（実用層と趣味層の分化、部品供給、小売構造。自動車・二輪との対比） | 設計済み（`design/themes/bicycle-industry.md`、H1〜H6 事前登録、2026-10-22）。データソース調査済み（`design/data-sources.md`）。①生産動態統計（自転車・自動車・二輪、2017–2025）、④UN Comtrade（9 か国 2010–2024）、⑤Eurostat HICP・BLS CPI、⑦シマノ 有報（FY2013–2025）、③総務省 CPI 品目別（自転車 A/B・乗用車）fetch〜mart 実装済み（`marts/meti_production`, `bicycle_trade`, `price_indices`, `shimano_segments`, `jp_cpi_vehicles`） |
 
 ## セットアップ
 ```bash

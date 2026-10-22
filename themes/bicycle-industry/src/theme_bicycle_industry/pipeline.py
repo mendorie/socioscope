@@ -7,7 +7,7 @@ still run (design/themes/bicycle-industry.md lists the adoption order).
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_bicycle_industry import comtrade, meti, prices, shimano
+from theme_bicycle_industry import comtrade, cpi, meti, prices, shimano
 
 THEME = "bicycle-industry"
 PANEL_TABLE = "marts/bicycle_industry_panel"
@@ -46,6 +46,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_comtrade(ctx, written, skipped)
     written, skipped = _fetch_prices(ctx, written, skipped)
     written, skipped = _fetch_shimano(ctx, written, skipped)
+    written, skipped = _fetch_cpi(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -56,6 +57,7 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_comtrade(ctx, written, skipped)
     written, skipped = _stage_prices(ctx, written, skipped)
     written, skipped = _stage_shimano(ctx, written, skipped)
+    written, skipped = _stage_cpi(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -66,6 +68,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_comtrade(ctx, written, skipped)
     written, skipped = _mart_prices(ctx, written, skipped)
     written, skipped = _mart_shimano(ctx, written, skipped)
+    written, skipped = _mart_cpi(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -403,4 +406,68 @@ def _mart_shimano(
         return written, skipped
     ctx.tables.write_table(SHIMANO_MART, shimano.build_mart(staged))
     written.append(SHIMANO_MART)
+    return written, skipped
+
+
+# ---- 総務省 CPI 2025 年基準 品目別 長期時系列 CSV（e-Stat、appId 不要）: 自転車 A/B・乗用車 -----
+# Two CSVs (annual, monthly). An HTML error page is not CP932 → rejected before raw.
+
+CPI_TABLE = "staged/estat/cpi_items"
+CPI_MART = "marts/jp_cpi_vehicles"
+
+
+def _fetch_cpi(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    if not ctx.wants(cpi.SOURCE):
+        return written, skipped
+    for key in cpi.FILES:
+        url = cpi.url(key)
+        name = cpi.raw_name(key)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        if payload.lstrip().startswith(b"<"):
+            skipped.append(f"{name}: HTML payload (wrong statInfId or fileKind?)")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME, source=cpi.SOURCE, name=name, url=url, license=cpi.LICENSE, payload=payload
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_cpi(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    if not ctx.wants(cpi.SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    staged_any = False
+    for key in cpi.FILES:
+        name = cpi.raw_name(key)
+        payload = ctx.raw.get(theme=THEME, source=cpi.SOURCE, name=name)
+        if payload is None:
+            skipped.append(f"{name}: raw missing (run fetch)")
+            continue
+        try:
+            parsed = cpi.parse(payload, key)
+        except ValueError as e:
+            skipped.append(f"{name}: layout not recognised ({e})")
+            continue
+        rows.extend(parsed.rows)
+        skipped.extend(f"{name}: {s}" for s in parsed.skipped)
+        staged_any = True
+    if staged_any:
+        ctx.tables.write_table(CPI_TABLE, rows)
+        written.append(CPI_TABLE)
+    return written, skipped
+
+
+def _mart_cpi(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(CPI_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{CPI_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(CPI_MART, cpi.build_mart(staged))
+    written.append(CPI_MART)
     return written, skipped

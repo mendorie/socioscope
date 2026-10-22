@@ -4,11 +4,13 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_bicycle_industry import comtrade, meti, prices, shimano
+from theme_bicycle_industry import comtrade, cpi, meti, prices, shimano
 from theme_bicycle_industry.pipeline import (
     BLS_TABLE,
     COMTRADE_MART,
     COMTRADE_TABLE,
+    CPI_MART,
+    CPI_TABLE,
     HICP_TABLE,
     METI_MART,
     METI_TABLE,
@@ -72,9 +74,8 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     assert result.written == ()
     assert all("raw missing (run fetch)" in s for s in result.skipped)
     n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
-    assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + 1 + n_bls + len(
-        shimano.DOCS
-    )
+    n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES)
+    assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
 
@@ -129,7 +130,7 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
     ctx = make_ctx()
     result = PIPELINE.run(Stage.MART, ctx)
     assert result.written == ()
-    for table in (METI_TABLE, COMTRADE_TABLE, HICP_TABLE, BLS_TABLE, SHIMANO_TABLE):
+    for table in (METI_TABLE, COMTRADE_TABLE, HICP_TABLE, BLS_TABLE, SHIMANO_TABLE, CPI_TABLE):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
 
@@ -246,3 +247,29 @@ def test_shimano_fetch_rejects_non_pdf_and_stage_reports_unreadable_raw() -> Non
     staged = PIPELINE.run(Stage.STAGE, ctx)
     assert staged.written == ()
     assert any("S100VGFP.pdf: layout not recognised" in s for s in staged.skipped)
+
+
+# ---- CPI
+
+
+def test_cpi_fetch_stage_mart_end_to_end_and_html_rejected() -> None:
+    annual = (FIXTURES / "cpi_zni2025a.csv").read_bytes()
+    ctx = Context(
+        fetcher=FakeFetcher({cpi.url("annual"): annual, cpi.url("monthly"): HTML_BLOCK}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({cpi.SOURCE}),
+    )
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert fetched.written == (f"{THEME}/estat_cpi/cpi_2025base_annual.csv",)
+    assert (
+        "cpi_2025base_monthly.csv: HTML payload (wrong statInfId or fileKind?)" in fetched.skipped
+    )
+    assert "政府標準利用規約" in ctx.raw.records()[0].license
+    staged = PIPELINE.run(Stage.STAGE, ctx)
+    assert staged.written == (CPI_TABLE,)
+    assert "cpi_2025base_monthly.csv: raw missing (run fetch)" in staged.skipped
+    marted = PIPELINE.run(Stage.MART, ctx)
+    assert CPI_MART in marted.written
+    mart = ctx.tables.read_table(CPI_MART)
+    assert {r["freq"] for r in mart} == {"annual"} and {r["iso3"] for r in mart} == {"JPN"}
