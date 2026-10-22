@@ -4,9 +4,11 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_bicycle_industry import comtrade, cpi, meti, prices, shimano
+from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shimano
 from theme_bicycle_industry.pipeline import (
     BLS_TABLE,
+    CENSUS_MART,
+    CENSUS_TABLE,
     COMTRADE_MART,
     COMTRADE_TABLE,
     CPI_MART,
@@ -74,7 +76,7 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     assert result.written == ()
     assert all("raw missing (run fetch)" in s for s in result.skipped)
     n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
-    n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES)
+    n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1  # +1 census
     assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
@@ -130,7 +132,15 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
     ctx = make_ctx()
     result = PIPELINE.run(Stage.MART, ctx)
     assert result.written == ()
-    for table in (METI_TABLE, COMTRADE_TABLE, HICP_TABLE, BLS_TABLE, SHIMANO_TABLE, CPI_TABLE):
+    for table in (
+        METI_TABLE,
+        COMTRADE_TABLE,
+        HICP_TABLE,
+        BLS_TABLE,
+        SHIMANO_TABLE,
+        CPI_TABLE,
+        CENSUS_TABLE,
+    ):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
 
@@ -273,3 +283,26 @@ def test_cpi_fetch_stage_mart_end_to_end_and_html_rejected() -> None:
     assert CPI_MART in marted.written
     mart = ctx.tables.read_table(CPI_MART)
     assert {r["freq"] for r in mart} == {"annual"} and {r["iso3"] for r in mart} == {"JPN"}
+
+
+# ---- census
+
+
+def test_census_fetch_stage_mart_end_to_end() -> None:
+    xlsx = (FIXTURES / "census_f1_001_sample.xlsx").read_bytes()
+    ctx = Context(
+        fetcher=FakeFetcher({census.URL: xlsx}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({census.SOURCE}),
+    )
+    assert PIPELINE.run(Stage.FETCH, ctx).written == (f"{THEME}/estat_census/{census.RAW_NAME}",)
+    assert PIPELINE.run(Stage.STAGE, ctx).written == (CENSUS_TABLE,)
+    assert CENSUS_MART in PIPELINE.run(Stage.MART, ctx).written
+    mart = ctx.tables.read_table(CENSUS_MART)
+    bike = {
+        r["year"]: r["value"]
+        for r in mart
+        if r["industry"] == "bicycle_retail" and r["metric"] == "establishments"
+    }
+    assert bike[2021] == 9552.0

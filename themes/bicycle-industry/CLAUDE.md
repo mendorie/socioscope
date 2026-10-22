@@ -19,6 +19,8 @@ src/theme_bicycle_industry/
                 セグメント売上・利益と地域別売上を正規表現で読む、fail-closed）、`build_mart`（その年の有報を優先、翌年と食い違えば `restated_next_year`）
   cpi.py        総務省 CPI 2025 年基準 品目別 長期時系列 CSV（年・月、CP932）: `FILES`（statInfId）、`ITEMS`（符号 → キー 8 品目）、
                 `parse`（符号で列選択、ヘッダ・符号欠落・非数値は ValueError）、`build_mart`
+  census.py     経済センサス（R3）小売業 産業編 第 1 表 xlsx: `URL`/`RAW_NAME`、`INDUSTRIES`（5 業種）、`METRICS`（6 指標）、
+                `SURVEY_OF_YEAR`（商業統計／経済センサス）、`parse`（全国行を long に、業種欠落は ValueError）、`build_mart`
   <source>.py   （予定）customs.py 貿易統計 CSV / kakei.py 家計調査（支出金額のみ）/
                 jbpi.py JBPI PDF / shimano.py EDINET PDF / census_jp.py 経済センサス
   analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）
@@ -41,6 +43,8 @@ tests/          fixtures/（実レスポンスの縮約）＋ Fake による状�
 | `marts/shimano_segments` | fy×table×key×metric | iso3(JPN), company(Shimano), fy, table, key, metric, value_mn_jpy, restated_next_year, docid, source。156 行（FY2013–2025、2026-10-22 取得、食い違い 0） |
 | `staged/estat/cpi_items` | item_code×freq×period | item_code, item（all_items / bicycles / bicycle_a / bicycle_b / car_kei / car_small / car_standard_a / car_standard_b）, period(YYYY or YYYY-MM), freq(annual/monthly), year, month, value, base("2025=100"), source(`estat_cpi`) |
 | `marts/jp_cpi_vehicles` | 〃 | iso3(JPN) ＋ staged と同列。4,393 行（年 1970–2025、月 1970-01–2026-08、2026-10-22 取得） |
+| `staged/estat/census_retail` | industry×year×metric | industry_label, industry（retail_total / auto_retail / motorcycle_retail / bicycle_retail / machinery_retail_other）, year（1994–2021 の 10 時点）, survey, metric（establishments / establishments_corporate / establishments_individual / persons_engaged / annual_sales_mn_jpy / sales_floor_m2）, value（`-`/`x` は NULL）, source(`estat_census`) |
+| `marts/jp_retail_census` | 〃 | iso3(JPN) ＋ staged と同列。300 行（2026-10-22 取得） |
 | `marts/bicycle_industry_panel` | iso3×year×product×metric×source（long） | iso3, year, product（bicycle_total / e_assist / sports / city / parts / car_kei / car_registered / moto_lt125 / moto_126_250 / moto_251p …）, metric（units / value_jpy / value_usd / price_index / avg_price_jpy …）, value, source。**未作成**（行が 0 の Parquet は列を持たず DuckDB が読めないため、行ができるまで書かない） |
 
 ## テーマ固有の規約

@@ -7,7 +7,7 @@ still run (design/themes/bicycle-industry.md lists the adoption order).
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_bicycle_industry import comtrade, cpi, meti, prices, shimano
+from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shimano
 
 THEME = "bicycle-industry"
 PANEL_TABLE = "marts/bicycle_industry_panel"
@@ -47,6 +47,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_prices(ctx, written, skipped)
     written, skipped = _fetch_shimano(ctx, written, skipped)
     written, skipped = _fetch_cpi(ctx, written, skipped)
+    written, skipped = _fetch_census(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -58,6 +59,7 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_prices(ctx, written, skipped)
     written, skipped = _stage_shimano(ctx, written, skipped)
     written, skipped = _stage_cpi(ctx, written, skipped)
+    written, skipped = _stage_census(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -69,6 +71,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_prices(ctx, written, skipped)
     written, skipped = _mart_shimano(ctx, written, skipped)
     written, skipped = _mart_cpi(ctx, written, skipped)
+    written, skipped = _mart_census(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -470,4 +473,69 @@ def _mart_cpi(ctx: Context, written: list[str], skipped: list[str]) -> tuple[lis
         return written, skipped
     ctx.tables.write_table(CPI_MART, cpi.build_mart(staged))
     written.append(CPI_MART)
+    return written, skipped
+
+
+# ---- 経済センサス（令和 3 年）小売業 産業編 第 1 表 xlsx（e-Stat、appId 不要）: 自転車小売業 -----
+# One xlsx; the national rows of five retail industries, 1994–2021.
+
+CENSUS_TABLE = "staged/estat/census_retail"
+CENSUS_MART = "marts/jp_retail_census"
+
+
+def _fetch_census(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(census.SOURCE):
+        return written, skipped
+    try:
+        payload = ctx.fetcher.fetch(census.URL)
+    except FetchError as e:
+        skipped.append(f"{census.RAW_NAME}: {e}")
+        return written, skipped
+    if not payload.startswith(b"PK"):
+        skipped.append(f"{census.RAW_NAME}: non-xlsx payload (wrong statInfId or fileKind?)")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=census.SOURCE,
+        name=census.RAW_NAME,
+        url=census.URL,
+        license=census.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_census(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(census.SOURCE):
+        return written, skipped
+    payload = ctx.raw.get(theme=THEME, source=census.SOURCE, name=census.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{census.RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        parsed = census.parse(payload)
+    except ValueError as e:
+        skipped.append(f"{census.RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(CENSUS_TABLE, parsed.rows)
+    written.append(CENSUS_TABLE)
+    skipped.extend(f"{census.RAW_NAME}: {s}" for s in parsed.skipped)
+    return written, skipped
+
+
+def _mart_census(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(CENSUS_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{CENSUS_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(CENSUS_MART, census.build_mart(staged))
+    written.append(CENSUS_MART)
     return written, skipped
