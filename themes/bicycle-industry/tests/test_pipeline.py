@@ -4,7 +4,7 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_bicycle_industry import comtrade, meti, prices
+from theme_bicycle_industry import comtrade, meti, prices, shimano
 from theme_bicycle_industry.pipeline import (
     BLS_TABLE,
     COMTRADE_MART,
@@ -15,6 +15,7 @@ from theme_bicycle_industry.pipeline import (
     PANEL_COLUMNS,
     PANEL_TABLE,
     PRICES_MART,
+    SHIMANO_TABLE,
     THEME,
     build_panel,
 )
@@ -71,7 +72,9 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     assert result.written == ()
     assert all("raw missing (run fetch)" in s for s in result.skipped)
     n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
-    assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + 1 + n_bls
+    assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + 1 + n_bls + len(
+        shimano.DOCS
+    )
     assert ctx.tables.list_tables() == []
 
 
@@ -126,7 +129,7 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
     ctx = make_ctx()
     result = PIPELINE.run(Stage.MART, ctx)
     assert result.written == ()
-    for table in (METI_TABLE, COMTRADE_TABLE, HICP_TABLE, BLS_TABLE):
+    for table in (METI_TABLE, COMTRADE_TABLE, HICP_TABLE, BLS_TABLE, SHIMANO_TABLE):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
 
@@ -215,3 +218,31 @@ def test_comtrade_fetch_rejects_non_json_without_touching_raw() -> None:
     result = PIPELINE.run(Stage.FETCH, ctx)
     assert result.written == () and ctx.raw.records() == []
     assert "comtrade_2023.json: non-JSON payload" in result.skipped
+
+
+# ---- Shimano
+
+
+def test_shimano_fetch_rejects_non_pdf_and_stage_reports_unreadable_raw() -> None:
+    ctx = Context(
+        fetcher=FakeFetcher({shimano.url(2024): HTML_BLOCK}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({shimano.SOURCE}),
+    )
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert fetched.written == () and ctx.raw.records() == []
+    assert "shimano_yuho_fy2024_S100VGFP.pdf: non-PDF payload" in fetched.skipped
+    assert sum("no fake response" in s for s in fetched.skipped) == len(shimano.DOCS) - 1
+
+    ctx.raw.put(
+        theme=THEME,
+        source=shimano.SOURCE,
+        name=shimano.raw_name(2024),
+        url=shimano.url(2024),
+        license=shimano.LICENSE,
+        payload=HTML_BLOCK,
+    )
+    staged = PIPELINE.run(Stage.STAGE, ctx)
+    assert staged.written == ()
+    assert any("S100VGFP.pdf: layout not recognised" in s for s in staged.skipped)

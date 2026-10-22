@@ -7,7 +7,7 @@ still run (design/themes/bicycle-industry.md lists the adoption order).
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_bicycle_industry import comtrade, meti, prices
+from theme_bicycle_industry import comtrade, meti, prices, shimano
 
 THEME = "bicycle-industry"
 PANEL_TABLE = "marts/bicycle_industry_panel"
@@ -45,6 +45,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_meti(ctx, written, skipped)
     written, skipped = _fetch_comtrade(ctx, written, skipped)
     written, skipped = _fetch_prices(ctx, written, skipped)
+    written, skipped = _fetch_shimano(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -54,6 +55,7 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_meti(ctx, written, skipped)
     written, skipped = _stage_comtrade(ctx, written, skipped)
     written, skipped = _stage_prices(ctx, written, skipped)
+    written, skipped = _stage_shimano(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -63,6 +65,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_meti(ctx, written, skipped)
     written, skipped = _mart_comtrade(ctx, written, skipped)
     written, skipped = _mart_prices(ctx, written, skipped)
+    written, skipped = _mart_shimano(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -324,4 +327,80 @@ def _mart_prices(
     if found:
         ctx.tables.write_table(PRICES_MART, prices.build_mart(rows))
         written.append(PRICES_MART)
+    return written, skipped
+
+
+# ---- Shimano 有価証券報告書 PDF（EDINET、キー不要）: セグメント・地域別売上 FY2013–2025 ------
+# One PDF per fiscal year (shimano.DOCS). Each filing carries the prior year too, so the mart
+# prefers the filing of the year itself and records a restatement when the next year differs.
+
+SHIMANO_TABLE = "staged/edinet/shimano_segments"
+SHIMANO_MART = "marts/shimano_segments"
+
+
+def _fetch_shimano(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(shimano.SOURCE):
+        return written, skipped
+    for fy in sorted(shimano.DOCS):
+        url = shimano.url(fy)
+        name = shimano.raw_name(fy)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        if not payload.startswith(b"%PDF"):
+            skipped.append(f"{name}: non-PDF payload")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=shimano.SOURCE,
+            name=name,
+            url=url,
+            license=shimano.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_shimano(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(shimano.SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    staged_any = False
+    for fy in sorted(shimano.DOCS):
+        name = shimano.raw_name(fy)
+        payload = ctx.raw.get(theme=THEME, source=shimano.SOURCE, name=name)
+        if payload is None:
+            skipped.append(f"{name}: raw missing (run fetch)")
+            continue
+        try:
+            parsed = shimano.parse(payload, fy)
+        except ValueError as e:
+            skipped.append(f"{name}: layout not recognised ({e})")
+            continue
+        rows.extend(parsed.rows)
+        skipped.extend(f"{name}: {s}" for s in parsed.skipped)
+        staged_any = True
+    if staged_any:
+        ctx.tables.write_table(SHIMANO_TABLE, rows)
+        written.append(SHIMANO_TABLE)
+    return written, skipped
+
+
+def _mart_shimano(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(SHIMANO_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{SHIMANO_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(SHIMANO_MART, shimano.build_mart(staged))
+    written.append(SHIMANO_MART)
     return written, skipped
