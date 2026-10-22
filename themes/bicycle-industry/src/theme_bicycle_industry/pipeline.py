@@ -7,7 +7,17 @@ still run (design/themes/bicycle-industry.md lists the adoption order).
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shakai, shimano, tw_mops
+from theme_bicycle_industry import (
+    census,
+    comtrade,
+    cpi,
+    merida,
+    meti,
+    prices,
+    shakai,
+    shimano,
+    tw_mops,
+)
 
 THEME = "bicycle-industry"
 PANEL_TABLE = "marts/bicycle_industry_panel"
@@ -52,6 +62,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_shakai(ctx, written, skipped)
     written, skipped = _fetch_taiwan(ctx, written, skipped)
     written, skipped = _fetch_mops(ctx, written, skipped)
+    written, skipped = _fetch_merida(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -68,6 +79,7 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_shakai(ctx, written, skipped)
     written, skipped = _stage_taiwan(ctx, written, skipped)
     written, skipped = _stage_mops(ctx, written, skipped)
+    written, skipped = _stage_merida(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -84,6 +96,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_shakai(ctx, written, skipped)
     written, skipped = _mart_taiwan(ctx, written, skipped)
     written, skipped = _mart_mops(ctx, written, skipped)
+    written, skipped = _mart_merida(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -850,4 +863,77 @@ def _mart_mops(ctx: Context, written: list[str], skipped: list[str]) -> tuple[li
         return written, skipped
     ctx.tables.write_table(MOPS_MART, tw_mops.build_mart(staged))
     written.append(MOPS_MART)
+    return written, skipped
+
+
+# ---- Merida 連結財務報告 PDF（自社 IR、ADR 0006 の例外）: Specialized 持分法・関連当事者売上
+
+MERIDA_TABLE = "staged/merida/specialized_equity"
+MERIDA_MART = "marts/merida_specialized"
+
+
+def _fetch_merida(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(merida.SOURCE):
+        return written, skipped
+    for fy in sorted(merida.DOCS):
+        url = merida.url(fy)
+        name = merida.raw_name(fy)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        if not payload.startswith(b"%PDF"):
+            skipped.append(f"{name}: non-PDF payload")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=merida.SOURCE,
+            name=name,
+            url=url,
+            license=merida.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_merida(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(merida.SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    staged_any = False
+    for fy in sorted(merida.DOCS):
+        name = merida.raw_name(fy)
+        payload = ctx.raw.get(theme=THEME, source=merida.SOURCE, name=name)
+        if payload is None:
+            skipped.append(f"{name}: raw missing (run fetch)")
+            continue
+        try:
+            parsed = merida.parse(payload, fy)
+        except ValueError as e:
+            skipped.append(f"{name}: layout not recognised ({e})")
+            continue
+        rows.extend(parsed.rows)
+        staged_any = True
+    if staged_any:
+        ctx.tables.write_table(MERIDA_TABLE, rows)
+        written.append(MERIDA_TABLE)
+    return written, skipped
+
+
+def _mart_merida(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(MERIDA_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{MERIDA_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(MERIDA_MART, merida.build_mart(staged))
+    written.append(MERIDA_MART)
     return written, skipped

@@ -27,10 +27,13 @@ src/theme_bicycle_industry/
                 総数／男／女 × 年齢階級を long に。必須種目・シート・行欠落は ValueError）、`build_mart`
   tw_mops.py    台湾 MOPS 月次営業収入 JSON API（POST）: `COMPANIES`（9921/9914/5306/8933）、`body`/`raw_name`/`requests`、
                 `parse`（`[ラベル, 値]` 配列を辞書に、未収録月は行なし、yymm 不一致は ValueError）、`build_mart`
+  merida.py     Merida 連結財務報告 PDF（Q4、ADR 0006 の例外で `merida-cdn.m-c-g.net` から）: `DOCS` FY2023–2025 → ファイル名、`url`/`raw_name`、
+                `pdf_text`、`parse_pages`（売上・持分法損益・SBC 帳簿価額・関連企業合計・SBC 集団向け売上を当期・前期で読む、fail-closed）、
+                `build_mart`（当年の報告を優先、翌年と食い違えば `restated_next_year`）
   comtrade.py   （追加）H9: `taiwan_url`/`parse_taiwan`/`build_taiwan_mart`（reporter 490 の輸出、仕向地別 ＋ OTH）
   <source>.py   （予定）edgar.py Fox Factory（要 SOCIOSCOPE_SEC_CONTACT）/ customs.py 貿易統計 CSV / kakei.py 家計調査（支出金額のみ）/
                 jbpi.py JBPI PDF / shimano.py EDINET PDF / census_jp.py 経済センサス
-  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）、a20261022_r4_pullforward_origin.py（H7 先食い・H8 原産国別、図 5 枚）、a20261022_r6_participation.py（H11 高齢化・非補充、図 2 枚）、a20261022_r5_world_cycle.py（H9 台湾輸出・H10 在庫サイクルの位相、図 3 枚）
+  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）、a20261022_r4_pullforward_origin.py（H7 先食い・H8 原産国別、図 5 枚）、a20261022_r6_participation.py（H11 高齢化・非補充、図 2 枚）、a20261022_r5_world_cycle.py（H9 台湾輸出・H10 在庫サイクルの位相、図 3 枚）、a20261022_r7_specialized.py（H14 Specialized 持分法、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          fixtures/（実レスポンスの縮約）＋ Fake による状態テスト
@@ -60,6 +63,8 @@ tests/          fixtures/（実レスポンスの縮約）＋ Fake による状�
 | `marts/taiwan_bicycle_exports` | 〃 ＋ OTH | 126 行（2015–2024、2026-10-22 取得） |
 | `staged/tw_mops/monthly_revenue` | company_id×period | company_id, company(giant/merida/kmc/ideal_bike), year, month, period(YYYY-MM), revenue_ntd_k, revenue_prev_year_ntd_k, ytd_ntd_k, source(`tw_mops`) |
 | `marts/tw_bicycle_monthly_revenue` | 〃 | iso3(TWN) ＋ staged と同列。612 行（2014-01–2026-09、2026-10-22 取得） |
+| `staged/merida/specialized_equity` | fy×metric×doc_fy（long） | fy, doc_fy, metric（revenue / equity_method_share / sbc_carrying_amount / associates_carrying_total / sbc_group_sales）, value_ntd_k, source(`merida_ir`)。3 報告 × 当期・前期 |
+| `marts/merida_specialized` | fy×metric | iso3(TWN), company(Merida), fy, metric, value_ntd_k, restated_next_year, doc_fy, source。20 行（FY2022–2025、2026-10-22 取得、食い違い 0） |
 | `marts/bicycle_industry_panel` | iso3×year×product×metric×source（long） | iso3, year, product（bicycle_total / e_assist / sports / city / parts / car_kei / car_registered / moto_lt125 / moto_126_250 / moto_251p …）, metric（units / value_jpy / value_usd / price_index / avg_price_jpy …）, value, source。**未作成**（行が 0 の Parquet は列を持たず DuckDB が読めないため、行ができるまで書かない） |
 
 ## テーマ固有の規約

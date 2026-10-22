@@ -21,7 +21,7 @@
 | OECD Data Explorer（IDD 等） | 所得分配（IDD）、出生率 | SDMX API | 同上 | 候補 |
 | Maddison Project / Penn World Table | 長期 GDP 系列 | Excel/CSV | 要確認 | 候補（戦後長期） |
 | Our World in Data | 整形済み系列（出典明記） | CSV / grapher API | CC BY | 候補（検証用） |
-| Merida（9914.TW）年報・四半期財報（Specialized 持分法） | 自社 IR ページは robots 許可だが PDF 実体は `merida-cdn.m-c-g.net`（robots 全面 Disallow）。FY2015–2022 は MOPS/doc.twse（Disallow）のみ | — | 開示書類 | **保留**（robots 方針の判断待ち） |
+| Merida（9914.TW）連結財務報告 Q4（Specialized 持分法） | FY2023–2025 の Q4 報告 PDF（各報告に前期あり → FY2022–2025）。自社 IR ページは robots 許可、PDF 実体は `merida-cdn.m-c-g.net`（robots 全面 Disallow → **ADR 0006 の例外**）。FY2022 以前の報告は自社サイトに無い | `merida-cdn.m-c-g.net/merida-v2/media-raw/countries/zh-tw/financial-report/<file>.pdf` | 開示書類（出典表示） | **採用**（bicycle-industry H14、2026-10-22、ユーザー承認） |
 | Halfords（HFD.L）プレリリース PDF | Cycling 売上（FY25– £m、FY19–24 は構成比 × Retail 売上）、粗利率なし | `halfordscompany.com/media/<id>/<file>.pdf`（robots 許可、静的一覧） | 開示書類 | 候補 |
 | Accell Group 年報（Wayback） | 2017（EN）・2018（NL）・2021（EN、2017–2021 売上 5 年表）のみ完全。他は 1 MB 切れ | `web.archive.org/web/<ts>id_/…` | 開示書類 | 候補（限定） |
 | Bike24（BIKE.DE）IR | EQS の SPA、API は JWT 認証 → 鍵なし取得不可 | — | — | **不可** |
@@ -530,6 +530,14 @@
 ### UN Comtrade 台湾輸出（bicycle-industry H9: reporter 490 × 仕向地）
 - URL / API: `…/preview/C/A/HS?reporterCode=490&period=<年>&cmdCode=8712,871160&flowCode=X&partnerCode=392,842,276,528,826,0`（年ごと 1 JSON、2015–2024）。mart で OTH（= 世界 − 5 か国）を足す。
 - 既知の欠損: 871160 は 2017 年から。台湾の完成車輸出は 2015 → 2019 に半減しており（生産の海外移転）、世界需要の代理としては弱い（R5 で明記）。
+
+### Merida 連結財務報告 PDF（bicycle-industry H14: Specialized 持分法・関連当事者売上）— ADR 0006 の例外
+- URL / API: 投資家向けページ `https://www.merida-bikes.com/zh-tw/p/tou-zi-ren-zi-xuninvestors/cai-wu-zi-xun`（`www.merida-bikes.com/robots.txt` は空＝許可）からリンクされた PDF 3 本: FY2023 Q4 `…/financial-report/112q4.pdf`、FY2024 Q4 `…/2024he-bing-cai-bao.pdf`、FY2025 Q4 `…/merida114q4-fsc.pdf`（ベース `https://merida-cdn.m-c-g.net/merida-v2/media-raw/countries/zh-tw/financial-report/`、クエリ `?p1`）。
+- ADR 0006 の例外（満たした条件）: (1) 取引所規則に基づく公開開示（連結財務報告、会計師核閲済み）。(2) 開示主体 Merida 自身の、robots 許可ページから直接リンク（上記 URL）。(3) Disallow を置いているのは制作会社の資産 CDN `merida-cdn.m-c-g.net`（`User-agent: * / Disallow: /`、LinkChecker のみ許可）で、Merida のサイトではない。(4) 文書単位 3 本、年 1 回、クロールなし。ユーザー承認 2026-10-22。
+- 対象・粒度: NT$ 千。損益表 4000 營業收入淨額、7370/7770 採用權益法認列之關聯企業損益之份額（SBC を含む関連企業全体。SBC 単独の損益は開示されない）、注記「採用權益法之投資」の SBC 帳簿価額と関連企業合計、注記「關係人交易」の SBC 集團向け銷貨。各報告の当期・前期。
+- ライセンス・利用規約（確認 2026-10-22）: 会社の公開開示文書（著作権は会社）。引用・研究目的で出典表示。raw 非コミット（manifest のみ）、再配布しない。
+- 取得方法: `theme_bicycle_industry.merida`（`DOCS`/`url`/`raw_name`、`parse_pages`（正規表現、5 指標のどれかが無ければ ValueError）、`build_mart`（当年の報告を優先、翌年と食い違えば `restated_next_year`））＋ `pipeline._fetch_merida/_stage_merida/_mart_merida`。年 1 回（Q4 報告の公表後、3 月末）。
+- 既知の欠損・断絶: FY2022 以前の報告は自社サイトに無い（doc.twse は robots 全面 Disallow で使わない）。持分法損益は関連企業全体の行。NT$ 建て（為替換算差額を含む）。CDN が 403 を返すようになれば従う（ADR 0006）。
 
 ## 記録テンプレート（ソース採用時）
 ```

@@ -4,7 +4,17 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shakai, shimano, tw_mops
+from theme_bicycle_industry import (
+    census,
+    comtrade,
+    cpi,
+    merida,
+    meti,
+    prices,
+    shakai,
+    shimano,
+    tw_mops,
+)
 from theme_bicycle_industry.pipeline import (
     BLS_TABLE,
     CENSUS_MART,
@@ -16,6 +26,8 @@ from theme_bicycle_industry.pipeline import (
     CPI_MART,
     CPI_TABLE,
     HICP_TABLE,
+    MERIDA_MART,
+    MERIDA_TABLE,
     METI_MART,
     METI_TABLE,
     MOPS_MART,
@@ -84,6 +96,7 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
     n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1 + len(comtrade.ORIGIN_YEARS) + 1
     n_other += len(comtrade.TAIWAN_YEARS) + 1  # taiwan exports + 'mops: raw missing'
+    n_other += len(merida.DOCS)
     assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
@@ -150,6 +163,7 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
         SHAKAI_TABLE,
         COMTRADE_TAIWAN_TABLE,
         MOPS_TABLE,
+        MERIDA_TABLE,
     ):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
@@ -413,3 +427,34 @@ def test_taiwan_exports_stage_and_mart_add_other_destinations() -> None:
     assert set(mart) == {"JPN", "USA", "DEU", "NLD", "GBR", "WLD", "OTH"}
     assert mart["OTH"]["qty"] == pytest.approx(1356048.0 - (63461 + 457488 + 50000 + 90000 + 70000))
     assert mart["JPN"]["iso3"] == "TWN" and mart["JPN"]["flow"] == "export"
+
+
+# ---- Merida
+
+
+def test_merida_fetch_rejects_non_pdf_and_stage_reports_unreadable_raw() -> None:
+    ctx = Context(
+        fetcher=FakeFetcher({merida.url(2023): HTML_BLOCK}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({merida.SOURCE}),
+    )
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert (
+        fetched.written == ()
+        and "merida_consolidated_fy2023_q4.pdf: non-PDF payload" in fetched.skipped
+    )
+    ctx.raw.put(
+        theme=THEME,
+        source=merida.SOURCE,
+        name=merida.raw_name(2023),
+        url=merida.url(2023),
+        license=merida.LICENSE,
+        payload=HTML_BLOCK,
+    )
+    staged = PIPELINE.run(Stage.STAGE, ctx)
+    assert staged.written == () and any("layout not recognised" in s for s in staged.skipped)
+    assert (
+        f"{MERIDA_TABLE}: staged table missing (run stage)" in PIPELINE.run(Stage.MART, ctx).skipped
+    )
+    assert MERIDA_MART not in PIPELINE.run(Stage.MART, ctx).written
