@@ -874,6 +874,310 @@ def growth_fertility_h12_part7() -> Path:
     return out
 
 
+# ---- bicycle-industry（2026-10-22、3 本） ----------------------------------------------
+
+
+def _bare(ax: plt.Axes) -> None:
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+    ax.set_facecolor(PAPER)
+    ax.tick_params(colors=MUTED, labelsize=11, length=0)
+
+
+def bicycle_part1() -> Path:
+    jb = pl.read_parquet(MARTS / "jp_bicycle_by_type.parquet")
+    pos = pl.read_parquet(MARTS / "jp_pos_sales.parquet")
+    prod = {
+        int(r["year"]): float(r["qty"])
+        for r in jb.filter(
+            (pl.col("category") == "total") & (pl.col("flow") == "production")
+        ).iter_rows(named=True)
+    }
+    imp = (
+        jb.filter(pl.col("flow") == "import").group_by("year").agg(pl.col("qty").sum()).sort("year")
+    )
+    total = {
+        int(r["year"]): prod[int(r["year"])] + float(r["qty"]) for r in imp.iter_rows(named=True)
+    }
+    years = sorted(total)
+    pos25 = (
+        pos.filter((pl.col("year") == 2025) & (pl.col("category") != "total"))
+        .group_by("category")
+        .agg(pl.col("qty").sum(), pl.col("value_jpy").sum())
+    )
+    order = ["light", "sports", "kids", "infant", "other", "eassist"]
+    names = {
+        "light": "軽快車",
+        "sports": "スポーツ車",
+        "kids": "子ども車",
+        "infant": "幼児車",
+        "other": "その他",
+        "eassist": "電動アシスト",
+    }
+    q = {str(r["category"]): float(r["qty"]) for r in pos25.iter_rows(named=True)}
+    v = {str(r["category"]): float(r["value_jpy"]) for r in pos25.iter_rows(named=True)}
+    tq, tv = sum(q.values()), sum(v.values())
+
+    fig, bg = canvas()
+    title_block(bg, "自転車業界は苦境なのか？", "台数は 3 割減った。でも、お金は減っていない")
+
+    ax1 = fig.add_axes([0.07, 0.12, 0.40, 0.55])
+    ax1.bar(
+        years,
+        [total[y] / 1e6 for y in years],
+        color=[BLUE if y == years[0] else ORANGE for y in years],
+        width=0.7,
+    )
+    for y in years:
+        ax1.text(
+            y,
+            total[y] / 1e6 + 0.12,
+            f"{total[y] / 1e6:.1f}",
+            ha="center",
+            fontsize=12,
+            color=INK,
+            fontweight="bold",
+        )
+    ax1.set_ylim(0, 8.2)
+    ax1.set_yticks([])
+    ax1.set_xticks(years)
+    _bare(ax1)
+    tag(bg, 92, 470, "国内向け自転車の台数（百万台）：2021 → 2025 で −30%", BLUE)
+
+    ax2 = fig.add_axes([0.57, 0.12, 0.38, 0.55])
+    left_q = left_v = 0.0
+    for c in order:
+        col = ORANGE if c == "eassist" else ("#c9c2b5" if c != "sports" else "#9aa7b8")
+        ax2.barh(1, q[c] / tq, left=left_q, color=col, height=0.6)
+        ax2.barh(0, v[c] / tv, left=left_v, color=col, height=0.6)
+        if c in ("eassist", "sports", "light"):
+            ax2.text(
+                left_q + q[c] / tq / 2,
+                1,
+                f"{names[c]}\n{q[c] / tq:.0%}",
+                ha="center",
+                va="center",
+                fontsize=11,
+                color="white" if c != "light" else INK,
+                fontweight="bold",
+            )
+            ax2.text(
+                left_v + v[c] / tv / 2,
+                0,
+                f"{names[c]}\n{v[c] / tv:.0%}",
+                ha="center",
+                va="center",
+                fontsize=11,
+                color="white" if c != "light" else INK,
+                fontweight="bold",
+            )
+        left_q += q[c] / tq
+        left_v += v[c] / tv
+    ax2.set_yticks([0, 1])
+    ax2.set_yticklabels(["金額", "台数"], fontsize=13, color=INK)
+    ax2.set_xticks([])
+    ax2.set_xlim(0, 1)
+    _bare(ax2)
+    tag(bg, 728, 470, "小売 2025 年：電動アシストは台数 16%・金額 42%", ORANGE)
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: 自転車産業振興協会「国内向自転車生産輸入統計」「POS 販売統計」を加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-22-note-bicycle-part1-is-the-industry-in-trouble.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
+def bicycle_part2() -> Path:
+    trade = pl.read_parquet(MARTS / "bicycle_trade.parquet")
+    six = ["JPN", "USA", "DEU", "NLD", "GBR", "ITA"]
+    t = (
+        trade.filter(
+            pl.col("iso3").is_in(six)
+            & (pl.col("flow") == "import")
+            & (pl.col("hs") == "8712")
+            & pl.col("qty").is_not_null()
+        )
+        .group_by("year")
+        .agg(pl.col("qty").sum())
+        .sort("year")
+    )
+    s = {
+        int(r["year"]): float(r["qty"])
+        for r in t.iter_rows(named=True)
+        if 2015 <= int(r["year"]) <= 2024
+    }
+    ys = sorted(s)
+    xs = np.array(ys, dtype=float)
+    pre = [y for y in ys if y <= 2019]
+    b, a = np.polyfit(np.array(pre, dtype=float), np.array([s[y] for y in pre]), 1)
+    m = pl.read_parquet(MARTS / "merida_specialized.parquet")
+    share = {
+        int(r["fy"]): float(r["value_ntd_k"]) / 1e6
+        for r in m.filter(pl.col("metric") == "equity_method_share").iter_rows(named=True)
+    }
+
+    fig, bg = canvas()
+    title_block(bg, "特需は「先食い」だった", "そして 2 年たっても、元の水準には戻っていない")
+
+    ax1 = fig.add_axes([0.07, 0.12, 0.42, 0.55])
+    ax1.axvspan(2019.5, 2022.5, color="#ece8e0", zorder=0)
+    ax1.plot(xs, a + b * (np.arange(2015, 2025)), color=MUTED, lw=3, ls="--")
+    ax1.plot(xs, [s[y] for y in ys], color=BLUE, lw=5, solid_capstyle="round")
+    ax1.scatter(xs, [s[y] for y in ys], color=BLUE, s=50, zorder=5)
+    ax1.set_xticks([2015, 2019, 2022, 2024])
+    ax1.set_yticks([])
+    ax1.set_ylim(0, max(s.values()) * 1.25)
+    _bare(ax1)
+    ax1.text(2024.1, a + b * 2024, "2015–19 年の\nトレンド", fontsize=11, color=MUTED, va="center")
+    tag(bg, 92, 470, "6 か国の完成車輸入台数：特需後はトレンドの 0.79 倍", BLUE)
+
+    ax2 = fig.add_axes([0.60, 0.12, 0.35, 0.55])
+    fys = sorted(share)
+    ax2.bar(
+        fys,
+        [share[y] for y in fys],
+        color=[BLUE if share[y] >= 0 else ORANGE for y in fys],
+        width=0.65,
+    )
+    for y in fys:
+        ax2.text(
+            y,
+            share[y] + (0.15 if share[y] >= 0 else -0.45),
+            f"{share[y]:+.1f}",
+            ha="center",
+            fontsize=12,
+            color=INK,
+            fontweight="bold",
+        )
+    ax2.axhline(0, color=MUTED, lw=1)
+    ax2.set_xticks(fys)
+    ax2.set_yticks([])
+    ax2.set_ylim(-5.2, 1.6)
+    _bare(ax2)
+    tag(bg, 770, 470, "Specialized の持分法損益（十億台湾ドル）", ORANGE)
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: UN Comtrade、Merida Industry 連結財務報告を加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-22-note-bicycle-part2-pandemic-boom-and-aftermath.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
+def bicycle_part3() -> Path:
+    kei = pl.read_parquet(MARTS / "jp_kei_moto_sales.parquet")
+    imp = pl.read_parquet(MARTS / "jp_import_car_price_bands.parquet")
+    jb = pl.read_parquet(MARTS / "jp_bicycle_by_type.parquet")
+    meti = pl.read_parquet(MARTS / "meti_production.parquet")
+
+    def seg(df: pl.DataFrame, col: str, val: str, ycol: str, vcol: str) -> dict[int, float]:
+        return {
+            int(r[ycol]): float(r[vcol])
+            for r in df.filter(pl.col(col) == val).iter_rows(named=True)
+        }
+
+    kei4 = seg(kei, "segment", "kei4_total", "year", "units")
+    gt = seg(kei, "segment", "moto_gt250", "year", "units")
+    high = ("ge_2000", "1000_1999", "900_999", "800_899", "700_799", "600_699", "500_599")
+    imp_high = imp.filter(pl.col("band").is_in(high)).group_by("year").agg(pl.col("units").sum())
+    ih = {int(r["year"]): float(r["units"]) for r in imp_high.iter_rows(named=True)}
+    g1 = {
+        int(r["year"]): float(r["value"])
+        for r in meti.filter(
+            (pl.col("product") == "moto_le50")
+            & (pl.col("measure") == "sales_qty")
+            & pl.col("period_type").is_in(["cy", "cy_from_months"])
+        )
+        .sort("year", "period_type")
+        .iter_rows(named=True)
+    }
+    ea = {
+        int(r["year"]): float(r["qty"])
+        for r in jb.filter(
+            (pl.col("category") == "eassist") & (pl.col("flow") == "production")
+        ).iter_rows(named=True)
+    }
+    sp = {
+        int(r["year"]): float(r["qty"])
+        for r in jb.filter(
+            (pl.col("category") == "other_sports_geared") & (pl.col("flow") == "import")
+        ).iter_rows(named=True)
+    }
+
+    def ch(d: dict[int, float]) -> float:
+        return d[2025] / d[2022] - 1
+
+    rows = [
+        ("自動車", "軽自動車", ch(kei4), "輸入車 500 万円以上", ch(ih)),
+        ("二輪", "原付一種", ch(g1), "大型二輪", ch(gt)),
+        ("自転車", "電動アシスト", ch(ea), "スポーツ車", ch(sp)),
+    ]
+
+    fig, bg = canvas()
+    title_block(
+        bg, "自動車・二輪とは、逆向きの分化", "「実用が残り、趣味が縮む」のは自転車だけだった"
+    )
+    ax = fig.add_axes([0.06, 0.08, 0.90, 0.56])
+    ypos = np.arange(len(rows))[::-1] * 1.0
+    for yp, (ind, un, uc, hn, hc) in zip(ypos, rows, strict=True):
+        ax.barh(yp + 0.18, uc * 100, color=BLUE, height=0.32)
+        ax.barh(yp - 0.18, hc * 100, color=ORANGE, height=0.32)
+        ax.text(-52, yp, ind, fontsize=18, fontweight="bold", color=INK, va="center", ha="left")
+        ax.text(
+            uc * 100 + (1.5 if uc >= 0 else -1.5),
+            yp + 0.18,
+            f"{un} {uc:+.0%}",
+            va="center",
+            ha="left" if uc >= 0 else "right",
+            fontsize=12,
+            color=INK,
+        )
+        ax.text(
+            hc * 100 + (1.5 if hc >= 0 else -1.5),
+            yp - 0.18,
+            f"{hn} {hc:+.0%}",
+            va="center",
+            ha="left" if hc >= 0 else "right",
+            fontsize=12,
+            color=INK,
+        )
+    ax.axvline(0, color=MUTED, lw=1)
+    ax.set_xlim(-54, 38)
+    ax.set_yticks([])
+    ax.set_xticks([])
+    _bare(ax)
+    tag(bg, 92, 470, "実用層", BLUE)
+    tag(bg, 200, 470, "趣味層", ORANGE)
+    bg.text(320, 470, "2022 → 2025 年の台数の変化率", fontsize=14, color=MUTED, va="center")
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: 全国軽自動車協会連合会・日本自動車輸入組合・経済産業省 生産動態統計・"
+        "自転車産業振興協会を加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-22-note-bicycle-part3-cars-motorcycles-and-what-it-means.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     for p in (
         growth_fertility(),
@@ -884,5 +1188,8 @@ if __name__ == "__main__":
         growth_fertility_h9_part5(),
         growth_fertility_h10_part6(),
         growth_fertility_h12_part7(),
+        bicycle_part1(),
+        bicycle_part2(),
+        bicycle_part3(),
     ):
         print(p)
