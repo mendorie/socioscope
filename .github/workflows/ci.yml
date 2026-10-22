@@ -52,7 +52,7 @@ jobs:
           for line in open("data/raw/manifest.jsonl", encoding="utf-8"):
               rec = json.loads(line)
               if rec.get("committed") is True:
-                  allowed.add(f"data/raw/{rec["theme"]}/{rec["source"]}/{rec["name"]}")
+                  allowed.add("data/raw/" + rec["theme"] + "/" + rec["source"] + "/" + rec["name"])
           bad = [f for f in sys.stdin.read().split() if f not in allowed]
           for f in bad:
               print(f"::error::{f}: data/raw/** must not be committed (manifest only, or committed: true in manifest)")
