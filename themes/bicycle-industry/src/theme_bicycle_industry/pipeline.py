@@ -12,7 +12,7 @@ from theme_bicycle_industry import meti
 THEME = "bicycle-industry"
 PANEL_TABLE = "marts/bicycle_industry_panel"
 
-# Columns of the (still empty) cross-source panel. Long format: one metric per row so sources
+# Columns of the cross-source panel (not written yet). Long format: one metric per row so sources
 # with different granularity (product type, price band, country) can share one table.
 PANEL_COLUMNS: tuple[str, ...] = (
     "iso3",
@@ -57,8 +57,8 @@ def mart(ctx: Context) -> StageResult:
     written: list[str] = []
     skipped: list[str] = []
     written, skipped = _mart_meti(ctx, written, skipped)
-    ctx.tables.write_table(PANEL_TABLE, build_panel([]))
-    written.append(PANEL_TABLE)
+    # The cross-source panel is written only once it has rows: a zero-row Parquet has no
+    # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 

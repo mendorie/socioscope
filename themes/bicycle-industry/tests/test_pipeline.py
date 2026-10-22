@@ -99,21 +99,22 @@ def test_stage_rejects_an_unrecognised_layout_without_writing() -> None:
     assert ctx.tables.list_tables() == []
 
 
-def test_mart_builds_meti_production_and_the_empty_panel() -> None:
+def test_mart_builds_meti_production_and_no_empty_panel() -> None:
     ctx = make_ctx()
     ctx.tables.write_table(METI_TABLE, meti.parse(F2025, report_year=2025).rows)
     result = PIPELINE.run(Stage.MART, ctx)
-    assert result.written == (METI_MART, PANEL_TABLE)
+    assert result.written == (METI_MART,)
     mart = ctx.tables.read_table(METI_MART)
     assert mart and all(r["iso3"] == "JPN" for r in mart)
     assert any(r["period_type"] == "cy_from_months" for r in mart)
-    assert ctx.tables.read_table(PANEL_TABLE) == []
+    # a zero-row panel is never written (DuckDB cannot read a column-less Parquet)
+    assert PANEL_TABLE not in ctx.tables.list_tables()
 
 
-def test_mart_without_staged_meti_still_writes_the_panel() -> None:
+def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
     ctx = make_ctx()
     result = PIPELINE.run(Stage.MART, ctx)
-    assert result.written == (PANEL_TABLE,)
+    assert result.written == ()
     assert f"{METI_TABLE}: staged table missing (run stage)" in result.skipped
 
 
