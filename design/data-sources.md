@@ -26,7 +26,7 @@
 | 総務省 消費者物価指数 2020 年基準 品目別 | 自転車 A/B、軽乗用車、小型乗用車、普通乗用車 A/B（**自動二輪の品目はない**）。1970–、月次・年次、全国＋都市 | e-Stat DB `sid=0003427113`（ファイル DL は要確認。API は appId 要） | 政府標準利用規約 2.0 | 候補（bicycle-industry ③） |
 | 総務省 家計調査 品目分類 年次（二人以上の世帯） | 自転車購入・自動車購入・自動二輪車購入の 支出金額・購入数量・平均価格 | e-Stat `toukei=00200561` Excel（2025: statInfId 000040424634 支出金額 / 000040424635 購入数量。表番号は年で変わる） | 政府標準利用規約 2.0 | 候補（bicycle-industry ③） |
 | 自転車産業振興協会（JBPI）統計 PDF | 国内向自転車生産輸入統計（軽快車／スポーツ車／ミニサイクル／幼児車／子供車／電動アシスト車 別 台数・金額、月次）、POS 販売統計（2024-07–、11 社約 2,300 店、カバー率 4〜5 割、家電量販を含まない）、年間報告 | `jbpi.or.jp/wp-content/uploads/<YYYY>/<MM>/<日本語ファイル名>.pdf`（要 percent-encode）。**2026-10-22 時点サイトメンテ中（503）** | 利用規約の記載なし → 出典「(一財)自転車産業振興協会」明記で引用、raw・staged は非コミット | 候補（bicycle-industry ⑥、唯一のスポーツ車系列） |
-| シマノ（7309）有価証券報告書・決算短信 | 自転車部品／釣具 セグメント売上・営業利益、地域別売上、四半期 | EDINET PDF 直リンク（`disclosure2dl.edinet-fsa.go.jp/searchdocument/pdf/<docID>.pdf`、EDINET コード E02257、キー不要。docID は検索ページから手で控える）／TDnet iXBRL（`www2.jpx.co.jp/disc/73090/…`）。shimano.com IR は非ブラウザ UA に 403。EDINET API はキー登録要のため使わない | 開示書類（引用可、著作権は会社） | 候補（bicycle-industry ⑦） |
+| シマノ（7309、EDINET E02257）有価証券報告書 PDF | セグメント情報（自転車部品／釣具／その他 の外部顧客売上高・セグメント利益）と 地域ごとの情報（日本／北米／ヨーロッパ／アジア／その他 売上高、顧客所在地ベース）、百万円、FY2013–2025（12 本の有報。各有報は前期も載せる） | EDINET PDF 直リンク `disclosure2dl.edinet-fsa.go.jp/searchdocument/pdf/<docID>.pdf`（キー不要、docID は `shimano.DOCS` に固定）。**2026-10-24 のメンテで URL 形式変更の予告** → 取得済み raw を保持、再取得時は再調査。shimano.com は 403 | 開示書類（著作権は提出者、引用・研究目的で利用、raw 非コミット。確認 2026-10-22） | **採用**（bicycle-industry ⑦、2026-10-22） |
 | あさひ（3333）月次営業速報 PDF | 全社・既存店 売上・客数・客単価、店舗数（月次） | TDnet PDF（`www2.jpx.co.jp/disc/33330/<id>.pdf`、URL は一覧 API 有料のため検索で解決） | 開示書類 | 候補（bicycle-industry、小売の補助） |
 | 総務省・経産省 経済センサス-活動調査 産業小分類「自転車小売業」 | 事業所数・従業者数・年間商品販売額（経営組織別、売場面積規模別、市区町村別）。2016・2021 | e-Stat `toukei=00200553` Excel（令和 3 年 総括表第 3 表 000040032842、第 1 表 000040032840、第 6 表 000040032845；平成 28 年 000031676907） | 政府標準利用規約 2.0 | 候補（bicycle-industry ⑧、ニッチ小売の代理） |
 | UN Comtrade preview API | HS 8712 完成自転車・871160 電動二輪・8714 部品 の輸出入 数量（台。8714 と一部の報告国・年は数量なし）・純重量・金額 USD、報告国 9（JPN USA DEU NLD FRA GBR ITA CHN TWN=490）× 2010–2024、相手国 世界計 | `comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=…&period=<年>&cmdCode=8712,871160,8714&flowCode=M,X&partnerCode=0`（キー不要、1 期間/呼び出し、≤500 行。逐次でも 429 が返るので `HttpxFetcher` が Retry-After で再試行） | UN Comtrade 利用条件: 非商用・出典表示で利用可、バルク再配布は制限 → raw 非コミット（確認 2026-10-22） | **採用**（bicycle-industry ④、2026-10-22） |
@@ -476,6 +476,13 @@
 - ライセンス・利用規約（確認 2026-10-22）: Eurostat copyright notice（出典表示で商用含め再利用可）、BLS はパブリックドメイン。raw 非コミット（既定）。
 - 取得方法: `theme_bicycle_industry.prices`（`hicp_url`/`parse_hicp`（次元順 freq/unit/coicop/geo/time と unit=I15 を検査、疎な値は欠損）、`bls_url`/`parse_bls`（REQUEST_SUCCEEDED 以外は ValueError）、`build_mart`）＋ `pipeline._fetch_prices/_stage_prices/_mart_prices`。mart `marts/price_indices` は両ソースを 1 つの long 表に（基準年が違うので `base` 列で区別、比較は再基準化して行う）。
 - 既知の欠損・断絶・定義変更: `prc_hicp_midx` は「廃止・`prc_hicp_minr` に置換」と表示（2026-02 更新で 2025-12 まで配信）。`minr` は COICOP 2018 で次元名が違うため、構造を確認して切り替える（追跡項目）。HICP はヘドニック調整済みでセールの深さは直接は捉えない。
+
+### シマノ 有価証券報告書 PDF（EDINET、bicycle-industry ⑦: 自転車部品セグメント・地域別売上）
+- URL / API: `https://disclosure2dl.edinet-fsa.go.jp/searchdocument/pdf/<docID>.pdf`（キー不要、各 0.5–0.7 MB）。docID（事業年度 → docID）: 2025 S100XQSE、2024 S100VGFP、2023 S100T5J9、2022 S100QH4Z、2021 S100NQC5、2020 S100L203、2019 S100IA93、2018 S100FGAL、2017 S100CMXI、2016 S1009Z4C、2015 S10078MN、2014 S1004EF8（`theme_bicycle_industry.shimano.DOCS`、2026-10-22 に全部取得・manifest 記録）。FY2013 以前の有報は EDINET に無い（FY2013 は FY2014 有報の前期比較で得る）。**EDINET は 2026-10-24 のメンテナンス後に PDF 表示用 URL の形式を変える**（予告）。EDINET API v2 はキー登録要のため使わない。shimano.com / corporate.shimano.com は非ブラウザ・ブラウザ UA とも 403。決算短信補足資料は xj-storage.jp に置かれ取れるが URL にランダム hex を含み一覧は取れない（直近分のみ手で控える）。
+- 対象・粒度: 「セグメント情報」の 外部顧客に対する売上高・セグメント利益（自転車部品／釣具／その他）、「地域ごとの情報 (1) 売上高」（日本／北米／ヨーロッパ／アジア／その他の地域／合計）。百万円。当期と前期の両方を取り、mart はその年の有報を採って翌年の有報と食い違えば `restated_next_year` に残す（2026-10-22 時点で食い違い 0）。
+- ライセンス・利用規約（確認 2026-10-22）: EDINET 開示書類（著作権は提出者）。引用・非商用の研究目的で利用。raw PDF は非コミット（既定）。出典「株式会社シマノ 有価証券報告書（EDINET）」。
+- 取得方法: `theme_bicycle_industry.shimano`（`url`/`raw_name`、`pdf_text`（pypdf）、`parse_pages`（「前／当連結会計年度（自 …」でブロックに割り、`外部顧客に対する売上高` 行・`セグメント利益` 行・`地域ごとの情報 (1) 売上高` 直後の 6 数値行を正規表現で読む。「△ 1」は負、「－」は None、和暦は西暦に変換。表が無ければ ValueError）、`build_mart`）＋ `pipeline._fetch_shimano/_stage_shimano/_mart_shimano`。年 1 回（3 月末の有報提出後。URL 形式の再確認が要る）。
+- 既知の欠損・断絶・定義変更: FY2018 有報から和暦→西暦。FY2023 有報から収益認識の内訳行（一時点で移転される財）が加わるが「外部顧客に対する売上高」行は共通。FY2010–2012 は取れない（gap）。地域別は「顧客の所在地」ベースで自転車部品だけの地域別ではない（補足説明資料には自転車部品の仕向地別があるが未採用）。
 
 ## 記録テンプレート（ソース採用時）
 ```
