@@ -21,7 +21,7 @@
 | OECD Data Explorer（IDD 等） | 所得分配（IDD）、出生率 | SDMX API | 同上 | 候補 |
 | Maddison Project / Penn World Table | 長期 GDP 系列 | Excel/CSV | 要確認 | 候補（戦後長期） |
 | Our World in Data | 整形済み系列（出典明記） | CSV / grapher API | CC BY | 候補（検証用） |
-| 経産省 生産動態統計（機械統計）年報・月報 | 自転車（完成車／電動アシスト／部品）、自動車（普通・小型・軽）、二輪（排気量別）の生産・出荷・在庫 数量・金額。1 ファイル＝全品目 | METI 直置き xlsx（`meti.go.jp/statistics/tyo/seidou/result/.../nenpo/<YYYY>/h2daa<YYYY>k.xlsx`、2021–2025 確認。2007–2020 は別一覧）。非ブラウザ UA は 403 | 政府標準利用規約 2.0 と推定（`meti.go.jp/main/rules.html` 要確認） | 候補（bicycle-industry ①） |
+| 経産省 生産動態統計（機械統計）年報 | 自転車（軽快車／電動アシスト車／その他／車いす）と自動車（軽・小型・普通乗用車、排気量別二輪）の生産・受入・販売・出荷その他・月末在庫 数量・金額、月次（2021–2025 年報）＋暦年 2017–2023・年度・四半期（2021–2023 年報）。1 ファイル＝全品目 | METI 直置き xlsx（`…/08_seidou/nenpo/<YYYY>/h2daa<YYYY>k.xlsx`、appId 不要）。**非ブラウザ UA は 403** → `Settings.browser_ua_hosts` でこのホストだけブラウザ UA。2007–2020 は業種別 .xls（未対応） | 経産省 利用規約＝政府標準利用規約 2.0 準拠（出典表示、確認 2026-10-22） | **採用**（bicycle-industry ①、2026-10-22） |
 | 財務省 貿易統計（e-Stat 配信 CSV、品別国別表） | HS 8712 完成自転車・8714 部品・8711.60 電動二輪・8703 乗用車・8711 二輪の輸出入 数量・金額、国別、月次 1988–・年次 | e-Stat `toukei=00350300`、`file-download?statInfId=…&fileKind=1`（appId 不要）。月次 statInfId は一覧ページから解決が必要。税関サイトの検索も CSV 可（≤3,000 行、Shift_JIS） | 政府標準利用規約 2.0（e-Stat）／税関サイトは公共データ利用規約 PDL1.0（確認 2026-10-22） | 候補（bicycle-industry ②） |
 | 総務省 消費者物価指数 2020 年基準 品目別 | 自転車 A/B、軽乗用車、小型乗用車、普通乗用車 A/B（**自動二輪の品目はない**）。1970–、月次・年次、全国＋都市 | e-Stat DB `sid=0003427113`（ファイル DL は要確認。API は appId 要） | 政府標準利用規約 2.0 | 候補（bicycle-industry ③） |
 | 総務省 家計調査 品目分類 年次（二人以上の世帯） | 自転車購入・自動車購入・自動二輪車購入の 支出金額・購入数量・平均価格 | e-Stat `toukei=00200561` Excel（2025: statInfId 000040424634 支出金額 / 000040424635 購入数量。表番号は年で変わる） | 政府標準利用規約 2.0 | 候補（bicycle-industry ③） |
@@ -455,6 +455,13 @@
   - 次元コードが dataset ごとの閉集合の外なら `ValueError`（fail-closed）。要求したが返らない組み合わせ（`une_rt_a` Y25-29）は行なし。
   - OECD SF3.1 の粗婚姻率は欧州諸国については Eurostat Demographic Statistics が出典なので、同じ国・年では `demo_nind` GNUPRT と一致する（2020 年 ITA 1.6、ESP 1.9、SWE 3.6）。重複して保持するのは日本・韓国・米国と欧州を同じ mart で比べるため。
   - `lfsa_etpgan` は LFS 標本で、小セル（IS）は非公表 → 行なし。2021 年に LFS の調査設計が変わり `status: b`。
+
+### 経済産業省 生産動態統計（機械統計）年報 xlsx（bicycle-industry ①: 自転車 2430・自動車 2400）
+- URL / API: `https://www.meti.go.jp/statistics/tyo/seidou/result/ichiran/resourceData/08_seidou/nenpo/<YYYY>/h2daa<YYYY>k.xlsx`（2021–2025、各 2.3–3.2 MB、全品目 1 ファイル）。一覧 `…/ichiran/08_seidou.html`。2007–2020 は `…/ichiran/nenpo_2007-2020.html` に業種別 .xls（機械は `03_kikai/nenpo/h2dcd<YYYY>k{mc,hc1,hc2,ml}.xls`）で別形式 → 未対応（必要なら xlrd で追加）。
+- 対象・粒度: シート「実数表」。調査票 2430「自転車及び車いす」= 軽快車／電動アシスト車／その他（スポーツ車等を含む完成車）／手動式・電動式車いす、2400「自動車」= 軽・小型・普通乗用車、バス・トラック、二輪（≤50 / 51–125 / 126–250 / >250 ml）。アイテム = 生産数量・生産金額（千円）・受入数量・販売数量・販売金額・出荷その他数量・月末在庫数量。時間軸コード 1 行目（YYYY000000 暦年 / YYYY100000 年度 / YYYY00ssee 四半期 / YYYY00MMMM 月）。2021–2023 年報は暦年 5 年分（→ 2017 年まで遡れる）・年度 2・四半期 4・月次 12、2024 年報から月次 12 のみ。秘匿 "X"、不詳 "***"。**販売数量は受入（他社・輸入品の仕入）を含むため生産数量より大きい**。
+- ライセンス・利用規約（確認 2026-10-22）: `meti.go.jp/main/rules.html` 経済産業省ウェブサイト利用規約 = 政府標準利用規約（第 2.0 版）準拠、出典表示で商用含め利用可。raw は非コミット（既定）。出典: 経済産業省「経済産業省生産動態統計年報 機械統計編」。
+- 取得方法: `theme_bicycle_industry.meti`（URL 組み立て・xlsx → long 行 `parse`・`build_mart`）＋ `pipeline._fetch_meti/_stage_meti/_mart_meti`。**www.meti.go.jp は非ブラウザ UA に 403**（robots.txt も 403。一覧 HTML は 202 でボット判定）→ `socioscope_core.config.Settings.browser_ua_hosts`（既定 `["www.meti.go.jp"]`）に載せたホストだけ `HttpxFetcher` が汎用ブラウザ UA を送る。5 ファイル逐次、年 1 回（年報は翌年 4 月頃）。
+- 既知の欠損・断絶・定義変更: 品目番号は年で振り直される（2024 年にトラック細分が変更）ため、品目は NFKC 正規化した品目名で同定（`meti.PRODUCTS`、必須 5 品目が欠けると fail-closed）。同じ系列×期間が複数年報にあるときは最新の年報を採る（改定反映）。「その他」自転車にスポーツ車・ミニサイクル・子供車が混在し分離不可。原付一種は 2400 の「二輪自動車 ≤50 ml」。
 
 ## 記録テンプレート（ソース採用時）
 ```

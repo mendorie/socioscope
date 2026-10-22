@@ -14,6 +14,18 @@ class Settings(BaseSettings):
         default="socioscope/0.1 (+https://github.com/; research; contact via repo issues)",
         alias="SOCIOSCOPE_USER_AGENT",
     )
+    # Hosts whose WAF rejects non-browser User-Agents (403). Each entry is documented in
+    # design/data-sources.md; the fetcher sends a generic browser UA to these hosts only.
+    browser_ua_hosts: list[str] = Field(
+        default=["www.meti.go.jp"], alias="SOCIOSCOPE_BROWSER_UA_HOSTS"
+    )
+    browser_user_agent: str = Field(
+        default=(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+        ),
+        alias="SOCIOSCOPE_BROWSER_USER_AGENT",
+    )
 
     def __repr__(self) -> str:  # never leak the key
         return f"Settings(llm_model={self.llm_model!r}, data_dir={str(self.data_dir)!r})"

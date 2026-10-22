@@ -40,7 +40,12 @@ def build_context(settings: Settings, sources: frozenset[str] | None = None) -> 
     data = settings.data_dir
     key = settings.anthropic_api_key.get_secret_value() if settings.anthropic_api_key else None
     return Context(
-        fetcher=HttpxFetcher(user_agent=settings.user_agent),
+        fetcher=HttpxFetcher(
+            user_agent=settings.user_agent,
+            user_agent_by_host=dict.fromkeys(
+                settings.browser_ua_hosts, settings.browser_user_agent
+            ),
+        ),
         raw=FilesystemRawStore(data / "raw"),
         tables=ParquetTableStore(data),
         structurer=ClaudeStructurer(
