@@ -8,6 +8,9 @@ dependencies = []
 
 [tool.uv]
 package = false
+# 推移的依存の下限制約（セキュリティ修正の取り込み漏れ・退行を lock 段階で防ぐ）。
+# certifi: GHSA-6q48-6c7w-9gw2 — 鍵が侵害された eMudhra（emSign）中間 CA の親ルートを同梱していた。2026.10.19 で修正。
+constraint-dependencies = ["certifi>=2026.10.19"]
 
 [tool.uv.workspace]
 members = ["packages/core", "themes/*"]
