@@ -45,5 +45,17 @@ jobs:
         run: |
           set -e
           if git ls-files | grep -E '\.duckdb(\.wal)?$'; then echo "::error::*.duckdb must not be committed"; exit 1; fi
-          if git ls-files 'data/raw/**' | grep -vE '^data/raw/(\.gitkeep|manifest\.jsonl)$'; then echo "::error::data/raw/** must not be committed (manifest only)"; exit 1; fi
+          # ADR 0002 の例外: manifest に committed: true で記録された小さな再配布可 raw だけはコミットしてよい
+          git ls-files 'data/raw/**' | grep -vE '^data/raw/(\.gitkeep|manifest\.jsonl)$' | python3 -c '
+          import json, sys
+          allowed = set()
+          for line in open("data/raw/manifest.jsonl", encoding="utf-8"):
+              rec = json.loads(line)
+              if rec.get("committed") is True:
+                  allowed.add(f"data/raw/{rec["theme"]}/{rec["source"]}/{rec["name"]}")
+          bad = [f for f in sys.stdin.read().split() if f not in allowed]
+          for f in bad:
+              print(f"::error::{f}: data/raw/** must not be committed (manifest only, or committed: true in manifest)")
+          sys.exit(1 if bad else 0)
+          '
           if git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$'; then echo "::error::.env must not be committed"; exit 1; fi
