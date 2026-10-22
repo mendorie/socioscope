@@ -44,6 +44,7 @@ def fetch(ctx: Context) -> StageResult:
     skipped: list[str] = []
     written, skipped = _fetch_meti(ctx, written, skipped)
     written, skipped = _fetch_comtrade(ctx, written, skipped)
+    written, skipped = _fetch_comtrade_origin(ctx, written, skipped)
     written, skipped = _fetch_prices(ctx, written, skipped)
     written, skipped = _fetch_shimano(ctx, written, skipped)
     written, skipped = _fetch_cpi(ctx, written, skipped)
@@ -56,6 +57,7 @@ def stage(ctx: Context) -> StageResult:
     skipped: list[str] = []
     written, skipped = _stage_meti(ctx, written, skipped)
     written, skipped = _stage_comtrade(ctx, written, skipped)
+    written, skipped = _stage_comtrade_origin(ctx, written, skipped)
     written, skipped = _stage_prices(ctx, written, skipped)
     written, skipped = _stage_shimano(ctx, written, skipped)
     written, skipped = _stage_cpi(ctx, written, skipped)
@@ -68,6 +70,7 @@ def mart(ctx: Context) -> StageResult:
     skipped: list[str] = []
     written, skipped = _mart_meti(ctx, written, skipped)
     written, skipped = _mart_comtrade(ctx, written, skipped)
+    written, skipped = _mart_comtrade_origin(ctx, written, skipped)
     written, skipped = _mart_prices(ctx, written, skipped)
     written, skipped = _mart_shimano(ctx, written, skipped)
     written, skipped = _mart_cpi(ctx, written, skipped)
@@ -538,4 +541,86 @@ def _mart_census(
         return written, skipped
     ctx.tables.write_table(CENSUS_MART, census.build_mart(staged))
     written.append(CENSUS_MART)
+    return written, skipped
+
+
+# ---- UN Comtrade 原産国別（H8）: 輸入 5 か国 × 相手国 中国・台湾 × 2015–2024 -------------------
+# Same preview endpoint, one JSON per year, imports only. The mart adds WLD (world, from the
+# world-partner staged table) and OTH (= world − CHN − TWN) rows.
+
+COMTRADE_ORIGIN_SOURCE = "un_comtrade_origin"
+COMTRADE_ORIGIN_TABLE = "staged/comtrade/bicycle_trade_origin"
+COMTRADE_ORIGIN_MART = "marts/bicycle_trade_by_origin"
+
+
+def _fetch_comtrade_origin(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(COMTRADE_ORIGIN_SOURCE):
+        return written, skipped
+    for year in comtrade.ORIGIN_YEARS:
+        url = comtrade.origin_url(year)
+        name = comtrade.origin_raw_name(year)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        if not payload.lstrip().startswith(b"{"):
+            skipped.append(f"{name}: non-JSON payload")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=COMTRADE_ORIGIN_SOURCE,
+            name=name,
+            url=url,
+            license=comtrade.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_comtrade_origin(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(COMTRADE_ORIGIN_SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    staged_any = False
+    for year in comtrade.ORIGIN_YEARS:
+        name = comtrade.origin_raw_name(year)
+        payload = ctx.raw.get(theme=THEME, source=COMTRADE_ORIGIN_SOURCE, name=name)
+        if payload is None:
+            skipped.append(f"{name}: raw missing (run fetch)")
+            continue
+        try:
+            parsed = comtrade.parse(payload, year=year, partners=True)
+        except ValueError as e:
+            skipped.append(f"{name}: layout not recognised ({e})")
+            continue
+        rows.extend(parsed.rows)
+        skipped.extend(f"{name}: {s}" for s in parsed.skipped)
+        staged_any = True
+    if staged_any:
+        ctx.tables.write_table(COMTRADE_ORIGIN_TABLE, rows)
+        written.append(COMTRADE_ORIGIN_TABLE)
+    return written, skipped
+
+
+def _mart_comtrade_origin(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        origin = ctx.tables.read_table(COMTRADE_ORIGIN_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{COMTRADE_ORIGIN_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    try:
+        world = ctx.tables.read_table(COMTRADE_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{COMTRADE_TABLE}: staged table missing (run stage); OTH/WLD rows omitted")
+        world = []
+    ctx.tables.write_table(COMTRADE_ORIGIN_MART, comtrade.build_origin_mart(origin, world))
+    written.append(COMTRADE_ORIGIN_MART)
     return written, skipped

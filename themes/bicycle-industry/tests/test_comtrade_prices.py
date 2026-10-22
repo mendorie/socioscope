@@ -39,7 +39,7 @@ def test_comtrade_parse_maps_reporters_commodities_and_flows() -> None:
 
 def test_comtrade_parse_fails_closed_on_wrong_period_or_shape() -> None:
     doc = json.loads(COMTRADE)
-    with pytest.raises(ValueError, match="period/partner mismatch"):
+    with pytest.raises(ValueError, match="period mismatch"):
         comtrade.parse(json.dumps(doc).encode(), year=2022)
     with pytest.raises(ValueError, match="not JSON"):
         comtrade.parse(b"<html>", year=2023)
@@ -131,3 +131,35 @@ def test_prices_build_mart_merges_sources_and_rejects_duplicates() -> None:
     assert keys == sorted(keys) and len(set(keys)) == len(keys)
     with pytest.raises(ValueError, match="duplicate price key"):
         prices.build_mart([*rows, dict(rows[0])])
+
+
+def test_comtrade_origin_parse_and_mart_add_world_and_other_rows() -> None:
+    doc = json.loads(COMTRADE)
+    # turn the fixture into an origin file: JPN rows for CHN/TWN imports of 8712 only
+    jp = [
+        dict(x)
+        for x in doc["data"]
+        if x["reporterCode"] == 392 and x["flowCode"] == "M" and x["cmdCode"] == "8712"
+    ]
+    assert len(jp) == 1
+    chn = {**jp[0], "partnerCode": 156, "qty": 4000000.0, "primaryValue": 450e6}
+    twn = {**jp[0], "partnerCode": 490, "qty": 70000.0, "primaryValue": 60e6}
+    origin_payload = json.dumps({"data": [chn, twn, {**chn, "partnerCode": 999}]}).encode()
+    parsed = comtrade.parse(origin_payload, year=2023, partners=True)
+    assert {r["partner"] for r in parsed.rows} == {"CHN", "TWN"}
+    assert any("unexpected partner 999" in s for s in parsed.skipped)
+    with pytest.raises(ValueError, match="partner mismatch"):
+        comtrade.parse(origin_payload, year=2023)  # world-partner parser rejects partner rows
+    assert comtrade.origin_url(2023).endswith("flowCode=M&partnerCode=156,490")
+
+    world = comtrade.parse(COMTRADE, year=2023).rows
+    mart = comtrade.build_origin_mart(parsed.rows, world)
+    jp8712 = {r["partner"]: r for r in mart if r["iso3"] == "JPN" and r["hs"] == "8712"}
+    assert set(jp8712) == {"CHN", "TWN", "WLD", "OTH"}
+    assert jp8712["OTH"]["qty"] == jp8712["WLD"]["qty"] - 4070000.0
+    assert jp8712["OTH"]["value_usd"] == pytest.approx(jp8712["WLD"]["value_usd"] - 510e6)
+    # a series with only one partner present gets WLD but OTH is undefined
+    only_chn = [r for r in parsed.rows if r["partner"] == "CHN"]
+    mart2 = comtrade.build_origin_mart(only_chn, world)
+    oth = next(r for r in mart2 if r["partner"] == "OTH")
+    assert oth["qty"] is None and oth["value_usd"] is None

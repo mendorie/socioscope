@@ -498,6 +498,13 @@
 - 取得方法: `theme_bicycle_industry.census`（`URL`/`RAW_NAME`、`parse`（指標ヘッダ行を探し、5 業種の全国行を long に。業種欠落・シート欠落・非 xlsx は ValueError）、`build_mart`）＋ `pipeline._fetch_census/_stage_census/_mart_census`。5 年に 1 回（次は 2026 年調査の 2028 年公表）。
 - 既知の欠損・断絶・定義変更（表の注記）: 2007 年以前と 2014 年は商業統計調査、2012・2016・2021 年は経済センサス（注 5）。1999・2004 年は簡易調査（注 6）。2016 年の個人経営は売場面積を含まず、**2021 年の個人経営は年間商品販売額・売場面積を含まない**（注 7）→ 2016→2021 の販売額の比較は法人中心。2012 年以降は格付不能の事業所を含むため合計と内訳が一致しないことがある（注 8）。二輪自動車小売業 5914 は一部の年で値なし。
 
+### UN Comtrade preview API — 原産国別（bicycle-industry H8: 中国・台湾からの輸入）
+- URL / API: `https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=392,842,276,528,826&period=<年>&cmdCode=8712,871160,8714&flowCode=M&partnerCode=156,490`（年ごと 1 JSON、2015–2024 の 10 リクエスト、各 30 行）。世界計の行は既存の `comtrade_<年>.json` から取り、mart で `WLD` と `OTH`（= 世界 − 中国 − 台湾）を足す。
+- 対象・粒度: 輸入国 5（日・米・独・蘭・英）× 相手国（中国 156・台湾 490）× HS 3 × 2015–2024。列は世界計と同じ ＋ `partner`。
+- ライセンス: 世界計と同じ（UN Comtrade Terms of Use、raw 非コミット）。
+- 取得方法: `comtrade.origin_url/origin_raw_name`、`parse(payload, year, partners=True)`、`build_origin_mart`（staged/comtrade/bicycle_trade と結合）＋ `pipeline._fetch_comtrade_origin/_stage_comtrade_origin/_mart_comtrade_origin`（source 名 `un_comtrade_origin`）。
+- 既知の欠損: 一方の相手国しか無い年は OTH が None。台数欠損は世界計と同じ扱い。
+
 ## 記録テンプレート（ソース採用時）
 ```
 ### <ソース名>
