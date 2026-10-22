@@ -33,6 +33,13 @@
   - H14: Specialized（Merida 持分法）の利益は特需後に赤字または特需期の 3 割以下。
 - 成果物: `bike24.py`・`halfords.py`（PDF）、`merida_equity.py`、R7 report。
 
+### Phase 3 の調査結果（2026-10-22）と判断待ち
+- **Merida 年報・四半期財報**: 自社 IR ページ（merida-bikes.com、robots 許可）から PDF にリンクするが、PDF の実体はすべて `merida-cdn.m-c-g.net` にあり、その robots.txt は全面 Disallow。FY2015–2022 は自社サイトに無く MOPS/doc.twse（同じく Disallow）だけ。→ **H14（Specialized の持分法損益）は現行ルールでは取得不可。** 到達性確認で読めた FY2023・2024 の値（SBC の持分法損失、関連当事者売上の比率）は manifest 無しのため mart に入れない。CDN の robots を「資産ホストの一般設定」として例外扱いにするかは人の判断（設計判断 → ADR 候補）。
+- **Bike24**: IR サイトは EQS の SPA で、API は JWT 認証（クライアント側で発行）。鍵なし取得は不可で、トークンの再現は認証回避に当たるので行わない。→ **H13（粗利率）は取得不可。** ブラウザで PDF URL を取るなら人の作業。
+- **Halfords**: 取得可（robots 許可、プレリリース PDF FY15–FY26）。Cycling は FY25 以降に £m、FY19–24 は Retail 売上 × 構成比で導出。粗利率は開示なし。→ 英国小売の Cycling 売上の 3 局面は出せるが、H13 の代替にはならない。
+- **Accell**: 本体サイトに年報なし、年次マイクロサイトは消滅。Wayback で完全なのは 2017（EN）・2018（NL、章別）・2021（EN、2017–2021 の 5 年表）。2015・16・19・20 は 1 MB で切れている。→ コロナ前基準線は 2017–2021 の売上のみ。
+- 判断: H13・H14 は取り下げ候補。Halfords（Cycling 売上）と Accell（2017–2021 売上）だけで R7 を書く価値は限定的（英国小売の 3 局面、欧州 e-bike メーカーの特需前後）。JBPI（Phase 4）の復旧と SEC 連絡先（Fox）の方が優先度が高い。
+
 ## Phase 4 — 日本のスポーツ車本丸（JBPI 復旧後）: R8
 - JBPI 国内向自転車生産輸入統計（車種別、月次 2018〜）と POS。R4 の先食い検定（E/F/R・L）をスポーツ車に適用、H2 を判定。
 
