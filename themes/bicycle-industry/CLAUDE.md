@@ -33,11 +33,14 @@ src/theme_bicycle_industry/
   halfords.py   Halfords 通期決算発表 PDF（FY2015–2026）: `DOCS`/`url`/`raw_name`、`parse_pages`（Retail 売上・Cycling 構成比・Cycling £m を
                 年ごとの様式（3 種の正規表現）で読む、53 週は 52 週列、fail-closed）、`build_mart`
   accell.py     Accell 年報 PDF（Wayback `id_`、2017・2021）: `DOCS`（ts, 原 URL）、`parse_pages`（8 年表・5 年表）、`build_mart`（`restated_later`）
-  pipeline.py   （追加）`PdfSource` ＋ `_fetch/_stage/_mart_pdf_source`: PDF 1 文書 1 キーのソースの共通結線（HALFORDS / ACCELL）
+  jbpi.py       JBPI 国内向自転車生産輸入統計 12 月分（`DOMESTIC_DOCS` 版の最終年 → URL、3 版で 2021–2025）と POS 年間総括
+                （`POS_DOCS`）: `parse_domestic_pages`（行ラベルの出現順で品目、年見出し・生産合計で検算）、`build_domestic_mart`
+                （新しい版を優先、`restated_from`、単価）、`parse_pos_pages`（14 数値＋月の行、分類合計で検算）、`build_pos_mart`
+  pipeline.py   （追加）`PdfSource` ＋ `_fetch/_stage/_mart_pdf_source`: PDF 1 文書 1 キーのソースの共通結線（HALFORDS / ACCELL / JBPI_DOMESTIC / JBPI_POS）
   comtrade.py   （追加）H9: `taiwan_url`/`parse_taiwan`/`build_taiwan_mart`（reporter 490 の輸出、仕向地別 ＋ OTH）
   <source>.py   （予定）edgar.py Fox Factory（要 SOCIOSCOPE_SEC_CONTACT）/ customs.py 貿易統計 CSV / kakei.py 家計調査（支出金額のみ）/
-                jbpi.py JBPI PDF / shimano.py EDINET PDF / census_jp.py 経済センサス
-  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）、a20261022_r4_pullforward_origin.py（H7 先食い・H8 原産国別、図 5 枚）、a20261022_r6_participation.py（H11 高齢化・非補充、図 2 枚）、a20261022_r5_world_cycle.py（H9 台湾輸出・H10 在庫サイクルの位相、図 3 枚）、a20261022_r7_specialized.py（H14 Specialized 持分法 ＋ 補足 Halfords・Accell、図 3 枚）
+                shimano.py EDINET PDF / census_jp.py 経済センサス
+  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）、a20261022_r4_pullforward_origin.py（H7 先食い・H8 原産国別、図 5 枚）、a20261022_r6_participation.py（H11 高齢化・非補充、図 2 枚）、a20261022_r5_world_cycle.py（H9 台湾輸出・H10 在庫サイクルの位相、図 3 枚）、a20261022_r7_specialized.py（H14 Specialized 持分法 ＋ 補足 Halfords・Accell、図 3 枚）、a20261022_r8_segments.py（H2 車種別 台数・単価 ＋ POS、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          fixtures/（実レスポンスの縮約）＋ Fake による状態テスト
@@ -73,6 +76,10 @@ tests/          fixtures/（実レスポンスの縮約）＋ Fake による状�
 | `marts/halfords_cycling` | 〃 | iso3(GBR), company(Halfords) ＋ staged と同列。34 行（FY2015–2026、2026-10-22 取得） |
 | `staged/accell/net_turnover` | year×report_year | year, report_year(2017/2021), metric(net_turnover), value_eur_m, source(`accell_ar`) |
 | `marts/accell_turnover` | year | iso3(NLD), company(Accell) ＋ staged と同列 ＋ restated_later。12 行（2010–2021、2026-10-22 取得） |
+| `staged/jbpi/domestic_by_type` | year×category×flow×edition | year, edition, category（total / light / mtb_cross / mini / infant / kids / other_sports_geared / eassist / other）, flow(production/import), qty, value_k_jpy, source(`jbpi_domestic`) |
+| `marts/jp_bicycle_by_type` | year×category×flow | iso3(JPN) ＋ staged と同列 ＋ restated_from, unit_price_jpy。50 行（2021–2025、2026-10-22 取得、食い違い 0） |
+| `staged/jbpi/pos_monthly` | period×category | period(YYYY-MM), year, month, category（total / other / eassist / kids / infant / sports / light）, qty, value_jpy（税込）, source(`jbpi_pos`) |
+| `marts/jp_pos_sales` | 〃 | iso3(JPN) ＋ staged と同列 ＋ avg_price_jpy。126 行（2024-07–2025-12、2026-10-22 取得） |
 | `marts/bicycle_industry_panel` | iso3×year×product×metric×source（long） | iso3, year, product（bicycle_total / e_assist / sports / city / parts / car_kei / car_registered / moto_lt125 / moto_126_250 / moto_251p …）, metric（units / value_jpy / value_usd / price_index / avg_price_jpy …）, value, source。**未作成**（行が 0 の Parquet は列を持たず DuckDB が読めないため、行ができるまで書かない） |
 
 ## テーマ固有の規約
