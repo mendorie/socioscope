@@ -42,9 +42,9 @@
 | ZIV（独 二輪産業協会）市場データ PDF | 独 販売台数（e-bike／従来車）、平均価格、売上、生産・輸出入、在庫、2015–2025 | `ziv-zweirad.de/marktdaten-archiv/`（46 PDF、英語版あり。例 `wp-content/uploads/2026/03/Market-Data-Bicycle-Industry-2025.pdf`） | 著作権 ZIV → 引用のみ、PDF 非再配布 | 候補（bicycle-industry ⑩） |
 | TWSE OpenAPI 上場企業月次売上 | Giant（9921）・Merida（9914）の月次売上・前年比（当月分のみ → 毎月スナップショット、過去分は MOPS） | `openapi.twse.com.tw/v1/opendata/t187ap05_L`（JSON、キー不要。確認 2026-10-22） | 政府資料開放授權條款 v1（台湾、出典表示） | 候補（bicycle-industry ⑩） |
 | Fox Factory（FOXF）10-K | 自転車（Specialty Sports Group）売上・比率 | SEC EDGAR XBRL / HTML（キー不要、UA 必須） | パブリックドメイン | 候補（bicycle-industry、補助） |
-| 全国軽自動車協会連合会 | 軽四輪 新車販売（1967–、車種別）、軽二輪（126–250cc）・小型二輪（251cc–）新車販売 1967–、保有 | `zenkeijikyo.or.jp/.../hanbai4-<YYYY>kaku.xls`、`hanbai2-<YYYY>.xls`（年ごと別ファイル） | 利用規約なし → 「全国軽自動車協会連合会調べ」出典明記、raw 非コミット | 候補（bicycle-industry ⑨ 対比） |
-| 日本自動車販売協会連合会（自販連） | 登録車 車種別・ブランド別・RV タイプ別 新車登録台数（月次、約 5 年分オンライン） | `jada.or.jp/pages/336/`〜`343/` の xls（URL は不透明 ID、ページをスクレイプ） | 利用規約なし → 出典明記、raw 非コミット | 候補（bicycle-industry ⑨ 対比） |
-| 日本自動車輸入組合（JAIA） | 輸入乗用車 車両本体価格帯別 新規登録台数（年次）、ブランド別、輸入二輪 | `jaia-jp.org/cms/wp-content/uploads/stats_ja/PriceRange_year.xls` 等（固定名、上書き更新 → manifest でスナップショット） | 利用規約なし → 出典明記、raw 非コミット | 候補（bicycle-industry ⑨ 対比、趣味層の価格帯） |
+| 全国軽自動車協会連合会 | 軽四輪 新車販売 年別・車種別（1967–2025）、軽二輪（126–250cc）・小型二輪（251cc–）新車販売 年別（1967–2025） | `zenkeijikyo.or.jp/zenkei17/zen/wp-content/uploads/2026/01/hanbai4-2025kaku.xls`、`hanbai2-2025.xls`（年ごと別ファイル） | 利用規約なし → 「全国軽自動車協会連合会調べ」出典明記、raw 非コミット | **採用**（bicycle-industry H6、R9、2026-10-22） |
+| 日本自動車販売協会連合会（自販連） | 登録車 車種別 新車登録台数 年計（2021–2025）、登録車＋軽 販売台数（2022–2025） | `jada.or.jp/files/libs/<id>/<id>.xls`（ページ 336・343 から取得した不透明 ID、manifest で固定） | 利用規約なし → 出典明記、raw 非コミット | **採用**（bicycle-industry H6、R9、2026-10-22） |
+| 日本自動車輸入組合（JAIA） | 輸入乗用車 車両本体価格帯別 新規登録台数（年次 2003–2025、13 帯） | `jaia-jp.org/cms/wp-content/uploads/stats_ja/PriceRange_year.xls`（固定名、上書き更新 → manifest でスナップショット）。robots.txt `Crawl-delay: 10`、AI クローラーの UA は Disallow（本ツールの UA は socioscope、1 ファイルのみ・遅延遵守） | 利用規約なし → 出典明記、raw 非コミット | **採用**（bicycle-industry H6、R9、2026-10-22） |
 | 日本自動車工業会（JAMA）Active Matrix DB | 四輪 生産・輸出・販売、二輪 生産・出荷・輸出（原付一種・二種・軽二輪・小型二輪、月次） | `jamaserv.jama.or.jp/newdb/`（Shift_JIS の HTML フォーム、CSV なし。adapter はブラウザで引数確認後に書く）。統計月報 PDF は 2020-09 で終了 | 利用規約なし → 出典明記、raw 非コミット | 候補（bicycle-industry ⑨ 対比、原付の唯一のソース） |
 | ACEM / ACEA / OICA | EU 二輪・原付 登録台数（PDF、5〜6 か国）、EU 乗用車登録、世界生産・販売 | PDF 中心 | 各団体の著作権 | 候補（bicycle-industry、補助） |
 | e-Stat（政府統計の総合窓口） | 国民生活基礎調査 所得票（所得階級×配偶者の有無・児童のいる世帯） | 統計表ファイル直接ダウンロード（`stat-search/file-download?statInfId=…&fileKind=1`、appId 不要） | **政府標準利用規約（第2.0版）＝CC BY 4.0 互換**（確認 2026-10-04） | **採用**（growth-fertility H3） |
@@ -559,6 +559,13 @@
 - ライセンス・利用規約（確認 2026-10-22）: 利用規約の記載なし。出典「（一財）自転車産業振興協会」を明記して引用。raw・staged は非コミット（manifest のみ）。
 - 取得方法: `theme_bicycle_industry.jbpi`（`parse_domestic_pages`: 行ラベルの出現順で品目を割り当て、年見出しと生産合計で検算。`parse_pos_pages`: 時系列表の 14 数値＋月の行、分類合計で検算（金額は端数 10 円まで許容）。`build_domestic_mart`: 新しい版を優先し食い違いは `restated_from`、単価 = 金額 ÷ 台数。`build_pos_mart`: 平均単価）＋ `pipeline._fetch/_stage/_mart_pdf_source(JBPI_DOMESTIC / JBPI_POS)`。年 1 回（2 月の 12 月分、4 月の年間総括）。
 - 既知の欠損・断絶: 2020 年以前は同じ表組みの PDF が無い（「2017-2023 自転車生産動態輸出入統計」は合計のみ）。電動アシスト車の輸入は原付・キックボード等を含む参考値で除外。2026 年の分類変更で 2025 年以前と接続しない。POS はカバー率 42%、家電量販を含まない。サイトは 2026-10-22 午前に 503（メンテ）だった。
+
+### 自動車・二輪の協会統計 xls（bicycle-industry H6: 全軽自協・自販連・JAIA）
+- URL / API: 全軽自協 `https://www.zenkeijikyo.or.jp/statistics/4new-yearsui`・`/2new-year` にリンクされた `hanbai4-2025kaku.xls`・`hanbai2-2025.xls`（robots: `/wp-admin/` のみ Disallow）。自販連 `https://www.jada.or.jp/pages/336/`（車種別）・`/343/`（登録車＋軽）にリンクされた `/files/libs/<id>/<id>.xls`（robots: `/files` Allow。ID は更新で変わるので manifest で固定）。JAIA `https://www.jaia-jp.org/stats/` の `PriceRange_year.xls`（robots: `Crawl-delay: 10`、GPTBot・ClaudeBot 等の AI クローラー UA は Disallow。本ツールは UA `socioscope/0.1` で 1 ファイルを年 1 回取得し遅延を守る）。
+- 対象・粒度: 全軽自協 = 軽四輪 総台数・乗用車群計、軽二輪・小型二輪（台、暦年、1967–）。自販連 = 普通／小型乗用車・貨物・バス・合計（台、暦年、2021–2025）、登録車＋軽（2022–2025）。JAIA = 車両本体価格帯 13 帯（2,000 万円以上〜199 万円以下・不明・計、台、暦年、2003–2025）。
+- ライセンス・利用規約（確認 2026-10-22）: いずれも利用規約の記載なし。出典（「全国軽自動車協会連合会調べ」「日本自動車販売協会連合会調べ」「日本自動車輸入組合調べ」）を明記して引用。raw 非コミット。
+- 取得方法: `theme_bicycle_industry.auto_moto`（`xls_rows` → `parse_zenkei_rows`（和暦ラベルの `(yy)` から西暦）、`parse_jada_rows`（「1～12月」列の年計／年計シートの車種行）、`parse_jaia_rows`（帯の見出し順を検査、合計を検算）、`build_*_mart`）＋ `pipeline._fetch/_stage/_mart_pdf_source(ZENKEI / JADA / JAIA)`（`magic` を xls に）。年 1 回。
+- 既知の欠損・断絶: 原付一種・二種の販売統計は協会に公開系列が無い（JAMA DB はフォーム専用）→ 生産動態統計で代理。自販連の年計は 2021 年から。JAIA の「不明」帯は 2021 年以前に数%。2025 年の新基準原付移行で原付一種は断絶しうる。
 
 ## 記録テンプレート（ソース採用時）
 ```

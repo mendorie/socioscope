@@ -9,6 +9,7 @@ from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
 from theme_bicycle_industry import (
     accell,
+    auto_moto,
     census,
     comtrade,
     cpi,
@@ -70,6 +71,9 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_pdf_source(ctx, written, skipped, ACCELL)
     written, skipped = _fetch_pdf_source(ctx, written, skipped, JBPI_DOMESTIC)
     written, skipped = _fetch_pdf_source(ctx, written, skipped, JBPI_POS)
+    written, skipped = _fetch_pdf_source(ctx, written, skipped, ZENKEI)
+    written, skipped = _fetch_pdf_source(ctx, written, skipped, JADA)
+    written, skipped = _fetch_pdf_source(ctx, written, skipped, JAIA)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -91,6 +95,9 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_pdf_source(ctx, written, skipped, ACCELL)
     written, skipped = _stage_pdf_source(ctx, written, skipped, JBPI_DOMESTIC)
     written, skipped = _stage_pdf_source(ctx, written, skipped, JBPI_POS)
+    written, skipped = _stage_pdf_source(ctx, written, skipped, ZENKEI)
+    written, skipped = _stage_pdf_source(ctx, written, skipped, JADA)
+    written, skipped = _stage_pdf_source(ctx, written, skipped, JAIA)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -112,6 +119,9 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_pdf_source(ctx, written, skipped, ACCELL)
     written, skipped = _mart_pdf_source(ctx, written, skipped, JBPI_DOMESTIC)
     written, skipped = _mart_pdf_source(ctx, written, skipped, JBPI_POS)
+    written, skipped = _mart_pdf_source(ctx, written, skipped, ZENKEI)
+    written, skipped = _mart_pdf_source(ctx, written, skipped, JADA)
+    written, skipped = _mart_pdf_source(ctx, written, skipped, JAIA)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -964,13 +974,14 @@ from typing import Any as _Any  # noqa: E402
 class PdfSource:
     source: str
     license: str
-    keys: tuple[int, ...]
+    keys: tuple[int | str, ...]
     url: _Any
     raw_name: _Any
     parse: _Any
     build_mart: _Any
     table: str
     mart: str
+    magic: bytes = b"%PDF"
 
 
 HALFORDS = PdfSource(
@@ -1017,6 +1028,42 @@ JBPI_POS = PdfSource(
     table="staged/jbpi/pos_monthly",
     mart="marts/jp_pos_sales",
 )
+ZENKEI = PdfSource(
+    source=auto_moto.SOURCE_ZENKEI,
+    license=auto_moto.LICENSE_ZENKEI,
+    keys=tuple(auto_moto.ZENKEI_DOCS),
+    url=auto_moto.ZENKEI_DOCS.__getitem__,
+    raw_name=lambda k: f"zenkeijikyo_{k}_2025.xls",
+    parse=auto_moto.parse_zenkei,
+    build_mart=auto_moto.build_zenkei_mart,
+    table="staged/zenkeijikyo/annual_sales",
+    mart="marts/jp_kei_moto_sales",
+    magic=auto_moto.XLS_MAGIC,
+)
+JADA = PdfSource(
+    source=auto_moto.SOURCE_JADA,
+    license=auto_moto.LICENSE_JADA,
+    keys=tuple(auto_moto.JADA_DOCS),
+    url=auto_moto.JADA_DOCS.__getitem__,
+    raw_name=lambda k: f"jada_{k}_2026-10.xls",
+    parse=auto_moto.parse_jada,
+    build_mart=auto_moto.build_jada_mart,
+    table="staged/jada/annual_registrations",
+    mart="marts/jp_registered_car_sales",
+    magic=auto_moto.XLS_MAGIC,
+)
+JAIA = PdfSource(
+    source=auto_moto.SOURCE_JAIA,
+    license=auto_moto.LICENSE_JAIA,
+    keys=tuple(auto_moto.JAIA_DOCS),
+    url=auto_moto.JAIA_DOCS.__getitem__,
+    raw_name=lambda k: f"jaia_{k}_year.xls",
+    parse=auto_moto.parse_jaia,
+    build_mart=auto_moto.build_jaia_mart,
+    table="staged/jaia/price_bands",
+    mart="marts/jp_import_car_price_bands",
+    magic=auto_moto.XLS_MAGIC,
+)
 
 
 def _fetch_pdf_source(
@@ -1031,8 +1078,8 @@ def _fetch_pdf_source(
         except FetchError as e:
             skipped.append(f"{name}: {e}")
             continue
-        if not payload.startswith(b"%PDF"):
-            skipped.append(f"{name}: non-PDF payload")
+        if not payload.startswith(src.magic):
+            skipped.append(f"{name}: non-{'PDF' if src.magic == b'%PDF' else 'xls'} payload")
             continue
         rec = ctx.raw.put(
             theme=THEME, source=src.source, name=name, url=url, license=src.license, payload=payload
