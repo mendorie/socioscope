@@ -23,7 +23,7 @@ src/theme_bicycle_industry/
                 `SURVEY_OF_YEAR`（商業統計／経済センサス）、`parse`（全国行を long に、業種欠落は ValueError）、`build_mart`
   <source>.py   （予定）customs.py 貿易統計 CSV / kakei.py 家計調査（支出金額のみ）/
                 jbpi.py JBPI PDF / shimano.py EDINET PDF / census_jp.py 経済センサス
-  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）
+  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          fixtures/（実レスポンスの縮約）＋ Fake による状態テスト
