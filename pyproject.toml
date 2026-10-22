@@ -25,12 +25,15 @@ dev = [
   "socioscope-core",
   "theme-wealth-population-distribution",
   "theme-growth-fertility",
+  "theme-bicycle-industry",
 ]
 notebooks = ["marimo>=0.10", "matplotlib>=3.9", "plotly>=5"]
 
 [tool.uv.sources.theme-wealth-population-distribution]
 workspace = true
 [tool.uv.sources.theme-growth-fertility]
+workspace = true
+[tool.uv.sources.theme-bicycle-industry]
 workspace = true
 
 # ---- 共通ツール設定（全 member に適用）----
@@ -44,7 +47,7 @@ select = ["E", "F", "I", "B", "UP", "N", "S", "SIM", "RUF"]
 ignore = ["S101", "RUF001", "RUF002", "RUF003"]  # assert in tests; 日本語の全角記号を許容
 
 [tool.ruff.lint.isort]
-known-first-party = ["socioscope_core", "theme_growth_fertility", "theme_wealth_population_distribution"]
+known-first-party = ["socioscope_core", "theme_growth_fertility", "theme_wealth_population_distribution", "theme_bicycle_industry"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S", "RUF"]
@@ -53,7 +56,7 @@ known-first-party = ["socioscope_core", "theme_growth_fertility", "theme_wealth_
 python_version = "3.13"
 strict = true
 warn_unreachable = true
-mypy_path = ["packages/core/src", "themes/wealth-population-distribution/src", "themes/growth-fertility/src"]
+mypy_path = ["packages/core/src", "themes/wealth-population-distribution/src", "themes/growth-fertility/src", "themes/bicycle-industry/src"]
 namespace_packages = true
 explicit_package_bases = true
 

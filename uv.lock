@@ -17,6 +17,7 @@ resolution-markers = [
 members = [
     "socioscope-core",
     "socioscope-workspace",
+    "theme-bicycle-industry",
     "theme-growth-fertility",
     "theme-wealth-population-distribution",
 ]
@@ -1919,6 +1920,7 @@ dev = [
     { name = "pyyaml" },
     { name = "ruff" },
     { name = "socioscope-core" },
+    { name = "theme-bicycle-industry" },
     { name = "theme-growth-fertility" },
     { name = "theme-wealth-population-distribution" },
     { name = "types-pyyaml" },
@@ -1938,6 +1940,7 @@ dev = [
     { name = "pyyaml", specifier = ">=6" },
     { name = "ruff", specifier = ">=0.8" },
     { name = "socioscope-core", editable = "packages/core" },
+    { name = "theme-bicycle-industry", editable = "themes/bicycle-industry" },
     { name = "theme-growth-fertility", editable = "themes/growth-fertility" },
     { name = "theme-wealth-population-distribution", editable = "themes/wealth-population-distribution" },
     { name = "types-pyyaml" },
@@ -2010,6 +2013,31 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/cc/f5/b9b47f3c688a8af1b199af96e098b8f20897a60b45187c57ce6fcde77a5f/statsmodels-0.15.0-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:583eb2a46f7c7a5c34a26715c8b6d92199bfb4f04623db5fff9902a3c7c832d3", size = 11934786, upload-time = "2026-08-30T07:41:46.809Z" },
     { url = "https://files.pythonhosted.org/packages/c4/08/608871f18bc18c6cba0b484e81fd25a023ef3ca6541f6793ec839fa49e1f/statsmodels-0.15.0-cp315-cp315t-win_amd64.whl", hash = "sha256:38038823fbe86f11e09433b4a0f4af5f102327c3137a1604b002ce3cf722a31f", size = 11549124, upload-time = "2026-08-30T16:05:53.179Z" },
     { url = "https://files.pythonhosted.org/packages/e3/eb/90a506dbee5cde669e2ef28565ff6b7a0791ab415eab2da82f92d033cccc/statsmodels-0.15.0-cp315-cp315t-win_arm64.whl", hash = "sha256:90df413d7e09474f7e7cbf8807440c1bf76298cdd9daabf9141f76d7627c9151", size = 11021454, upload-time = "2026-08-30T16:06:08.124Z" },
+]
+
+[[package]]
+name = "theme-bicycle-industry"
+version = "0.1.0"
+source = { editable = "themes/bicycle-industry" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "openpyxl" },
+    { name = "polars" },
+    { name = "pyarrow" },
+    { name = "pydantic" },
+    { name = "socioscope-core" },
+    { name = "statsmodels" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "matplotlib", specifier = ">=3.9" },
+    { name = "openpyxl", specifier = ">=3.1" },
+    { name = "polars", specifier = ">=1.0" },
+    { name = "pyarrow", specifier = ">=17" },
+    { name = "pydantic", specifier = ">=2.9" },
+    { name = "socioscope-core", editable = "packages/core" },
+    { name = "statsmodels", specifier = ">=0.14" },
 ]
 
 [[package]]

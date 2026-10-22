@@ -24,6 +24,7 @@ analyze: marts → themes/<theme>/reports/*.md （ノートブック or スク�
 ## テーマ一覧
 - `design/themes/wealth-population-distribution.md`
 - `design/themes/growth-fertility.md`
+- `design/themes/bicycle-industry.md`
 
 ## 非スコープ（当面）
 - 個人レベルのマイクロデータ（匿名化済みでも扱わない。集計統計のみ）
