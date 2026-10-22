@@ -4,7 +4,7 @@ import pytest
 
 from socioscope_core.core.pipeline import Context, Stage
 from socioscope_core.testing.fakes import FakeFetcher, InMemoryRawStore, InMemoryTableStore
-from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shimano
+from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shakai, shimano
 from theme_bicycle_industry.pipeline import (
     BLS_TABLE,
     CENSUS_MART,
@@ -19,6 +19,8 @@ from theme_bicycle_industry.pipeline import (
     PANEL_COLUMNS,
     PANEL_TABLE,
     PRICES_MART,
+    SHAKAI_MART,
+    SHAKAI_TABLE,
     SHIMANO_TABLE,
     THEME,
     build_panel,
@@ -76,7 +78,7 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     assert result.written == ()
     assert all("raw missing (run fetch)" in s for s in result.skipped)
     n_bls = len(prices.BLS_SERIES) * len(prices.BLS_RANGES)
-    n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1 + len(comtrade.ORIGIN_YEARS)
+    n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1 + len(comtrade.ORIGIN_YEARS) + 1
     assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
@@ -140,6 +142,7 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
         SHIMANO_TABLE,
         CPI_TABLE,
         CENSUS_TABLE,
+        SHAKAI_TABLE,
     ):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
@@ -306,3 +309,26 @@ def test_census_fetch_stage_mart_end_to_end() -> None:
         if r["industry"] == "bicycle_retail" and r["metric"] == "establishments"
     }
     assert bike[2021] == 9552.0
+
+
+# ---- 社会生活基本調査
+
+
+def test_shakai_fetch_stage_mart_end_to_end() -> None:
+    xlsx = (FIXTURES / "shakai_jikei2_sample.xlsx").read_bytes()
+    ctx = Context(
+        fetcher=FakeFetcher({shakai.URL: xlsx}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({shakai.SOURCE}),
+    )
+    assert PIPELINE.run(Stage.FETCH, ctx).written == (f"{THEME}/estat_shakai/{shakai.RAW_NAME}",)
+    assert PIPELINE.run(Stage.STAGE, ctx).written == (SHAKAI_TABLE,)
+    assert SHAKAI_MART in PIPELINE.run(Stage.MART, ctx).written
+    mart = ctx.tables.read_table(SHAKAI_MART)
+    cyc = {
+        r["year"]: r["rate_pct"]
+        for r in mart
+        if r["sport"] == "サイクリング" and r["sex"] == "total" and r["age"] == "total"
+    }
+    assert cyc[2021] == 8.2

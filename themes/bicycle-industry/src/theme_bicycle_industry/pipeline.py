@@ -7,7 +7,7 @@ still run (design/themes/bicycle-industry.md lists the adoption order).
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shimano
+from theme_bicycle_industry import census, comtrade, cpi, meti, prices, shakai, shimano
 
 THEME = "bicycle-industry"
 PANEL_TABLE = "marts/bicycle_industry_panel"
@@ -49,6 +49,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_shimano(ctx, written, skipped)
     written, skipped = _fetch_cpi(ctx, written, skipped)
     written, skipped = _fetch_census(ctx, written, skipped)
+    written, skipped = _fetch_shakai(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -62,6 +63,7 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_shimano(ctx, written, skipped)
     written, skipped = _stage_cpi(ctx, written, skipped)
     written, skipped = _stage_census(ctx, written, skipped)
+    written, skipped = _stage_shakai(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -75,6 +77,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_shimano(ctx, written, skipped)
     written, skipped = _mart_cpi(ctx, written, skipped)
     written, skipped = _mart_census(ctx, written, skipped)
+    written, skipped = _mart_shakai(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -623,4 +626,68 @@ def _mart_comtrade_origin(
         world = []
     ctx.tables.write_table(COMTRADE_ORIGIN_MART, comtrade.build_origin_mart(origin, world))
     written.append(COMTRADE_ORIGIN_MART)
+    return written, skipped
+
+
+# ---- 社会生活基本調査 時系列統計表（e-Stat、appId 不要）: スポーツ種類別 行動者率 1986–2021 ----
+
+SHAKAI_TABLE = "staged/estat/shakai_sports_rates"
+SHAKAI_MART = "marts/jp_sports_participation"
+
+
+def _fetch_shakai(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(shakai.SOURCE):
+        return written, skipped
+    try:
+        payload = ctx.fetcher.fetch(shakai.URL)
+    except FetchError as e:
+        skipped.append(f"{shakai.RAW_NAME}: {e}")
+        return written, skipped
+    if not payload.startswith(b"PK"):
+        skipped.append(f"{shakai.RAW_NAME}: non-xlsx payload (wrong statInfId or fileKind?)")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=shakai.SOURCE,
+        name=shakai.RAW_NAME,
+        url=shakai.URL,
+        license=shakai.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_shakai(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(shakai.SOURCE):
+        return written, skipped
+    payload = ctx.raw.get(theme=THEME, source=shakai.SOURCE, name=shakai.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{shakai.RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        parsed = shakai.parse(payload)
+    except ValueError as e:
+        skipped.append(f"{shakai.RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(SHAKAI_TABLE, parsed.rows)
+    written.append(SHAKAI_TABLE)
+    skipped.extend(f"{shakai.RAW_NAME}: {s}" for s in parsed.skipped)
+    return written, skipped
+
+
+def _mart_shakai(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    try:
+        staged = ctx.tables.read_table(SHAKAI_TABLE)
+    except FileNotFoundError:
+        skipped.append(f"{SHAKAI_TABLE}: staged table missing (run stage)")
+        return written, skipped
+    ctx.tables.write_table(SHAKAI_MART, shakai.build_mart(staged))
+    written.append(SHAKAI_MART)
     return written, skipped

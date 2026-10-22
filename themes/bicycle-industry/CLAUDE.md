@@ -23,9 +23,11 @@ src/theme_bicycle_industry/
                 `parse`（符号で列選択、ヘッダ・符号欠落・非数値は ValueError）、`build_mart`
   census.py     経済センサス（R3）小売業 産業編 第 1 表 xlsx: `URL`/`RAW_NAME`、`INDUSTRIES`（5 業種）、`METRICS`（6 指標）、
                 `SURVEY_OF_YEAR`（商業統計／経済センサス）、`parse`（全国行を long に、業種欠落は ValueError）、`build_mart`
+  shakai.py     総務省 社会生活基本調査 時系列統計表 xlsx: `URL`/`RAW_NAME`、`SEXES`/`AGES`、`parse`（スポーツ名行 × 西暦行で列を組み、
+                総数／男／女 × 年齢階級を long に。必須種目・シート・行欠落は ValueError）、`build_mart`
   <source>.py   （予定）customs.py 貿易統計 CSV / kakei.py 家計調査（支出金額のみ）/
                 jbpi.py JBPI PDF / shimano.py EDINET PDF / census_jp.py 経済センサス
-  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）、a20261022_r4_pullforward_origin.py（H7 先食い・H8 原産国別、図 5 枚）
+  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）、a20261022_r2_bullwhip_price.py（H3・H4 判定、図 2 枚）、a20261022_r3_retail.py（H5 判定、図 2 枚）、a20261022_r4_pullforward_origin.py（H7 先食い・H8 原産国別、図 5 枚）、a20261022_r6_participation.py（H11 高齢化・非補充、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          fixtures/（実レスポンスの縮約）＋ Fake による状態テスト
@@ -49,6 +51,8 @@ tests/          fixtures/（実レスポンスの縮約）＋ Fake による状�
 | `marts/jp_cpi_vehicles` | 〃 | iso3(JPN) ＋ staged と同列。4,393 行（年 1970–2025、月 1970-01–2026-08、2026-10-22 取得） |
 | `staged/estat/census_retail` | industry×year×metric | industry_label, industry（retail_total / auto_retail / motorcycle_retail / bicycle_retail / machinery_retail_other）, year（1994–2021 の 10 時点）, survey, metric（establishments / establishments_corporate / establishments_individual / persons_engaged / annual_sales_mn_jpy / sales_floor_m2）, value（`-`/`x` は NULL）, source(`estat_census`) |
 | `marts/jp_retail_census` | 〃 | iso3(JPN) ＋ staged と同列。300 行（2026-10-22 取得） |
+| `staged/estat/shakai_sports_rates` | sport×sex×age×year | sport（23 種目、日本語名）, sex(total/male/female), age（total / 10_14 / … / 70_plus / r_15_plus / r_65_plus）, year（1986–2021 の 8 時点）, rate_pct（過去 1 年の行動者率 %）, source(`estat_shakai`)。`...` は行なし |
+| `marts/jp_sports_participation` | 〃 | iso3(JPN) ＋ staged と同列。5,890 行（2026-10-22 取得） |
 | `marts/bicycle_industry_panel` | iso3×year×product×metric×source（long） | iso3, year, product（bicycle_total / e_assist / sports / city / parts / car_kei / car_registered / moto_lt125 / moto_126_250 / moto_251p …）, metric（units / value_jpy / value_usd / price_index / avg_price_jpy …）, value, source。**未作成**（行が 0 の Parquet は列を持たず DuckDB が読めないため、行ができるまで書かない） |
 
 ## テーマ固有の規約
