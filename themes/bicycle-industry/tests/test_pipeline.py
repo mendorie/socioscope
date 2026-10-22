@@ -10,6 +10,7 @@ from theme_bicycle_industry import (
     comtrade,
     cpi,
     halfords,
+    jbpi,
     merida,
     meti,
     prices,
@@ -30,6 +31,8 @@ from theme_bicycle_industry.pipeline import (
     CPI_TABLE,
     HALFORDS,
     HICP_TABLE,
+    JBPI_DOMESTIC,
+    JBPI_POS,
     MERIDA_MART,
     MERIDA_TABLE,
     METI_MART,
@@ -101,6 +104,7 @@ def test_stage_without_raw_writes_nothing_and_says_why() -> None:
     n_other = 1 + n_bls + len(shimano.DOCS) + len(cpi.FILES) + 1 + len(comtrade.ORIGIN_YEARS) + 1
     n_other += len(comtrade.TAIWAN_YEARS) + 1  # taiwan exports + 'mops: raw missing'
     n_other += len(merida.DOCS) + len(halfords.DOCS) + len(accell.DOCS)
+    n_other += len(jbpi.DOMESTIC_DOCS) + len(jbpi.POS_DOCS)
     assert len(result.skipped) == len(meti.YEARS) + len(comtrade.YEARS) + n_other
     assert ctx.tables.list_tables() == []
 
@@ -170,6 +174,8 @@ def test_mart_without_staged_meti_writes_nothing_and_says_why() -> None:
         MERIDA_TABLE,
         HALFORDS.table,
         ACCELL.table,
+        JBPI_DOMESTIC.table,
+        JBPI_POS.table,
     ):
         assert f"{table}: staged table missing (run stage)" in result.skipped
 
@@ -485,3 +491,17 @@ def test_pdf_sources_fail_closed_on_html_and_missing_raw() -> None:
     marted = PIPELINE.run(Stage.MART, ctx)
     assert f"{HALFORDS.table}: staged table missing (run stage)" in marted.skipped
     assert HALFORDS.mart not in marted.written and ACCELL.mart not in marted.written
+
+
+def test_jbpi_sources_fail_closed_on_html() -> None:
+    ctx = Context(
+        fetcher=FakeFetcher({jbpi.domestic_url(2025): HTML_BLOCK, jbpi.pos_url(2025): HTML_BLOCK}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({jbpi.SOURCE_DOMESTIC, jbpi.SOURCE_POS}),
+    )
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert fetched.written == ()
+    assert "jbpi_domestic_2023_2025_dec.pdf: non-PDF payload" in fetched.skipped
+    assert "jbpi_pos_annual_2025.pdf: non-PDF payload" in fetched.skipped
+    assert JBPI_DOMESTIC.mart not in PIPELINE.run(Stage.MART, ctx).written

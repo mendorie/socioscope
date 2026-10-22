@@ -13,6 +13,7 @@ from theme_bicycle_industry import (
     comtrade,
     cpi,
     halfords,
+    jbpi,
     merida,
     meti,
     prices,
@@ -67,6 +68,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_merida(ctx, written, skipped)
     written, skipped = _fetch_pdf_source(ctx, written, skipped, HALFORDS)
     written, skipped = _fetch_pdf_source(ctx, written, skipped, ACCELL)
+    written, skipped = _fetch_pdf_source(ctx, written, skipped, JBPI_DOMESTIC)
+    written, skipped = _fetch_pdf_source(ctx, written, skipped, JBPI_POS)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -86,6 +89,8 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_merida(ctx, written, skipped)
     written, skipped = _stage_pdf_source(ctx, written, skipped, HALFORDS)
     written, skipped = _stage_pdf_source(ctx, written, skipped, ACCELL)
+    written, skipped = _stage_pdf_source(ctx, written, skipped, JBPI_DOMESTIC)
+    written, skipped = _stage_pdf_source(ctx, written, skipped, JBPI_POS)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -105,6 +110,8 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_merida(ctx, written, skipped)
     written, skipped = _mart_pdf_source(ctx, written, skipped, HALFORDS)
     written, skipped = _mart_pdf_source(ctx, written, skipped, ACCELL)
+    written, skipped = _mart_pdf_source(ctx, written, skipped, JBPI_DOMESTIC)
+    written, skipped = _mart_pdf_source(ctx, written, skipped, JBPI_POS)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it (CI smoke `socioscope db build`).
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -987,6 +994,28 @@ ACCELL = PdfSource(
     build_mart=accell.build_mart,
     table="staged/accell/net_turnover",
     mart="marts/accell_turnover",
+)
+JBPI_DOMESTIC = PdfSource(
+    source=jbpi.SOURCE_DOMESTIC,
+    license=jbpi.LICENSE,
+    keys=tuple(sorted(jbpi.DOMESTIC_DOCS)),
+    url=jbpi.domestic_url,
+    raw_name=jbpi.domestic_raw_name,
+    parse=jbpi.parse_domestic,
+    build_mart=jbpi.build_domestic_mart,
+    table="staged/jbpi/domestic_by_type",
+    mart="marts/jp_bicycle_by_type",
+)
+JBPI_POS = PdfSource(
+    source=jbpi.SOURCE_POS,
+    license=jbpi.LICENSE,
+    keys=tuple(sorted(jbpi.POS_DOCS)),
+    url=jbpi.pos_url,
+    raw_name=jbpi.pos_raw_name,
+    parse=jbpi.parse_pos,
+    build_mart=jbpi.build_pos_mart,
+    table="staged/jbpi/pos_monthly",
+    mart="marts/jp_pos_sales",
 )
 
 
