@@ -19,6 +19,7 @@ src/theme_bicycle_industry/
                 セグメント売上・利益と地域別売上を正規表現で読む、fail-closed）、`build_mart`（その年の有報を優先、翌年と食い違えば `restated_next_year`）
   <source>.py   （予定）customs.py 貿易統計 CSV / cpi.py・kakei.py e-Stat Excel /
                 jbpi.py JBPI PDF / shimano.py EDINET PDF / census_jp.py 経済センサス
+  analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261022_r1_volume_price.py（H1 判定、H2/H3/H4/H6 の記述、図 5 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          fixtures/（実レスポンスの縮約）＋ Fake による状態テスト
