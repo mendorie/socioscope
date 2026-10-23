@@ -11,7 +11,7 @@ dependencies = [
   "statsmodels>=0.14",
   "matplotlib>=3.9",
   "openpyxl>=3.1",
-  "pypdf>=5.0",
+  "pypdf>=6.21.1",  # CVE-2026-113786 ほか 5 件の修正版
 ]
 
 [project.entry-points."socioscope.themes"]

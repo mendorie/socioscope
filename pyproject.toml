@@ -10,7 +10,8 @@ dependencies = []
 package = false
 # 推移的依存の下限制約（セキュリティ修正の取り込み漏れ・退行を lock 段階で防ぐ）。
 # certifi: GHSA-6q48-6c7w-9gw2 — 鍵が侵害された eMudhra（emSign）中間 CA の親ルートを同梱していた。2026.10.19 で修正。
-constraint-dependencies = ["certifi>=2026.10.19"]
+# pillow: CVE-2026-112390 ほか 24 件（matplotlib 経由の推移的依存）。13.0.0 で修正。
+constraint-dependencies = ["certifi>=2026.10.19", "pillow>=13.0.0"]
 
 [tool.uv.workspace]
 members = ["packages/core", "themes/*"]
