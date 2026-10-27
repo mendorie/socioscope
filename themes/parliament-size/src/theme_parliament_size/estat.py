@@ -23,6 +23,14 @@ STAT_INF_ID = "000032142404"  # 表 2-1、Excel（fileKind=0）
 URL = f"https://www.e-stat.go.jp/stat-search/file-download?statInfId={STAT_INF_ID}&fileKind=0"
 RAW_NAME = "census2020_table2-1.xlsx"
 MAGIC = b"PK"
+# 人口推計 長期時系列 表 1: 男女別人口（各年 10 月 1 日現在）。
+# 総人口 1920–2000・日本人人口 1950–2000（H6 用）
+LONGPOP_STAT_INF_ID = "000000090261"
+LONGPOP_URL = (
+    f"https://www.e-stat.go.jp/stat-search/file-download?statInfId={LONGPOP_STAT_INF_ID}&fileKind=0"
+)
+LONGPOP_RAW_NAME = "population_longterm_1920_2000.xlsx"
+LONGPOP_MAGIC = b"PK"
 CENSUS_YEAR = 2020
 N_PREFS = 47
 
@@ -132,4 +140,54 @@ def build_mart(staged: Sequence[dict[str, object]]) -> list[dict[str, object]]:
     if len(out) != N_PREFS or len({r["pref_code"] for r in out}) != N_PREFS:
         msg = f"census mart: expected {N_PREFS} distinct prefectures"
         raise ValueError(msg)
+    return out
+
+
+# ---- 人口推計 長期時系列 表 1（1920–2000、千人）--------
+
+
+def parse_longpop(sheets: Sequence[tuple[str, Rows]]) -> list[dict[str, object]]:
+    """→ [{year, population_total_thousands, population_japanese_thousands|None}]。
+
+    1920 と 2000 が無ければ ValueError。
+    """
+    if not sheets:
+        msg = "workbook has no sheet"
+        raise ValueError(msg)
+    rows = sheets[0][1]
+    out: list[dict[str, object]] = []
+    for row in rows:
+        if len(row) < 7:
+            continue
+        year = _num(row[1])
+        total = _num(row[3])
+        if year is None or total is None or not (1900 <= year <= 2100):
+            continue
+        jp = _num(row[6])
+        out.append(
+            {
+                "year": int(year),
+                "population_total_thousands": total,
+                "population_japanese_thousands": jp,
+            }
+        )
+    years = [int(str(r["year"])) for r in out]
+    if not out or years[0] != 1920 or years[-1] != 2000 or len(set(years)) != len(years):
+        msg = f"longpop: expected yearly rows 1920..2000, got {years[:3]}..{years[-3:]}"
+        raise ValueError(msg)
+    return out
+
+
+def build_longpop_mart(staged: Sequence[dict[str, object]]) -> list[dict[str, object]]:
+    out = [
+        {
+            "iso3": "JPN",
+            "year": r["year"],
+            "population_total_thousands": r["population_total_thousands"],
+            "population_japanese_thousands": r["population_japanese_thousands"],
+            "source": SOURCE,
+        }
+        for r in staged
+    ]
+    out.sort(key=lambda r: int(str(r["year"])))
     return out

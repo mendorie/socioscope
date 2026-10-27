@@ -64,3 +64,29 @@ def test_build_mart_adds_keys_and_sorts_by_code() -> None:
     )
     with pytest.raises(ValueError, match="distinct"):
         estat.build_mart(staged[:46])
+
+
+def longpop_sheet(last: int = 2000) -> list[tuple[str, estat.Rows]]:
+    rows: estat.Rows = [["第１表 男女別人口"], [], ["", "", "", "総人口", "", "", "日本人人口"]]
+    for y in range(1920, last + 1):
+        jp: object = "－" if y < 1950 else 1000.0 * (y - 1900) * 0.98
+        rows.append([f"{y}年", y, "", 1000.0 * (y - 1900), 1.0, 1.0, jp, 1.0, 1.0])
+    rows.append(["注", "", "", "", "", "", ""])
+    return [("第1表", rows)]
+
+
+def test_parse_longpop_reads_yearly_totals_and_optional_japanese() -> None:
+    out = estat.parse_longpop(longpop_sheet())
+    assert len(out) == 81
+    assert out[0] == {
+        "year": 1920,
+        "population_total_thousands": 20000.0,
+        "population_japanese_thousands": None,
+    }
+    assert out[-1]["year"] == 2000 and out[-1]["population_japanese_thousands"] == pytest.approx(
+        98000.0
+    )
+    with pytest.raises(ValueError, match="1920..2000"):
+        estat.parse_longpop(longpop_sheet(last=1999))
+    mart = estat.build_longpop_mart(list(reversed(out)))
+    assert mart[0]["year"] == 1920 and mart[0]["iso3"] == "JPN"

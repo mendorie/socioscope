@@ -11,6 +11,7 @@ dependencies = [
   "matplotlib>=3.9",
   "openpyxl>=3.1",
   "xlrd>=2.0",
+  "pypdf>=6.21.1",
 ]
 
 [project.entry-points."socioscope.themes"]

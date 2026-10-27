@@ -67,9 +67,9 @@
 | V-Dem | 立法府の制約指数 `v2xlg_legcon` 等（parliament-size H2） | CSV（登録の要否 確認要） | CC BY-SA 4.0（確認要） | 候補（parliament-size） |
 | Eurostat `gov_10a_exp` / OECD COFOG | 執行・立法機関 歳出（COFOG 01.1）（parliament-size H5b） | JSON-stat / SDMX、鍵不要 | Eurostat: CC BY 4.0 / OECD Terms & Conditions | 候補（parliament-size。01.1 は執行機関と合算、立法のみ分離できる国に限る） |
 | 総務省 衆議院議員総選挙 結果調（第 49〜51 回） | 都道府県別・比例ブロック別 有権者数、政党別得票・議席（parliament-size H3・H4） | **Excel あり**（xls／xlsx、`main_content/<id>.xls(x)`、鍵不要）。PDF の結果調全体版もある | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size H3・H4、2026-10-27。`marts/jp_hr_pr_results`, `jp_hr_seats_by_party`, `jp_hr_electorate`） |
-| 衆議院 議案審議経過・国立国会図書館 日本法令索引 | 回次別の閣法・衆法・参法の提出数・成立数（parliament-size H2） | HTML（表） | 衆議院サイトの利用規約 確認要 | 候補（parliament-size） |
-| 財務省 予算書・決算書（国会所管）、歳費法・立法事務費交付法 | 国会所管歳出、議員 1 人当たり法定経費（parliament-size H5） | PDF / e-Gov 法令 API | 政府標準利用規約（第 2.0 版） | 候補（parliament-size） |
-| 衆議院・参議院 公式サイト 定数の変遷、総務省 人口推計、IPSS 将来推計 | 定数の時系列 1890–、人口（parliament-size H6・H4b） | HTML / xlsx | 確認要 / 政府標準利用規約 | 候補（parliament-size） |
+| 内閣法制局「過去の法律案の提出・成立件数一覧」 | 国会回次別（第 183 回 2013 年〜）の 閣法・議員立法の提出・成立件数（parliament-size H2）。衆法・参法の区別はない | HTML 表（1 ページ、鍵不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_bill_counts`）。衆議院 議案審議経過（1947–、衆法・参法別）は候補のまま |
+| 財務省 令和 7 年度 一般会計歳入歳出予算（衆参修正後）PDF、歳費法・秘書給与法（e-Gov 法令 API v1 XML） | 歳出の所管別内訳（国会 1,315 億円、合計 115.2 兆円）、議員 1 人当たり法定経費（parliament-size H5） | PDF（AES 暗号化だが空パスワードで pypdf が読める）/ `laws.e-gov.go.jp/api/1/lawdata/<law_id>` | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size、2026-10-27。`marts/jp_budget_by_organ`。法定額は `jp_member_costs.csv` に手入力） |
+| 衆議院 HP「衆議院議員定数の変遷」（1946–2004）＋ 法令、e-Stat 人口推計 長期時系列 表 1（1920–2000） | 定数の時系列 1890–2022（手入力表 `jp_seats_history.csv`）、総人口 1920–2000（parliament-size H6） | HTML（Shift_JIS）/ `file-download?statInfId=000000090261&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_population_longterm`。2001 年以降の人口は IPU Parline） |
 | e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1 | 都道府県別 国籍総数・日本人 人口（parliament-size H4b: アダムズ方式の基礎人口） | `file-download?statInfId=000032142404&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_census2020_prefecture`） |
 
 ## 採用ソースの記録
@@ -596,6 +596,27 @@
 - ライセンス・利用規約（確認日）: 政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。出典表記「政府統計の総合窓口(e-Stat)、令和 2 年国勢調査 人口等基本集計（総務省統計局）を加工」。
 - 取得方法（adapter 名）: `theme_parliament_size.estat`（`URL`/`RAW_NAME`/`workbook_rows`/`parse`/`build_mart`）、`pipeline._fetch_estat`。
 - 既知の欠損・断絶・定義変更: 「国籍総数」は国籍不詳を含む（全国 126,146,099）。「うち日本人」の全国計は 121,541,155 で、結果概要の「日本人人口 1 億 2,339 万人」（不詳補完値）とは異なる。画定審の配分はどちらを使ったか本書では未確認だが、アダムズ方式でこの値から現行の 289・176 の配分が完全に再現できる。
+
+### 財務省 令和 7 年度 一般会計歳入歳出予算（衆議院修正＋参議院修正後）PDF（parliament-size H5: 歳出の所管別内訳）
+- URL / API: `https://www.mof.go.jp/policy/budget/budger_workflow/budget/fy2025/0003.pdf`（6 ページ、80 KB）。同ページの 0002.pdf（予算フレーム）も同形式。
+- 対象指標・粒度: 2 ページ目「所管別内訳」: 所管 22 行（皇室費・国会・裁判所・会計検査院・内閣・内閣府（内訳 2 行）・デジタル庁・各省・予備費 2 行）× 前年度当初／令和 7 年度修正後（億円）＋ 合計。
+- ライセンス・利用規約（確認日）: 財務省ホームページは政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。
+- 取得方法（adapter 名）: `theme_parliament_size.mof`（`pdf_pages`（pypdf、AES 暗号化を空パスワードで復号）、`parse`（数値行を `ORGANS` の順に割り当て、主要行の合計 = 合計行で検算）、`build_mart`）、`pipeline.MOF`（`SingleDoc`）。
+- 既知の欠損・断絶・定義変更: PDF は数値行が所管名より先にテキスト化されるため順序依存。ページ番号「－ 2 －」は数値行に見えるので除外。所管の増減（デジタル庁 2021–、こども家庭庁は内閣府の内訳）で年度が変わると `ORGANS` の更新が要る。
+
+### 内閣法制局「過去の法律案の提出・成立件数一覧」HTML（parliament-size H2: 閣法と議員立法の提出・成立件数）
+- URL / API: `https://www.clb.go.jp/recent-laws/number/`（HTML 表 1 枚、鍵不要）。
+- 対象指標・粒度: 国会回次 × 会期種別 × 会期 × 内閣提出法律案（提出・成立）× 議員立法（提出・成立）× 計。第 183 回（2013-01）〜第 221 回（2026-02）の 39 回次。継続審査件数は外数。衆法・参法の区別なし。
+- ライセンス・利用規約（確認日）: 政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。
+- 取得方法（adapter 名）: `theme_parliament_size.clb`（`parse`: `html.parser` で全表を走査し「第 N 回（種別）」と「（継続 n 件） m 件」のセルを読む。計 = 閣法 ＋ 議員立法 で検算）、`pipeline.CLB`。
+- 既知の欠損・断絶・定義変更: 2013 年以前は無い（衆議院「議案審議経過」が 1947– を持つが未採用）。議員立法には委員長提出を含む。
+
+### e-Stat 人口推計 長期時系列 表 1（parliament-size H6: 総人口 1920–2000）
+- URL / API: `https://www.e-stat.go.jp/stat-search/file-download?statInfId=000000090261&fileKind=0`（xlsx 18 KB、appId 不要。一覧は旧 URL `SG1/estat/List.do?bid=000000090004`）。
+- 対象指標・粒度: 各年 10 月 1 日現在の 総人口（男女計・男・女、1920–2000）と日本人人口（1950–2000）、千人。
+- ライセンス・利用規約（確認日）: 政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。出典表記「政府統計の総合窓口(e-Stat)、人口推計（総務省統計局）を加工」。
+- 取得方法（adapter 名）: `theme_parliament_size.estat`（`LONGPOP_URL`、`parse_longpop`、`build_longpop_mart`）。
+- 既知の欠損・断絶・定義変更: 1945・1946 年は注記付き推計（1946 年 75,750 千人）。1920–1945 は内地人口。2001 年以降は IPU Parline の `population_in_thousands`（2016–2020 を欠く）で接続。
 
 ## 記録テンプレート（ソース採用時）
 ```

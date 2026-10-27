@@ -5,9 +5,12 @@ block here. Sources are independent: a missing raw is reported in ``skipped`` an
 still run (design/themes/parliament-size.md lists the adoption order).
 """
 
+from collections.abc import Callable
+from dataclasses import dataclass
+
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_parliament_size import estat, ipu, soumu
+from theme_parliament_size import clb, estat, ipu, mof, soumu
 
 THEME = "parliament-size"
 PANEL_TABLE = "marts/parliament_size_panel"
@@ -45,6 +48,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_ipu(ctx, written, skipped)
     written, skipped = _fetch_soumu(ctx, written, skipped)
     written, skipped = _fetch_estat(ctx, written, skipped)
+    written, skipped = _fetch_single(ctx, written, skipped, MOF)
+    written, skipped = _fetch_single(ctx, written, skipped, CLB)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -54,6 +59,8 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_ipu(ctx, written, skipped)
     written, skipped = _stage_soumu(ctx, written, skipped)
     written, skipped = _stage_estat(ctx, written, skipped)
+    written, skipped = _stage_single(ctx, written, skipped, MOF)
+    written, skipped = _stage_single(ctx, written, skipped, CLB)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -63,6 +70,8 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_ipu(ctx, written, skipped)
     written, skipped = _mart_soumu(ctx, written, skipped)
     written, skipped = _mart_estat(ctx, written, skipped)
+    written, skipped = _mart_single(ctx, written, skipped, MOF)
+    written, skipped = _mart_single(ctx, written, skipped, CLB)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it.
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -284,6 +293,8 @@ def _mart_soumu(
 
 CENSUS_TABLE = "staged/estat/census2020_prefecture"
 CENSUS_MART = "marts/jp_census2020_prefecture"
+LONGPOP_TABLE = "staged/estat/population_longterm"
+LONGPOP_MART = "marts/jp_population_longterm"
 
 
 def _fetch_estat(
@@ -308,6 +319,23 @@ def _fetch_estat(
         payload=payload,
     )
     written.append(rec.relative_path)
+    try:
+        payload = ctx.fetcher.fetch(estat.LONGPOP_URL)
+    except FetchError as e:
+        skipped.append(f"{estat.LONGPOP_RAW_NAME}: {e}")
+        return written, skipped
+    if not payload.startswith(estat.LONGPOP_MAGIC):
+        skipped.append(f"{estat.LONGPOP_RAW_NAME}: non-Excel payload")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=estat.SOURCE,
+        name=estat.LONGPOP_RAW_NAME,
+        url=estat.LONGPOP_URL,
+        license=estat.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
     return written, skipped
 
 
@@ -327,6 +355,17 @@ def _stage_estat(
         return written, skipped
     ctx.tables.write_table(CENSUS_TABLE, [{**r, "source": estat.SOURCE} for r in rows])
     written.append(CENSUS_TABLE)
+    payload = ctx.raw.get(theme=THEME, source=estat.SOURCE, name=estat.LONGPOP_RAW_NAME)
+    if payload is None:
+        skipped.append(f"{estat.LONGPOP_RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows = estat.parse_longpop(estat.workbook_rows(payload))
+    except ValueError as e:
+        skipped.append(f"{estat.LONGPOP_RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(LONGPOP_TABLE, [{**r, "source": estat.SOURCE} for r in rows])
+    written.append(LONGPOP_TABLE)
     return written, skipped
 
 
@@ -345,4 +384,113 @@ def _mart_estat(
         return written, skipped
     ctx.tables.write_table(CENSUS_MART, rows)
     written.append(CENSUS_MART)
+    if LONGPOP_TABLE in ctx.tables.list_tables():
+        ctx.tables.write_table(
+            LONGPOP_MART, estat.build_longpop_mart(ctx.tables.read_table(LONGPOP_TABLE))
+        )
+        written.append(LONGPOP_MART)
+    else:
+        skipped.append(f"{LONGPOP_MART}: staged missing (run stage)")
+    return written, skipped
+
+
+# ---- 1 文書 1 ソースの共通結線（財務省 予算書 PDF、内閣法制局 HTML）--------
+
+
+@dataclass(frozen=True)
+class SingleDoc:
+    source: str
+    license: str
+    url: str
+    raw_name: str
+    magic: bytes
+    parse: Callable[[bytes], list[dict[str, object]]]
+    build_mart: Callable[[list[dict[str, object]]], list[dict[str, object]]]
+    table: str
+    mart: str
+
+
+MOF = SingleDoc(
+    source=mof.SOURCE,
+    license=mof.LICENSE,
+    url=mof.URL,
+    raw_name=mof.RAW_NAME,
+    magic=mof.MAGIC,
+    parse=lambda payload: mof.parse(mof.pdf_pages(payload)),
+    build_mart=mof.build_mart,
+    table="staged/mof/budget_by_organ",
+    mart="marts/jp_budget_by_organ",
+)
+CLB = SingleDoc(
+    source=clb.SOURCE,
+    license=clb.LICENSE,
+    url=clb.URL,
+    raw_name=clb.RAW_NAME,
+    magic=b"<",
+    parse=clb.parse,
+    build_mart=clb.build_mart,
+    table="staged/clb/bill_counts",
+    mart="marts/jp_bill_counts",
+)
+
+
+def _fetch_single(
+    ctx: Context, written: list[str], skipped: list[str], doc: SingleDoc
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(doc.source):
+        return written, skipped
+    try:
+        payload = ctx.fetcher.fetch(doc.url)
+    except FetchError as e:
+        skipped.append(f"{doc.raw_name}: {e}")
+        return written, skipped
+    if not payload.lstrip().startswith(doc.magic):
+        skipped.append(f"{doc.raw_name}: unexpected payload (magic mismatch)")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=doc.source,
+        name=doc.raw_name,
+        url=doc.url,
+        license=doc.license,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_single(
+    ctx: Context, written: list[str], skipped: list[str], doc: SingleDoc
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(doc.source):
+        return written, skipped
+    payload = ctx.raw.get(theme=THEME, source=doc.source, name=doc.raw_name)
+    if payload is None:
+        skipped.append(f"{doc.raw_name}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows = doc.parse(payload)
+    except ValueError as e:
+        skipped.append(f"{doc.raw_name}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(doc.table, [{**r, "source": doc.source} for r in rows])
+    written.append(doc.table)
+    return written, skipped
+
+
+def _mart_single(
+    ctx: Context, written: list[str], skipped: list[str], doc: SingleDoc
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(doc.source):
+        return written, skipped
+    if doc.table not in ctx.tables.list_tables():
+        skipped.append(f"{doc.mart}: staged missing (run stage)")
+        return written, skipped
+    try:
+        rows = doc.build_mart(ctx.tables.read_table(doc.table))
+    except ValueError as e:
+        skipped.append(f"{doc.mart}: {e}")
+        return written, skipped
+    ctx.tables.write_table(doc.mart, rows)
+    written.append(doc.mart)
     return written, skipped
