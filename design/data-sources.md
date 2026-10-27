@@ -62,7 +62,7 @@
 | Eurostat `demo_nind` / `lfsa_etpgan` / `une_rt_a` / `ilc_lvho07a` | 粗婚姻率・初婚平均年齢・初婚率（1960–）、有期雇用比率 15–24 / 25–34（1995–）、若年失業率 15–24（2003–）、若年層の住宅費過重負担率（2004–） | dissemination API JSON-stat（鍵不要、国別分割） | Eurostat copyright notice（出典明記で再利用可） | **採用**（growth-fertility H10） |
 | 国税庁 統計年報 / 民間給与実態統計 | 所得分布 | Excel | 政府標準利用規約 | 候補（日本） |
 | 野村総研 富裕層レポート等 | 資産階層別世帯数（推計） | PDF（公開レポート） | 引用のみ | 候補（LLM 構造化対象） |
-| IPU Parline（data.ipu.org） | 272 議院の定数・現員・選挙制度・任期（parliament-size H1・H2） | JSON API（鍵の要否は確認要） | ipu.org 利用規約: 研究・個人利用のみ、出典表示。Parline は CC ライセンスとの記載があるが種別未確認 | 候補（parliament-size、**確認要**） |
+| IPU Parline（data.ipu.org） | 272 議院の定数・現員・選挙制度・任期（parliament-size H1・H2） | JSON API（鍵の要否は確認要） | **CC BY-NC-SA 4.0**（API `meta.licence`、確認 2026-10-27）。非商用 | **採用**（parliament-size H1。`marts/ipu_parliaments`） |
 | ParlGov | 欧州・OECD の選挙結果（政党別得票・議席）（parliament-size H3c 国際比較） | CSV | CC BY 4.0（確認要） | 候補（parliament-size） |
 | V-Dem | 立法府の制約指数 `v2xlg_legcon` 等（parliament-size H2） | CSV（登録の要否 確認要） | CC BY-SA 4.0（確認要） | 候補（parliament-size） |
 | Eurostat `gov_10a_exp` / OECD COFOG | 執行・立法機関 歳出（COFOG 01.1）（parliament-size H5b） | JSON-stat / SDMX、鍵不要 | Eurostat: CC BY 4.0 / OECD Terms & Conditions | 候補（parliament-size。01.1 は執行機関と合算、立法のみ分離できる国に限る） |
@@ -574,6 +574,13 @@
 - ライセンス・利用規約（確認 2026-10-22）: いずれも利用規約の記載なし。出典（「全国軽自動車協会連合会調べ」「日本自動車販売協会連合会調べ」「日本自動車輸入組合調べ」）を明記して引用。raw 非コミット。
 - 取得方法: `theme_bicycle_industry.auto_moto`（`xls_rows` → `parse_zenkei_rows`（和暦ラベルの `(yy)` から西暦）、`parse_jada_rows`（「1～12月」列の年計／年計シートの車種行）、`parse_jaia_rows`（帯の見出し順を検査、合計を検算）、`build_*_mart`）＋ `pipeline._fetch/_stage/_mart_pdf_source(ZENKEI / JADA / JAIA)`（`magic` を xls に）。年 1 回。
 - 既知の欠損・断絶: 原付一種・二種の販売統計は協会に公開系列が無い（JAMA DB はフォーム専用）→ 生産動態統計で代理。自販連の年計は 2021 年から。JAIA の「不明」帯は 2021 年以前に数%。2025 年の新基準原付移行で原付一種は断絶しうる。
+
+### IPU Parline API（Inter-Parliamentary Union、parliament-size H1・H2・H5b: 議院の定数・現員・職員数・予算、国の人口）
+- URL / API: `https://api.data.ipu.org/v1/chambers` と `/v1/countries`（JSON:API、`page[size]=100&page[number]=N`、`links.next` で辿る。鍵不要）。chambers 281 件 = 3 ページ（各 7〜10 MB）、countries 193 件 = 2 ページ。`fields[...]` の sparse fieldset は効かない（全属性が返る）。
+- 対象指標・粒度: 議院 × 属性 × 期間（long）。採用した属性は `ipu.CHAMBER_ATTRS`（statutory_members_number / current_members_number / directly_elected_number / designation_mode / electoral_system / electoral_subsystem / major_sys_elect_mems / mixed_sys_elect_mems / permanent_staff_number / is_staff_combined_parl / chamber_budget（`{"type": 通貨, "value": 額}`）/ chamber_budget_ppp / is_budget_combined_parl / basic_salary / basic_salary_ppp / num_days_parl_plen / num_cham_perm_committees）と `ipu.COUNTRY_ATTRS`（country_name / iso_alpha3 / region / subregion / political_system / local_currency / members_per_country / population_in_thousands（1950– 年次）/ inhabitants_per_parliament / parliament_devoted_budget_perc / ppp_conversion_factor / other_groupings（`[{"term": "oecd_members"}]`）。
+- ライセンス・利用規約（確認日）: API レスポンスの `meta.licence` に「Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International」、`meta.terms_of_use` に ipu.org/terms-use（2026-10-27 確認）。**非商用・出典表示・継承**。`data/README.md` に記載。出典表記: 「Inter-Parliamentary Union, Parline: global data on national parliaments, https://data.ipu.org (accessed 2026-10-27)」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.ipu`（`url`/`raw_name`/`parse`/`has_next`/`build_mart`）、`pipeline._fetch_ipu`。レート制限の記載なし。5 リクエストで完了。`data.ipu.org` の HTML ページ（about、terms）はボット UA に 403 を返すが API は返す。
+- 既知の欠損・断絶・定義変更: `statutory_members_number` は OECD 38 か国で欠損なし。`permanent_staff_number` は AUT・CHE・CHL（上院）・IRL が欠損、`chamber_budget_ppp` は OECD 24 議院が欠損（H2・H5b では国数が減る）。人口は 2023 年が 276 議院、2024–25 年が 5 議院。`parliament_structure` は常に null（一院制・二院制は chamber_id の LC/UC 接尾辞で判定）。`country_name` は `{"en", "fr"}` の辞書。
 
 ## 記録テンプレート（ソース採用時）
 ```
