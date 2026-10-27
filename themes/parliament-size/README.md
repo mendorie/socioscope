@@ -9,4 +9,5 @@ uv run python themes/parliament-size/src/theme_parliament_size/analysis/a2026102
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261027_r2_pr_blocks.py  # R2（H3・H3b・H3c・H4・H4b）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261027_r3_cost.py       # R3（H5・H5b）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261027_r4_history.py    # R4（H6）
+uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261027_r5_roles.py      # R5（H2）
 ```

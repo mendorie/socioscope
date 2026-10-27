@@ -31,7 +31,7 @@ src/theme_parliament_size/
                 `adams`（切り上げ、各単位 1 以上、除数は二分探索）、`gallagher`、`threshold_share`（1 議席の最小得票率）
   analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261027_r1_ratio.py（H1・H1b・H1c、図 3 枚）、
                 a20261027_r2_pr_blocks.py（H3・H3b・H3c・H4・H4b、図 3 枚。アダムズ方式で現行 176・289 を再現してから試算）、
-                a20261027_r3_cost.py（H5・H5b、図 2 枚）、a20261027_r4_history.py（H6、図 2 枚）
+                a20261027_r3_cost.py（H5・H5b、図 2 枚）、a20261027_r4_history.py（H6、図 2 枚）、a20261027_r5_roles.py（H2、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -62,7 +62,9 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 - ② 総務省 結果調 Excel（第 50・51 回）＋ ③ e-Stat 国勢調査 2020 実装済み。R2 report（H3・H3b・H3c 整合、H4・H4b 不支持）: `reports/2026-10-27-r2-pr-blocks.md`。
 - ④ 財務省 予算書 PDF ＋ 法定額 CSV 実装済み。R3 report（H5 整合、H5b 整合）: `reports/2026-10-27-r3-cost.md`。
 - ⑤ 定数の変遷 CSV ＋ e-Stat 長期人口 実装済み。R4 report（H6 日本は僅差で不支持、各国は整合）: `reports/2026-10-27-r4-history.md`。
-- ⑥ 内閣法制局 法律案件数 実装済み（`marts/jp_bill_counts`）。次: R5（H2 役割の範囲: IPU の職員数・本会議日数・委員会数 × 人口当たり議員数、日本の議員立法シェア）。
+- ⑥ 内閣法制局 法律案件数 実装済み。R5 report（H2 (a) 整合 ρ = −0.42、(b) 判定不能）: `reports/2026-10-27-r5-roles.md`。
+- **総括（H1〜H6 を「支える／支えない／規範の選択」に整理）**: `reports/2026-10-27-summary-parliament-size.md`。
+- 未着手: H2 (b) の各国比較（議員立法シェア）、H5b の対 GDP 比、各国の定数履歴の深掘り（IPU は 2005 年以降のみ）。
 
 ## テーマ固有の規約
 - 「議員数」は定数（statutory）と現員（current）を列で分け、混ぜない。上院の選出方法（designation_mode）を注記できるよう議院単位で持つ。
