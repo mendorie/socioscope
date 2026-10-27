@@ -62,6 +62,14 @@
 | Eurostat `demo_nind` / `lfsa_etpgan` / `une_rt_a` / `ilc_lvho07a` | 粗婚姻率・初婚平均年齢・初婚率（1960–）、有期雇用比率 15–24 / 25–34（1995–）、若年失業率 15–24（2003–）、若年層の住宅費過重負担率（2004–） | dissemination API JSON-stat（鍵不要、国別分割） | Eurostat copyright notice（出典明記で再利用可） | **採用**（growth-fertility H10） |
 | 国税庁 統計年報 / 民間給与実態統計 | 所得分布 | Excel | 政府標準利用規約 | 候補（日本） |
 | 野村総研 富裕層レポート等 | 資産階層別世帯数（推計） | PDF（公開レポート） | 引用のみ | 候補（LLM 構造化対象） |
+| IPU Parline（data.ipu.org） | 272 議院の定数・現員・選挙制度・任期（parliament-size H1・H2） | JSON API（鍵の要否は確認要） | ipu.org 利用規約: 研究・個人利用のみ、出典表示。Parline は CC ライセンスとの記載があるが種別未確認 | 候補（parliament-size、**確認要**） |
+| ParlGov | 欧州・OECD の選挙結果（政党別得票・議席）（parliament-size H3c 国際比較） | CSV | CC BY 4.0（確認要） | 候補（parliament-size） |
+| V-Dem | 立法府の制約指数 `v2xlg_legcon` 等（parliament-size H2） | CSV（登録の要否 確認要） | CC BY-SA 4.0（確認要） | 候補（parliament-size） |
+| Eurostat `gov_10a_exp` / OECD COFOG | 執行・立法機関 歳出（COFOG 01.1）（parliament-size H5b） | JSON-stat / SDMX、鍵不要 | Eurostat: CC BY 4.0 / OECD Terms & Conditions | 候補（parliament-size。01.1 は執行機関と合算、立法のみ分離できる国に限る） |
+| 総務省 衆議院議員総選挙 結果調（第 49〜51 回） | 都道府県別・比例ブロック別 有権者数、政党別得票・議席（parliament-size H3・H4） | PDF（表）。CSV 配布なし | 政府標準利用規約（第 2.0 版）と推定、確認要 | 候補（parliament-size） |
+| 衆議院 議案審議経過・国立国会図書館 日本法令索引 | 回次別の閣法・衆法・参法の提出数・成立数（parliament-size H2） | HTML（表） | 衆議院サイトの利用規約 確認要 | 候補（parliament-size） |
+| 財務省 予算書・決算書（国会所管）、歳費法・立法事務費交付法 | 国会所管歳出、議員 1 人当たり法定経費（parliament-size H5） | PDF / e-Gov 法令 API | 政府標準利用規約（第 2.0 版） | 候補（parliament-size） |
+| 衆議院・参議院 公式サイト 定数の変遷、総務省 人口推計、IPSS 将来推計 | 定数の時系列 1890–、人口（parliament-size H6・H4b） | HTML / xlsx | 確認要 / 政府標準利用規約 | 候補（parliament-size） |
 
 ## 採用ソースの記録
 

@@ -15,7 +15,7 @@ sync:            ## 依存を同期（全 workspace member）。`.venv` は `ven
 
 doctor:          ## 環境診断: workspace member が import できるか／hidden フラグの有無
 	@echo "UV_PROJECT_ENVIRONMENT=$(UV_PROJECT_ENVIRONMENT)"
-	@if uv run --no-sync python -c "import socioscope_core, theme_growth_fertility, theme_wealth_population_distribution, theme_bicycle_industry" 2>/dev/null; then \
+	@if uv run --no-sync python -c "import socioscope_core, theme_growth_fertility, theme_wealth_population_distribution, theme_bicycle_industry, theme_parliament_size" 2>/dev/null; then \
 	  echo "ok: workspace member は import できます"; \
 	else \
 	  echo "NG: workspace member が import できません"; \
