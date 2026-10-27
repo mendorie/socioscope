@@ -20,9 +20,15 @@ from theme_parliament_size.wiring import PIPELINE
 PageBuilder = Callable[[str, list[dict[str, object]], bool], bytes]
 
 
-def make_ctx(responses: dict[str, bytes] | None = None) -> Context:
+def make_ctx(
+    responses: dict[str, bytes] | None = None,
+    sources: frozenset[str] | None = frozenset({ipu.SOURCE}),
+) -> Context:
     return Context(
-        fetcher=FakeFetcher(responses or {}), raw=InMemoryRawStore(), tables=InMemoryTableStore()
+        fetcher=FakeFetcher(responses or {}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=sources,
     )
 
 

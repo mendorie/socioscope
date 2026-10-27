@@ -66,10 +66,11 @@
 | ParlGov | 欧州・OECD の選挙結果（政党別得票・議席）（parliament-size H3c 国際比較） | CSV | CC BY 4.0（確認要） | 候補（parliament-size） |
 | V-Dem | 立法府の制約指数 `v2xlg_legcon` 等（parliament-size H2） | CSV（登録の要否 確認要） | CC BY-SA 4.0（確認要） | 候補（parliament-size） |
 | Eurostat `gov_10a_exp` / OECD COFOG | 執行・立法機関 歳出（COFOG 01.1）（parliament-size H5b） | JSON-stat / SDMX、鍵不要 | Eurostat: CC BY 4.0 / OECD Terms & Conditions | 候補（parliament-size。01.1 は執行機関と合算、立法のみ分離できる国に限る） |
-| 総務省 衆議院議員総選挙 結果調（第 49〜51 回） | 都道府県別・比例ブロック別 有権者数、政党別得票・議席（parliament-size H3・H4） | PDF（表）。CSV 配布なし | 政府標準利用規約（第 2.0 版）と推定、確認要 | 候補（parliament-size） |
+| 総務省 衆議院議員総選挙 結果調（第 49〜51 回） | 都道府県別・比例ブロック別 有権者数、政党別得票・議席（parliament-size H3・H4） | **Excel あり**（xls／xlsx、`main_content/<id>.xls(x)`、鍵不要）。PDF の結果調全体版もある | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size H3・H4、2026-10-27。`marts/jp_hr_pr_results`, `jp_hr_seats_by_party`, `jp_hr_electorate`） |
 | 衆議院 議案審議経過・国立国会図書館 日本法令索引 | 回次別の閣法・衆法・参法の提出数・成立数（parliament-size H2） | HTML（表） | 衆議院サイトの利用規約 確認要 | 候補（parliament-size） |
 | 財務省 予算書・決算書（国会所管）、歳費法・立法事務費交付法 | 国会所管歳出、議員 1 人当たり法定経費（parliament-size H5） | PDF / e-Gov 法令 API | 政府標準利用規約（第 2.0 版） | 候補（parliament-size） |
 | 衆議院・参議院 公式サイト 定数の変遷、総務省 人口推計、IPSS 将来推計 | 定数の時系列 1890–、人口（parliament-size H6・H4b） | HTML / xlsx | 確認要 / 政府標準利用規約 | 候補（parliament-size） |
+| e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1 | 都道府県別 国籍総数・日本人 人口（parliament-size H4b: アダムズ方式の基礎人口） | `file-download?statInfId=000032142404&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_census2020_prefecture`） |
 
 ## 採用ソースの記録
 
@@ -581,6 +582,20 @@
 - ライセンス・利用規約（確認日）: API レスポンスの `meta.licence` に「Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International」、`meta.terms_of_use` に ipu.org/terms-use（2026-10-27 確認）。**非商用・出典表示・継承**。`data/README.md` に記載。出典表記: 「Inter-Parliamentary Union, Parline: global data on national parliaments, https://data.ipu.org (accessed 2026-10-27)」。
 - 取得方法（adapter 名、レート制限）: `theme_parliament_size.ipu`（`url`/`raw_name`/`parse`/`has_next`/`build_mart`）、`pipeline._fetch_ipu`。レート制限の記載なし。5 リクエストで完了。`data.ipu.org` の HTML ページ（about、terms）はボット UA に 403 を返すが API は返す。
 - 既知の欠損・断絶・定義変更: `statutory_members_number` は OECD 38 か国で欠損なし。`permanent_staff_number` は AUT・CHE・CHL（上院）・IRL が欠損、`chamber_budget_ppp` は OECD 24 議院が欠損（H2・H5b では国数が減る）。人口は 2023 年が 276 議院、2024–25 年が 5 議院。`parliament_structure` は常に null（一院制・二院制は chamber_id の LC/UC 接尾辞で判定）。`country_name` は `{"en", "fr"}` の辞書。
+
+### 総務省 衆議院議員総選挙 結果調 Excel（parliament-size H3・H4: 比例ブロック別 党派別得票・議席配分表・当選人数・都道府県別有権者数）
+- URL / API: `https://www.soumu.go.jp/main_content/<id>.<xls|xlsx>`。第 50 回（2024-10-27、.xls）: 2(1) 000979118、2(2) 000979120、3(1) 000979122、3(10) 000979131、3(12) 000979133。第 51 回（2026-02-08、.xlsx）: 001061471、001061473、001061475、001061484、001061486。資料集ページ `senkyo/senkyo_s/data/shugiin<N>/index.html`（Shift_JIS、ボット UA でも 200）。robots.txt は `ia_archiver` のみ拒否。
+- 対象指標・粒度: 2(1)/2(2) 都道府県 × 選挙当日の有権者数・投票者数（小選挙区／比例代表、比例はブロック付き）。3(10) ブロック × 党派 × 得票数（按分票は小数）・得票率。3(12) ブロック × 党派 × 当選順位（ドント商の表）。3(1) 党派 × 小選挙区／比例代表 当選人数（無所属・本人届出を含む）。
+- ライセンス・利用規約（確認日）: 総務省ホームページは政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。出典表記「総務省『衆議院議員総選挙 結果調』」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.soumu`（`ELECTIONS`/`url`/`raw_name`/`rows_of`、`parse_electorate_smd`/`parse_electorate_pr`/`parse_pr_votes`/`parse_pr_seats`/`parse_winners`、`build_*_mart`）、`pipeline._fetch_soumu`。xls は xlrd、xlsx は openpyxl。レート制限の記載なし。
+- 既知の欠損・断絶・定義変更: 第 50 回は得票数が「694,578.943」のような文字列、第 51 回は数値。3(12) の議席配分表は党が多いと同じブロックが複数チャンクに分かれる。公式議席は名簿登載者不足による他党への移転を含む（2024 国民民主党 3 議席、2026 自民党 14 議席）ので、純ドントとの差を `jp_hr_pr_results.seats` と比べて確認する。3(1) の「本人届出（政党等所属）」は党名ではないが 1 議席を持つ。ブロック名「東京都」は「東京」に正規化。
+
+### e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1（parliament-size H4b: 都道府県別 日本人人口）
+- URL / API: `https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032142404&fileKind=0`（xlsx 478 KB、appId 不要）。一覧 `stat-search/files?tclass=000001125102&cycle=0`。
+- 対象指標・粒度: 国籍区分（国籍総数／うち日本人）× 男女 × 地域（全国・都道府県・21 大都市・特別区・人口 50 万以上の市）× 年齢各歳。採るのは 国籍総数・うち日本人 × 総数 × 都道府県（地域識別コード `a`）の総数列。
+- ライセンス・利用規約（確認日）: 政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。出典表記「政府統計の総合窓口(e-Stat)、令和 2 年国勢調査 人口等基本集計（総務省統計局）を加工」。
+- 取得方法（adapter 名）: `theme_parliament_size.estat`（`URL`/`RAW_NAME`/`workbook_rows`/`parse`/`build_mart`）、`pipeline._fetch_estat`。
+- 既知の欠損・断絶・定義変更: 「国籍総数」は国籍不詳を含む（全国 126,146,099）。「うち日本人」の全国計は 121,541,155 で、結果概要の「日本人人口 1 億 2,339 万人」（不詳補完値）とは異なる。画定審の配分はどちらを使ったか本書では未確認だが、アダムズ方式でこの値から現行の 289・176 の配分が完全に再現できる。
 
 ## 記録テンプレート（ソース採用時）
 ```

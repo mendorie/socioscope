@@ -7,7 +7,7 @@ still run (design/themes/parliament-size.md lists the adoption order).
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_parliament_size import ipu
+from theme_parliament_size import estat, ipu, soumu
 
 THEME = "parliament-size"
 PANEL_TABLE = "marts/parliament_size_panel"
@@ -43,6 +43,8 @@ def fetch(ctx: Context) -> StageResult:
     written: list[str] = []
     skipped: list[str] = []
     written, skipped = _fetch_ipu(ctx, written, skipped)
+    written, skipped = _fetch_soumu(ctx, written, skipped)
+    written, skipped = _fetch_estat(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -50,6 +52,8 @@ def stage(ctx: Context) -> StageResult:
     written: list[str] = []
     skipped: list[str] = []
     written, skipped = _stage_ipu(ctx, written, skipped)
+    written, skipped = _stage_soumu(ctx, written, skipped)
+    written, skipped = _stage_estat(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -57,12 +61,14 @@ def mart(ctx: Context) -> StageResult:
     written: list[str] = []
     skipped: list[str] = []
     written, skipped = _mart_ipu(ctx, written, skipped)
+    written, skipped = _mart_soumu(ctx, written, skipped)
+    written, skipped = _mart_estat(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it.
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
 
 
-# ---- IPU Parline API: chambers (281) and countries (193), 100 per page ---------------------
+# ---- IPU Parline API: chambers (281) and countries (193), 100 per page ---
 # Pages are followed through ``links.next`` so a change in the number of entities needs no code
 # change; ``ipu.MAX_PAGES`` bounds the walk. A non-JSON payload (block page) never reaches raw.
 
@@ -142,4 +148,201 @@ def _mart_ipu(ctx: Context, written: list[str], skipped: list[str]) -> tuple[lis
         return written, skipped
     ctx.tables.write_table(IPU_MART, rows)
     written.append(IPU_MART)
+    return written, skipped
+
+
+# ---- 総務省 衆議院議員総選挙 結果調 Excel（第 50・51 回）----------------
+# One workbook per (election, table). The magic bytes are checked (xls: OLE2, xlsx: zip) so an
+# HTML block page never reaches raw.
+
+
+def _fetch_soumu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(soumu.SOURCE):
+        return written, skipped
+    for election in sorted(soumu.ELECTIONS):
+        for key in soumu.KEYS:
+            url, name = soumu.url(election, key), soumu.raw_name(election, key)
+            try:
+                payload = ctx.fetcher.fetch(url)
+            except FetchError as e:
+                skipped.append(f"{name}: {e}")
+                continue
+            if not payload.startswith(soumu.magic(election)):
+                skipped.append(f"{name}: non-{soumu.ELECTIONS[election].ext} payload")
+                continue
+            rec = ctx.raw.put(
+                theme=THEME,
+                source=soumu.SOURCE,
+                name=name,
+                url=url,
+                license=soumu.LICENSE,
+                payload=payload,
+            )
+            written.append(rec.relative_path)
+    return written, skipped
+
+
+SOUMU_ELECTORATE_TABLE = "staged/soumu/electorate"
+SOUMU_PR_VOTES_TABLE = "staged/soumu/pr_votes"
+SOUMU_PR_SEATS_TABLE = "staged/soumu/pr_seats"
+SOUMU_ELECTORATE_MART = "marts/jp_hr_electorate"
+SOUMU_PR_MART = "marts/jp_hr_pr_results"
+SOUMU_WINNERS_TABLE = "staged/soumu/winners_by_party"
+SOUMU_WINNERS_MART = "marts/jp_hr_seats_by_party"
+
+
+def _stage_soumu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(soumu.SOURCE):
+        return written, skipped
+    electorate: list[dict[str, object]] = []
+    votes: list[dict[str, object]] = []
+    seats: list[dict[str, object]] = []
+    winners: list[dict[str, object]] = []
+    for election in sorted(soumu.ELECTIONS):
+        meta = {"election": election, "election_date": soumu.ELECTIONS[election].date}
+        for key in soumu.KEYS:
+            name = soumu.raw_name(election, key)
+            payload = ctx.raw.get(theme=THEME, source=soumu.SOURCE, name=name)
+            if payload is None:
+                skipped.append(f"{name}: raw missing (run fetch)")
+                continue
+            try:
+                rows = soumu.rows_of(payload, election)
+                if key == "electorate_smd":
+                    electorate += [
+                        {**meta, "tier": "smd", "block": None, **r}
+                        for r in soumu.parse_electorate_smd(rows)
+                    ]
+                elif key == "electorate_pr":
+                    electorate += [
+                        {**meta, "tier": "pr", **r} for r in soumu.parse_electorate_pr(rows)
+                    ]
+                elif key == "pr_votes_by_block":
+                    votes += [{**meta, **r} for r in soumu.parse_pr_votes(rows)]
+                elif key == "pr_seats_table":
+                    seats += [{**meta, **r} for r in soumu.parse_pr_seats(rows)]
+                else:
+                    sheets = [soumu.rows_of(payload, election, i) for i in range(2)]
+                    winners += [{**meta, **r} for r in soumu.parse_winners(sheets)]
+            except ValueError as e:
+                skipped.append(f"{name}: layout not recognised ({e})")
+    for table, rows_ in (
+        (SOUMU_ELECTORATE_TABLE, electorate),
+        (SOUMU_PR_VOTES_TABLE, votes),
+        (SOUMU_PR_SEATS_TABLE, seats),
+        (SOUMU_WINNERS_TABLE, winners),
+    ):
+        if rows_:
+            ctx.tables.write_table(table, rows_)
+            written.append(table)
+    return written, skipped
+
+
+def _mart_soumu(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(soumu.SOURCE):
+        return written, skipped
+    tables = set(ctx.tables.list_tables())
+    if SOUMU_ELECTORATE_TABLE in tables:
+        try:
+            rows = soumu.build_electorate_mart(ctx.tables.read_table(SOUMU_ELECTORATE_TABLE))
+        except ValueError as e:
+            skipped.append(f"{SOUMU_ELECTORATE_MART}: {e}")
+        else:
+            ctx.tables.write_table(SOUMU_ELECTORATE_MART, rows)
+            written.append(SOUMU_ELECTORATE_MART)
+    else:
+        skipped.append(f"{SOUMU_ELECTORATE_MART}: staged missing (run stage)")
+    if SOUMU_PR_VOTES_TABLE in tables and SOUMU_PR_SEATS_TABLE in tables:
+        try:
+            rows = soumu.build_pr_mart(
+                ctx.tables.read_table(SOUMU_PR_VOTES_TABLE),
+                ctx.tables.read_table(SOUMU_PR_SEATS_TABLE),
+            )
+        except ValueError as e:
+            skipped.append(f"{SOUMU_PR_MART}: {e}")
+        else:
+            ctx.tables.write_table(SOUMU_PR_MART, rows)
+            written.append(SOUMU_PR_MART)
+    else:
+        skipped.append(f"{SOUMU_PR_MART}: staged missing (run stage)")
+    if SOUMU_WINNERS_TABLE in tables:
+        rows = soumu.build_winners_mart(ctx.tables.read_table(SOUMU_WINNERS_TABLE))
+        ctx.tables.write_table(SOUMU_WINNERS_MART, rows)
+        written.append(SOUMU_WINNERS_MART)
+    else:
+        skipped.append(f"{SOUMU_WINNERS_MART}: staged missing (run stage)")
+    return written, skipped
+
+
+# ---- e-Stat 令和 2 年国勢調査 表 2-1（都道府県別 日本人人口、アダムズ方式の基礎）---
+
+CENSUS_TABLE = "staged/estat/census2020_prefecture"
+CENSUS_MART = "marts/jp_census2020_prefecture"
+
+
+def _fetch_estat(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(estat.SOURCE):
+        return written, skipped
+    try:
+        payload = ctx.fetcher.fetch(estat.URL)
+    except FetchError as e:
+        skipped.append(f"{estat.RAW_NAME}: {e}")
+        return written, skipped
+    if not payload.startswith(estat.MAGIC):
+        skipped.append(f"{estat.RAW_NAME}: non-xlsx payload")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=estat.SOURCE,
+        name=estat.RAW_NAME,
+        url=estat.URL,
+        license=estat.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_estat(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(estat.SOURCE):
+        return written, skipped
+    payload = ctx.raw.get(theme=THEME, source=estat.SOURCE, name=estat.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{estat.RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows = estat.parse(estat.workbook_rows(payload))
+    except ValueError as e:
+        skipped.append(f"{estat.RAW_NAME}: layout not recognised ({e})")
+        return written, skipped
+    ctx.tables.write_table(CENSUS_TABLE, [{**r, "source": estat.SOURCE} for r in rows])
+    written.append(CENSUS_TABLE)
+    return written, skipped
+
+
+def _mart_estat(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(estat.SOURCE):
+        return written, skipped
+    if CENSUS_TABLE not in ctx.tables.list_tables():
+        skipped.append(f"{CENSUS_MART}: staged missing (run stage)")
+        return written, skipped
+    try:
+        rows = estat.build_mart(ctx.tables.read_table(CENSUS_TABLE))
+    except ValueError as e:
+        skipped.append(f"{CENSUS_MART}: {e}")
+        return written, skipped
+    ctx.tables.write_table(CENSUS_MART, rows)
+    written.append(CENSUS_MART)
     return written, skipped

@@ -2086,19 +2086,23 @@ version = "0.1.0"
 source = { editable = "themes/parliament-size" }
 dependencies = [
     { name = "matplotlib" },
+    { name = "openpyxl" },
     { name = "polars" },
     { name = "pyarrow" },
     { name = "pydantic" },
     { name = "socioscope-core" },
+    { name = "xlrd" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "matplotlib", specifier = ">=3.9" },
+    { name = "openpyxl", specifier = ">=3.1" },
     { name = "polars", specifier = ">=1.0" },
     { name = "pyarrow", specifier = ">=17" },
     { name = "pydantic", specifier = ">=2.9" },
     { name = "socioscope-core", editable = "packages/core" },
+    { name = "xlrd", specifier = ">=2.0" },
 ]
 
 [[package]]
