@@ -15,7 +15,7 @@
 - 追加（世論の検証 H12・H13、2026-10-29 夕）→ **R14** `themes/parliament-size/reports/2026-10-29-r14-pay-and-workload.md`（整合・整合）。国会会議録 API・ILOSTAT 賃金・WDI 1 人当たり GDP を結線。記事（論点 7・8、総括）に R11〜R14 と立場を反映済み。
 - 追加（ユーザー提起 H2e、2026-10-28 夜）→ **R10** `themes/parliament-size/reports/2026-10-28-r10-bureaucracy.md`（ILOSTAT 公務就業者 × 議員数、ρ = +0.33 で向きは逆、判定は中間）。記事（論点 2・総括）にも反映済み。
 - 事後追加の仮説と判定基準は `design/themes/parliament-size.md`「事後追加の仮説（2026-10-28）」に、結果の計算前に固定した。
-- 番外編（2026-10-29 深夜）: 議会の大きさ × 政府の大きさ（小さな政府／大きな政府）→ **R16** `themes/parliament-size/reports/2026-10-29-r16-government-size.md`（H15a 不支持・H15b 不支持: 立方根補正すると ρ = +0.34 で相関が現れる・H15d 整合）。OECD Government at a Glance 2025（SDMX-JSON）を `oecd.py` で結線。プラン: `docs/specs/parliament-size-government-size.md`。本編の記事には含めない（番外編記事は未作成）。
+- 番外編（2026-10-29 深夜）: 議会の大きさ × 政府の大きさ（小さな政府／大きな政府）→ **R16** `themes/parliament-size/reports/2026-10-29-r16-government-size.md`（H15a 不支持・H15b 不支持: 立方根補正すると ρ = +0.34 で相関が現れる・H15d 整合）。OECD Government at a Glance 2025（SDMX-JSON）を `oecd.py` で結線。プラン: `docs/specs/parliament-size-government-size.md`。本編の記事には含めない。番外編記事 `docs/articles/2026-10-29-note-parliament-size-extra-government-size.md`（`.final.md`、ヘッダー画像 `docs/articles/headers/2026-10-29-note-parliament-size-extra-government-size.png`）を 2026-10-29 に作成（note 未投稿）。
 
 ## 1. 現状
 
