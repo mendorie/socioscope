@@ -66,6 +66,7 @@
 | ParlGov 2024 Release（Harvard Dataverse） | 選挙ごとの総議席数 `seats_total`（parliament-size H6b 定数履歴 1990–）。政党別得票・議席も含む | Dataverse API `api/access/datafile/10437092`（`view_election.tab`、鍵不要） | **CC0 1.0**（Dataverse 上。parlgov.org 本体は CC BY 4.0、出典表示） | **採用**（parliament-size、2026-10-28。`marts/parlgov_elections`。parlgov.org 直接はボット UA に 403／404） |
 | UK Parliament Bills API | 法案 1 件ごとの種別（Government／Private Members' Bill）と成立（Royal Assent）（parliament-size H2d） | REST JSON `bills-api.parliament.uk/api/v1/Bills`（Take=100 でページング、鍵不要） | Open Parliament Licence v3.0 | **採用**（parliament-size、2026-10-28。`marts/uk_acts`） |
 | Assemblée nationale open data「Dossiers législatifs」 | 法律ドシエの手続種別・提出種別（projet／proposition）・公布（parliament-size H2d） | 立法期ごとの zip（JSON、第 16・17 期のみ） | Licence Ouverte 2.0（Etalab） | **採用**（parliament-size、2026-10-28。`marts/fr_laws`） |
+| ILOSTAT（rplumber.ilo.org） | 公務・防衛・社会保障（ISIC Rev.4 大分類 O）就業者、総就業者、公的部門就業者（parliament-size H2e） | REST JSON `data/indicator/?id=EMP_TEMP_SEX_ECO_NB_A&classif1=ECO_ISIC4_O+ECO_ISIC4_TOTAL`、`EMP_TEMP_SEX_INS_NB_A&classif1=INS_SECTOR_PUB`（鍵不要、1 リクエストずつ） | CC BY 4.0 | **採用**（parliament-size、2026-10-28。`marts/ilo_emp_public_admin`、`marts/ilo_emp_public_sector`。CAN は NAICS 分類で ISIC O 無し） |
 | Bundestag DIP API / Congress.gov API / 열린국회정보 | 独・米・韓の法案（parliament-size H2d） | REST JSON、**API 鍵が要る** | 各機関の規約 | 候補（parliament-size。鍵未取得で未着手） |
 | World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨）、`SP.POP.TOTL`（人口） | 議会費の対 GDP 比の分母（parliament-size H5c）、定数変更の直前 10 年の人口変化（H6b） | REST JSON（`api.worldbank.org/v2`、1 ページ） | CC BY 4.0 | **採用**（parliament-size、2026-10-28。`marts/wdi_gdp_lcu`、`marts/wdi_population`。growth-fertility の adapter と同じ URL 規約だがテーマ内に複製） |
 | V-Dem | 立法府の制約指数 `v2xlg_legcon` 等（parliament-size H2） | CSV（登録の要否 確認要） | CC BY-SA 4.0（確認要） | 候補（parliament-size） |
@@ -600,6 +601,13 @@
 - ライセンス・利用規約（確認日）: CC BY 4.0（https://datacatalog.worldbank.org/public-licenses、2026-10-28 確認）。出典表記「World Bank, World Development Indicators, NY.GDP.MKTP.CN (accessed 2026-10-28)」。
 - 取得方法（adapter 名、レート制限）: `theme_parliament_size.worldbank`（`URL`/`RAW_NAME`/`parse`/`build_mart`）、`pipeline.WDI`（`SingleDoc`）。growth-fertility の `worldbank.py` と同じ URL 規約だがテーマ間 import はしない（ADR 0001）。レート制限の記載なし。
 - 既知の欠損・断絶・定義変更: ページが分かれたら ValueError（fail-closed）。OECD 38 か国はすべて 2024 年まで値あり（日本は 2025 年も）。IPU の予算の通貨は国の通貨（`local_currency`）と一致することを R7 で確認したうえで割る。人口 `SP.POP.TOTL`（1980–2025、`POP_URL`／`POP_RAW_NAME`、`marts/wdi_population`）も同じ adapter で取る。
+
+### ILOSTAT（parliament-size H2e: 公務就業者・公的部門就業者）
+- URL / API: `https://rplumber.ilo.org/data/indicator/?id=<indicator>_A&sex=SEX_T&classif1=<codes>&timefrom=2015&format=.json`（レコードの JSON 配列、鍵不要）。指標 ID の一覧は `metadata/toc/indicator?format=.csv`（旧 ID `PSE_TPSE_*` は廃止）。
+- 対象指標・粒度: 国 × 年。`EMP_TEMP_SEX_ECO_NB`（ISIC Rev.4 大分類 O と総数、千人）、`EMP_TEMP_SEX_INS_NB`（公的部門、千人）。
+- ライセンス・利用規約（確認日）: CC BY 4.0（ilostat.ilo.org/about/terms-of-use、2026-10-28 確認）。出典表記「ILOSTAT (accessed 2026-10-28)」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.ilostat`（`ECO_URL`/`INS_URL`/`parse`/`build_mart`）、`pipeline.ILO_ECO`・`ILO_INS`（`SingleDoc`）。
+- 既知の欠損・断絶・定義変更: ISIC O は警察・軍人・自治体職員を含む。CAN は ISIC O 無し（NAICS）。公的部門は CZE・DEU・ISL・ITA・NZL・PRT が欠損。日本の最新は 2023 年、NZ は 2015 年。
 
 ### ParlGov 2024 Release（Harvard Dataverse、parliament-size H6b: 選挙ごとの総議席数 1990–）
 - URL / API: `https://dataverse.harvard.edu/api/access/datafile/10437092`（`view_election.tab`、doi:10.7910/DVN/2VZ5ZC、1.2 MB、鍵不要）。parlgov.org 直接（`/data/`、`static/data/*.csv`）は 2026-10-28 時点でボット UA に 403／404。
