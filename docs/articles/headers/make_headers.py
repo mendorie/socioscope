@@ -1256,6 +1256,119 @@ def parliament_size() -> Path:
     return out
 
 
+def parliament_size_extra() -> Path:
+    ipu = pl.read_parquet(MARTS / "ipu_parliaments.parquet")
+    gov = pl.read_parquet(MARTS / "oecd_gov_finance.parquet")
+    lower = ipu.filter(pl.col("oecd_member") & (pl.col("chamber_type") == "lower"))
+    cube = {
+        str(r["iso3"]): float(r["statutory_seats"])
+        / (float(r["population_thousands"]) * 1000) ** (1 / 3)
+        for r in lower.iter_rows(named=True)
+    }
+    ge = (
+        gov.filter(
+            (pl.col("metric") == "gov_expenditure_pct_gdp") & pl.col("year").is_between(2019, 2023)
+        )
+        .group_by("iso3")
+        .agg(pl.col("value").mean())
+    )
+    spend = {str(r["iso3"]): float(r["value"]) for r in ge.iter_rows(named=True)}
+    keys = sorted(k for k in cube if k in spend)
+    labels = {
+        "USA": "米国",
+        "JPN": "日本",
+        "FRA": "フランス",
+        "SWE": "スウェーデン",
+        "GBR": "英国",
+        "DEU": "ドイツ",
+        "CRI": "コスタリカ",
+        "AUS": "豪州",
+        "IRL": "アイルランド",
+        "MEX": "メキシコ",
+    }
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "「小さな政府」の国は議員も少ないのか",
+        "人口規模を補正すると、議会の大きさと政府の大きさは同じ向きに並ぶ",
+    )
+    ax = fig.add_axes([0.10, 0.12, 0.52, 0.56])
+    ax.scatter(
+        [cube[k] for k in keys],
+        [spend[k] for k in keys],
+        s=[90 if k == "JPN" else 42 for k in keys],
+        color=[ORANGE if k == "JPN" else BLUE for k in keys],
+        alpha=0.9,
+    )
+    for k, name in labels.items():
+        if k in cube and k in spend:
+            ax.annotate(
+                name,
+                (cube[k], spend[k]),
+                fontsize=11,
+                color=INK,
+                xytext=(6, 4),
+                textcoords="offset points",
+            )
+    ax.set_xlim(0.25, 1.75)
+    ax.set_ylim(20, 62)
+    ax.set_xticks([0.5, 1.0, 1.5])
+    ax.set_yticks([30, 40, 50, 60])
+    ax.tick_params(colors=MUTED, labelsize=11)
+    _bare(ax)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_visible(True)
+        ax.spines[side].set_color("#dddddd")
+    bg.text(
+        64,
+        470,
+        "横軸: 下院定数 ÷ 人口の立方根（1.0 = 法則どおり）",
+        fontsize=13,
+        color=MUTED,
+        va="center",
+    )
+    bg.text(
+        64,
+        445,
+        "縦軸: 一般政府支出 ÷ GDP（%、2019〜23 年平均）",
+        fontsize=13,
+        color=MUTED,
+        va="center",
+    )
+
+    x0 = 790
+    bg.add_patch(
+        FancyBboxPatch(
+            (x0, 100), 430, 350, boxstyle="round,pad=0,rounding_size=18", fc="white", ec="none"
+        )
+    )
+    bg.text(x0 + 28, 420, "順位相関（OECD 38 か国）", fontsize=14, color=MUTED, va="center")
+    items = [
+        ("素の人口当たり議員数では", "+0.16（関係なし）", MUTED),
+        ("人口規模を補正すると", "+0.34（弱く正）", ORANGE),
+        ("日本の位置", "支出比 26 位・議会 19 位", INK),
+        ("行政が大きいと議会は小さい？", "そうではない", INK),
+    ]
+    for i, (label, value, color) in enumerate(items):
+        y = 372 - i * 78
+        bg.text(x0 + 28, y, label, fontsize=13, color=MUTED, va="center")
+        bg.text(x0 + 28, y - 30, value, fontsize=19, fontweight="bold", color=color, va="center")
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: OECD Government at a Glance 2025・IPU Parline（CC BY-NC-SA 4.0）を加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-29-note-parliament-size-extra-government-size.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     for p in (
         growth_fertility(),
@@ -1270,5 +1383,6 @@ if __name__ == "__main__":
         bicycle_part2(),
         bicycle_part3(),
         parliament_size(),
+        parliament_size_extra(),
     ):
         print(p)
