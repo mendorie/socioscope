@@ -36,6 +36,7 @@ src/theme_parliament_size/
   ipss.py       IPSS 地域別将来推計人口（令和 5 年推計）結果表 1 xlsx: `URL`/`RAW_NAME`/`workbook_rows`/`parse`（都道府県 47 × 2020–2050、2020 年合計を国勢調査で検算）/`build_mart`
   camera.py     イタリア下院 dati.camera.it SPARQL: `LAWS_URL`/`SITTINGS_URL`（集計クエリ）/`parse_laws`/`parse_sittings`/`build_mart`（年×指標 long）
   jp_committee_seats.csv  衆院 常任委員会 17 の委員定数（衆議院規則 第 92 条）。出典列あり、手入力
+  intl_thresholds.csv     OECD 比例・混合制 29 か国の法定阻止条項（各国選挙法・ACE）。出典列あり、手入力
   kokkai.py     国会会議録検索システム API: `url(year, page)`/`raw_name`/`has_next`（nextRecordPosition）/`parse`（会議 1 行、衆議院のみ）/
                 `build_mart`（年 × plenary_days／committee_meetings／committee_days／sitting_days）
   clb.py        内閣法制局「法律案の提出・成立件数一覧」HTML: `parse`（html.parser で表を走査、「第 N 回（種別）」と
@@ -55,7 +56,8 @@ src/theme_parliament_size/
                 a20261029_r11_alternatives.py（事後追加 H8・H9・H10、修正サンラグ単独・職員増員の費用・委員会兼任率）、
                 a20261029_r12_future_disparity.py（事後追加 H11、IPSS 推計での格差、図 1 枚）、
                 a20261029_r13_after_cuts.py（事後追加 H7、イタリア・ハンガリーの削減前後）、
-                a20261029_r14_pay_and_workload.py（事後追加 H12・H13、基本給の相対水準と稼働日数、図 2 枚）
+                a20261029_r14_pay_and_workload.py（事後追加 H12・H13、基本給の相対水準と稼働日数、図 2 枚）、
+                a20261029_r15_small_parties.py（事後追加 H14a〜c、小政党の入口機能・阻止条項・泡沫政党の票）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -105,6 +107,7 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 - ⑨ R10（2026-10-28 夜、ユーザー提起 H2e「官僚が多い国ほど議員は少ないか」）: ILOSTAT を結線。ρ = +0.33 で向きは逆（議員が少ない国は公務就業者も少ない）、判定は事前基準で「中間」: `reports/2026-10-28-r10-bureaucracy.md`。
 - ⑩ R11〜R13（2026-10-29、「削減の是非」の立場を支える根拠）: R11（H8 整合: 定数維持＋修正サンラグで Gallagher −2.33 pt、H9: 職員を上位 3 分の 1 に上げる費用 16〜25 億円 ≈ 45 減の節約額、H10: 兼任率 1.24 → 1.37）、R12（H11 整合: 289 でも 2040 年に係数込み 2.24 倍）、R13（H7: イタリア不支持、ハンガリー判定不能）。立場の文書: `reports/2026-10-29-position-parliament-size.md`。H3f（2000 年の前後）は第 42・43 回の資料が無く対象外。
 - ⑪ R14（2026-10-29 夕、世論「議員 1 人の収入は多く働きは少ない」の検証）: H12 整合（歳費 ÷ 1 人当たり GDP 2.9 倍で 38 か国中 7 位、÷ 平均年収 4.2 倍で 31 か国中 7 位）、H13 整合（稼働日数 124 日 = 本会議 51 日の 2.43 倍）: `reports/2026-10-29-r14-pay-and-workload.md`。
+- ⑫ R15（2026-10-29 夜、ユーザー提起「少数政党保護は守るべき原則か」）: H14a 整合（1〜3 議席で入った 3 政党中 2 が次回 5 議席以上）、H14b 整合（29 か国中 22 か国が法定閾値 3% 以上、日本の実効閾値は 6.6〜12.3%）: `reports/2026-10-29-r15-small-parties.md`。立場文書のキーメッセージを「人数ではなく報酬・手当の水準と透明性」に書き換え。
 - 未着手: 独・米・韓の法案 API（鍵が要る）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）、規模を補正した官僚数 × 議員数、削減後の審査の質（修正率・審議時間）、手当込みの総報酬の国際比較（IPU に項目なし）。
 
 ## テーマ固有の規約

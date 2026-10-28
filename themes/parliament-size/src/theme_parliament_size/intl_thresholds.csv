@@ -1,0 +1,30 @@
+iso3,country,system,legal_threshold_pct,note,source
+AUT,Austria,PR,4,全国 4% または選挙区での直接議席,国民議会選挙法。ACE Electoral Knowledge Network（2026-10-29 確認）
+BEL,Belgium,PR,5,選挙区ごとに 5%,選挙法。ACE
+CHE,Switzerland,PR,0,法定閾値なし（州単位の実効閾値）,連邦選挙法。ACE
+CZE,Czechia,PR,5,単独政党 5%（連合はより高い）,下院選挙法。ACE
+DEU,Germany,mixed,5,全国 5% または小選挙区 3 議席,連邦選挙法 6 条。ACE
+DNK,Denmark,PR,2,全国 2%（他の基準でも可）,選挙法。ACE
+ESP,Spain,PR,3,選挙区ごとに 3%,選挙制度法 163 条。ACE
+EST,Estonia,PR,5,全国 5%,選挙法。ACE
+FIN,Finland,PR,0,法定閾値なし,選挙法。ACE
+GRC,Greece,PR,3,全国 3%,選挙法。ACE
+HUN,Hungary,mixed,5,全国 5%（連合は 10%）,選挙法。ACE
+ISL,Iceland,PR,5,調整議席の配分に全国 5%,選挙法。ACE
+ISR,Israel,PR,3.25,全国 3.25%,クネセト選挙法。ACE
+ITA,Italy,mixed,3,全国 3%（連合内の政党）,選挙法 2017。ACE
+JPN,Japan,mixed,0,法定閾値なし（ブロック制の実効閾値 7〜12%）,公職選挙法
+KOR,Republic of Korea,mixed,3,全国 3% または小選挙区 5 議席,公職選挙法。ACE
+LTU,Lithuania,mixed,5,全国 5%（連合 7%）,選挙法。ACE
+LUX,Luxembourg,PR,0,法定閾値なし,選挙法。ACE
+LVA,Latvia,PR,5,全国 5%,選挙法。ACE
+MEX,Mexico,mixed,3,全国 3%,選挙法。ACE
+NLD,Netherlands,PR,0,法定閾値なし（実効閾値 1 議席 = 0.67%）,選挙法。ACE
+NOR,Norway,PR,4,調整議席の配分に全国 4%,選挙法。ACE
+NZL,New Zealand,mixed,5,全国 5% または小選挙区 1 議席,選挙法 1993。ACE
+POL,Poland,PR,5,全国 5%（連合 8%）,選挙法。ACE
+PRT,Portugal,PR,0,法定閾値なし,選挙法。ACE
+SVK,Slovakia,PR,5,全国 5%,選挙法。ACE
+SVN,Slovenia,PR,4,全国 4%,選挙法。ACE
+SWE,Sweden,PR,4,全国 4%（選挙区 12%）,選挙法。ACE
+TUR,Türkiye,PR,7,全国 7%（2022 年に 10% から引き下げ）,選挙法。ACE

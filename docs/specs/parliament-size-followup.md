@@ -11,6 +11,7 @@
 - 論点 4（ParlGov）→ **R9** `themes/parliament-size/reports/2026-10-28-r9-seats-history.md`（H6b 不支持 r = 0.51。**R4 の各国判定を撤回**）。parlgov.org は 403 だが Harvard Dataverse の 2024 Release（CC0）から取れた。
 - 論点 7（記事の仕上げ）→ 2026-10-28 に R6〜R9 を反映して `.final.md` とヘッダー画像を作成。
 - 追加（立場の根拠、2026-10-29）→ **R11**（H8 整合・H9・H10）、**R12**（H11 整合）、**R13**（H7 イタリア不支持・ハンガリー判定不能）。立場の文書 `themes/parliament-size/reports/2026-10-29-position-parliament-size.md`。H3f（2000 年の前後）は第 42・43 回の資料が無く対象外。
+- 追加（ユーザー提起「少数政党保護は原則か」H14、2026-10-29 夜）→ **R15** `themes/parliament-size/reports/2026-10-29-r15-small-parties.md`（H14a・H14b 整合）。立場文書とレポートのキーメッセージを「人数ではなく報酬・手当の水準と透明性」に改め、削減そのものは方式次第で問題ない可能性を明記。
 - 追加（世論の検証 H12・H13、2026-10-29 夕）→ **R14** `themes/parliament-size/reports/2026-10-29-r14-pay-and-workload.md`（整合・整合）。国会会議録 API・ILOSTAT 賃金・WDI 1 人当たり GDP を結線。記事（論点 7・8、総括）に R11〜R14 と立場を反映済み。
 - 追加（ユーザー提起 H2e、2026-10-28 夜）→ **R10** `themes/parliament-size/reports/2026-10-28-r10-bureaucracy.md`（ILOSTAT 公務就業者 × 議員数、ρ = +0.33 で向きは逆、判定は中間）。記事（論点 2・総括）にも反映済み。
 - 事後追加の仮説と判定基準は `design/themes/parliament-size.md`「事後追加の仮説（2026-10-28）」に、結果の計算前に固定した。

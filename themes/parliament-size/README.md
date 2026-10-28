@@ -19,4 +19,5 @@ uv run python themes/parliament-size/src/theme_parliament_size/analysis/a2026102
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261029_r12_future_disparity.py # R12（事後追加 H11: 将来人口での格差）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261029_r13_after_cuts.py # R13（事後追加 H7: 削減後の議会）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261029_r14_pay_and_workload.py # R14（事後追加 H12・H13: 基本給の相対水準、稼働日数）
+uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261029_r15_small_parties.py # R15（事後追加 H14: 小政党の入口機能・阻止条項・泡沫政党の票）
 ```
