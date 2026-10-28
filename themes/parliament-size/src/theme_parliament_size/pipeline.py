@@ -11,10 +11,12 @@ from dataclasses import dataclass
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
 from theme_parliament_size import (
+    camera,
     clb,
     estat,
     fran,
     ilostat,
+    ipss,
     ipu,
     mof,
     parlgov,
@@ -66,6 +68,9 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_single(ctx, written, skipped, PARLGOV)
     written, skipped = _fetch_single(ctx, written, skipped, ILO_ECO)
     written, skipped = _fetch_single(ctx, written, skipped, ILO_INS)
+    written, skipped = _fetch_single(ctx, written, skipped, IPSS)
+    written, skipped = _fetch_single(ctx, written, skipped, CAMERA_LAWS)
+    written, skipped = _fetch_single(ctx, written, skipped, CAMERA_SITTINGS)
     written, skipped = _fetch_ukbills(ctx, written, skipped)
     written, skipped = _fetch_fran(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
@@ -84,6 +89,9 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_single(ctx, written, skipped, PARLGOV)
     written, skipped = _stage_single(ctx, written, skipped, ILO_ECO)
     written, skipped = _stage_single(ctx, written, skipped, ILO_INS)
+    written, skipped = _stage_single(ctx, written, skipped, IPSS)
+    written, skipped = _stage_single(ctx, written, skipped, CAMERA_LAWS)
+    written, skipped = _stage_single(ctx, written, skipped, CAMERA_SITTINGS)
     written, skipped = _stage_ukbills(ctx, written, skipped)
     written, skipped = _stage_fran(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
@@ -102,6 +110,9 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_single(ctx, written, skipped, PARLGOV)
     written, skipped = _mart_single(ctx, written, skipped, ILO_ECO)
     written, skipped = _mart_single(ctx, written, skipped, ILO_INS)
+    written, skipped = _mart_single(ctx, written, skipped, IPSS)
+    written, skipped = _mart_single(ctx, written, skipped, CAMERA_LAWS)
+    written, skipped = _mart_single(ctx, written, skipped, CAMERA_SITTINGS)
     written, skipped = _mart_ukbills(ctx, written, skipped)
     written, skipped = _mart_fran(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
@@ -519,6 +530,39 @@ ILO_INS = SingleDoc(
     build_mart=ilostat.build_mart,
     table="staged/ilostat/emp_ins",
     mart="marts/ilo_emp_public_sector",
+)
+IPSS = SingleDoc(
+    source=ipss.SOURCE,
+    license=ipss.LICENSE,
+    url=ipss.URL,
+    raw_name=ipss.RAW_NAME,
+    magic=ipss.MAGIC,
+    parse=lambda payload: ipss.parse(ipss.workbook_rows(payload)),
+    build_mart=ipss.build_mart,
+    table="staged/ipss/prefecture_projection",
+    mart="marts/jp_prefecture_projection",
+)
+CAMERA_LAWS = SingleDoc(
+    source=camera.SOURCE,
+    license=camera.LICENSE,
+    url=camera.LAWS_URL,
+    raw_name=camera.LAWS_RAW_NAME,
+    magic=camera.MAGIC,
+    parse=camera.parse_laws,
+    build_mart=camera.build_mart,
+    table="staged/camera/laws_by_year",
+    mart="marts/it_laws_by_year",
+)
+CAMERA_SITTINGS = SingleDoc(
+    source=camera.SOURCE,
+    license=camera.LICENSE,
+    url=camera.SITTINGS_URL,
+    raw_name=camera.SITTINGS_RAW_NAME,
+    magic=camera.MAGIC,
+    parse=camera.parse_sittings,
+    build_mart=camera.build_mart,
+    table="staged/camera/sittings_by_year",
+    mart="marts/it_sittings_by_year",
 )
 
 
