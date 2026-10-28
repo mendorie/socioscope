@@ -24,17 +24,20 @@ src/theme_parliament_size/
                 全国行で検算）、`build_mart`。人口推計 長期時系列 表 1（`LONGPOP_URL`、1920–2000）: `parse_longpop`、`build_longpop_mart`
   mof.py        財務省 令和 7 年度 一般会計予算（衆参修正後）PDF: `pdf_pages`（pypdf、AES を空パスワードで復号）、`parse`（所管別内訳の
                 数値行を `ORGANS` の順に割り当て、主要行の合計 = 合計行で検算）、`build_mart`
-  worldbank.py  World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨、2005–2025）と `SP.POP.TOTL`（人口、1980–2025）: `URL`/`POP_URL`、
+  worldbank.py  World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨、2005–2025）、`SP.POP.TOTL`（人口、1980–2025）、`NY.GDP.PCAP.CN`（1 人当たり GDP）: `URL`/`POP_URL`/`GDP_PCAP_URL`、
                 `parse`（[meta, data]、ページ分割は ValueError）/`parse_population`/`build_mart`/`build_population_mart`
   parlgov.py    ParlGov 2024（Harvard Dataverse `view_election.tab`、CC0）: `URL`/`RAW_NAME`/`parse`（parliament 選挙 × 国 で 1 行、seats_total）/`build_mart`
   ukbills.py    UK Parliament Bills API: `url(page)`/`raw_name`/`has_next`（totalResults）/`parse`（法案 1 行、isAct なら Royal Assent 日を必須）/
                 `origin_of`（billTypeId → government/member/other）/`build_mart`（成立法案のみ）
   fran.py       仏 国民議会 Dossiers législatifs zip（第 16・17 期）: `url(leg)`/`raw_name`/`is_law`/`parse`（ドシエ 1 行: 手続・提出種別 PRJL/PION・公布日）/
                 `build_mart`（公布済みのみ、立法期をまたぐ uid は新しい方）
-  ilostat.py    ILOSTAT（鍵不要）: `ECO_URL`（ISIC O ＋ 総数）/`INS_URL`（公的部門）/`parse`（JSON 配列 → 国×年×指標 long、採用 classif1 のみ）/`build_mart`（重複キーは ValueError）
+  ilostat.py    ILOSTAT（鍵不要）: `ECO_URL`（ISIC O ＋ 総数）/`INS_URL`（公的部門）/`EAR_URL`（平均月収 CUR_TYPE_LCU）/`parse`（JSON 配列 → 国×年×指標 long、
+                採用 classif1 のみ）/`parse_earnings`/`build_mart`（重複キーは ValueError）
   ipss.py       IPSS 地域別将来推計人口（令和 5 年推計）結果表 1 xlsx: `URL`/`RAW_NAME`/`workbook_rows`/`parse`（都道府県 47 × 2020–2050、2020 年合計を国勢調査で検算）/`build_mart`
   camera.py     イタリア下院 dati.camera.it SPARQL: `LAWS_URL`/`SITTINGS_URL`（集計クエリ）/`parse_laws`/`parse_sittings`/`build_mart`（年×指標 long）
   jp_committee_seats.csv  衆院 常任委員会 17 の委員定数（衆議院規則 第 92 条）。出典列あり、手入力
+  kokkai.py     国会会議録検索システム API: `url(year, page)`/`raw_name`/`has_next`（nextRecordPosition）/`parse`（会議 1 行、衆議院のみ）/
+                `build_mart`（年 × plenary_days／committee_meetings／committee_days／sitting_days）
   clb.py        内閣法制局「法律案の提出・成立件数一覧」HTML: `parse`（html.parser で表を走査、「第 N 回（種別）」と
                 「（継続 n 件） m 件」を読み、計 = 閣法 ＋ 議員立法 で検算）、`build_mart`（議員立法の成立シェア付き）
   jp_member_costs.csv   議員 1 人当たりの法定経費（歳費・調査研究広報滞在費・立法事務費・秘書給与の別表）。出典列あり、手入力
@@ -51,7 +54,8 @@ src/theme_parliament_size/
                 a20261028_r10_bureaucracy.py（事後追加 H2e、公務就業者 × 議員数、図 1 枚）、
                 a20261029_r11_alternatives.py（事後追加 H8・H9・H10、修正サンラグ単独・職員増員の費用・委員会兼任率）、
                 a20261029_r12_future_disparity.py（事後追加 H11、IPSS 推計での格差、図 1 枚）、
-                a20261029_r13_after_cuts.py（事後追加 H7、イタリア・ハンガリーの削減前後）
+                a20261029_r13_after_cuts.py（事後追加 H7、イタリア・ハンガリーの削減前後）、
+                a20261029_r14_pay_and_workload.py（事後追加 H12・H13、基本給の相対水準と稼働日数、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -84,6 +88,9 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 | `staged/ilostat/emp_ins` → `marts/ilo_emp_public_sector` | 国×年×指標（long） | 同列、metric = emp_public_sector |
 | `staged/ipss/prefecture_projection` → `marts/jp_prefecture_projection` | 都道府県×年 | iso3, year(2020–2050、5 年刻み), pref_code, pref, population（総人口）, source(`ipss_regional`)。329 行 |
 | `staged/camera/laws_by_year`・`sittings_by_year` → `marts/it_laws_by_year`・`it_sittings_by_year` | 年×指標 | iso3(ITA), year(2007–2026), metric（laws_promulgated／plenary_sittings）, value, source(`camera_it`)。各 20 行 |
+| `staged/worldbank/gdp_pcap_lcu` → `marts/wdi_gdp_pcap_lcu` | 経済体×年 | iso3, year(2005–2025), country, gdp_pcap_lcu, source |
+| `staged/ilostat/earnings` → `marts/ilo_earnings_monthly` | 国×年 | iso3, year(2015–2025), metric(earnings_monthly_lcu), value_thousands（月収、現地通貨。千人ではない）, source_note, source |
+| `staged/kokkai/meetings` → `marts/jp_hr_sitting_days` | 会議 → 年×指標 | staged: issue_id, date, name_of_meeting, session, is_plenary（約 6,900 行）。mart: iso3(JPN), year(2013–2025), metric（plenary_days／committee_meetings／committee_days／sitting_days）, value, source(`kokkai_ndl`)。52 行 |
 | `marts/parliament_size_panel` | iso3×year×unit×metric×source（long） | **未作成**（行ができるまで書かない） |
 
 ## 状態
@@ -97,7 +104,8 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 - ⑧ 追加分析 2 回目（2026-10-28 夕）: ParlGov（Dataverse）・WDI 人口・英 Bills API・仏 AN ドシエを結線。R8（H2d 不支持: 議員立法シェアは英 21.5% ≈ 日 21.8% < 仏 50.9%）: `reports/2026-10-28-r8-member-bills.md`。R9（H6b 不支持: 1990 年以降の定数変更率 × 人口変化率 r = 0.51。**R4 の「人口減少国で減らしたのは日本のみ」を撤回**）: `reports/2026-10-28-r9-seats-history.md`。
 - ⑨ R10（2026-10-28 夜、ユーザー提起 H2e「官僚が多い国ほど議員は少ないか」）: ILOSTAT を結線。ρ = +0.33 で向きは逆（議員が少ない国は公務就業者も少ない）、判定は事前基準で「中間」: `reports/2026-10-28-r10-bureaucracy.md`。
 - ⑩ R11〜R13（2026-10-29、「削減の是非」の立場を支える根拠）: R11（H8 整合: 定数維持＋修正サンラグで Gallagher −2.33 pt、H9: 職員を上位 3 分の 1 に上げる費用 16〜25 億円 ≈ 45 減の節約額、H10: 兼任率 1.24 → 1.37）、R12（H11 整合: 289 でも 2040 年に係数込み 2.24 倍）、R13（H7: イタリア不支持、ハンガリー判定不能）。立場の文書: `reports/2026-10-29-position-parliament-size.md`。H3f（2000 年の前後）は第 42・43 回の資料が無く対象外。
-- 未着手: 独・米・韓の法案 API（鍵が要る）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）、規模を補正した官僚数 × 議員数、削減後の審査の質（修正率・審議時間）。
+- ⑪ R14（2026-10-29 夕、世論「議員 1 人の収入は多く働きは少ない」の検証）: H12 整合（歳費 ÷ 1 人当たり GDP 2.9 倍で 38 か国中 7 位、÷ 平均年収 4.2 倍で 31 か国中 7 位）、H13 整合（稼働日数 124 日 = 本会議 51 日の 2.43 倍）: `reports/2026-10-29-r14-pay-and-workload.md`。
+- 未着手: 独・米・韓の法案 API（鍵が要る）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）、規模を補正した官僚数 × 議員数、削減後の審査の質（修正率・審議時間）、手当込みの総報酬の国際比較（IPU に項目なし）。
 
 ## テーマ固有の規約
 - 「議員数」は定数（statutory）と現員（current）を列で分け、混ぜない。上院の選出方法（designation_mode）を注記できるよう議院単位で持つ。

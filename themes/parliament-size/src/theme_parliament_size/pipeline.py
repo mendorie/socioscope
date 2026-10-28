@@ -18,6 +18,7 @@ from theme_parliament_size import (
     ilostat,
     ipss,
     ipu,
+    kokkai,
     mof,
     parlgov,
     soumu,
@@ -71,6 +72,9 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_single(ctx, written, skipped, IPSS)
     written, skipped = _fetch_single(ctx, written, skipped, CAMERA_LAWS)
     written, skipped = _fetch_single(ctx, written, skipped, CAMERA_SITTINGS)
+    written, skipped = _fetch_single(ctx, written, skipped, ILO_EAR)
+    written, skipped = _fetch_single(ctx, written, skipped, WDI_GDP_PCAP)
+    written, skipped = _fetch_kokkai(ctx, written, skipped)
     written, skipped = _fetch_ukbills(ctx, written, skipped)
     written, skipped = _fetch_fran(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
@@ -92,6 +96,9 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_single(ctx, written, skipped, IPSS)
     written, skipped = _stage_single(ctx, written, skipped, CAMERA_LAWS)
     written, skipped = _stage_single(ctx, written, skipped, CAMERA_SITTINGS)
+    written, skipped = _stage_single(ctx, written, skipped, ILO_EAR)
+    written, skipped = _stage_single(ctx, written, skipped, WDI_GDP_PCAP)
+    written, skipped = _stage_kokkai(ctx, written, skipped)
     written, skipped = _stage_ukbills(ctx, written, skipped)
     written, skipped = _stage_fran(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
@@ -113,6 +120,9 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_single(ctx, written, skipped, IPSS)
     written, skipped = _mart_single(ctx, written, skipped, CAMERA_LAWS)
     written, skipped = _mart_single(ctx, written, skipped, CAMERA_SITTINGS)
+    written, skipped = _mart_single(ctx, written, skipped, ILO_EAR)
+    written, skipped = _mart_single(ctx, written, skipped, WDI_GDP_PCAP)
+    written, skipped = _mart_kokkai(ctx, written, skipped)
     written, skipped = _mart_ukbills(ctx, written, skipped)
     written, skipped = _mart_fran(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
@@ -564,6 +574,28 @@ CAMERA_SITTINGS = SingleDoc(
     table="staged/camera/sittings_by_year",
     mart="marts/it_sittings_by_year",
 )
+ILO_EAR = SingleDoc(
+    source=ilostat.SOURCE,
+    license=ilostat.LICENSE,
+    url=ilostat.EAR_URL,
+    raw_name=ilostat.EAR_RAW_NAME,
+    magic=ilostat.MAGIC,
+    parse=ilostat.parse_earnings,
+    build_mart=ilostat.build_mart,
+    table="staged/ilostat/earnings",
+    mart="marts/ilo_earnings_monthly",
+)
+WDI_GDP_PCAP = SingleDoc(
+    source=worldbank.SOURCE,
+    license=worldbank.LICENSE,
+    url=worldbank.GDP_PCAP_URL,
+    raw_name=worldbank.GDP_PCAP_RAW_NAME,
+    magic=worldbank.MAGIC,
+    parse=worldbank.parse_gdp_pcap,
+    build_mart=worldbank.build_gdp_pcap_mart,
+    table="staged/worldbank/gdp_pcap_lcu",
+    mart="marts/wdi_gdp_pcap_lcu",
+)
 
 
 def _fetch_single(
@@ -774,4 +806,85 @@ def _mart_fran(ctx: Context, written: list[str], skipped: list[str]) -> tuple[li
         return written, skipped
     ctx.tables.write_table(FRAN_MART, rows)
     written.append(FRAN_MART)
+    return written, skipped
+
+
+# ---- 国会会議録検索システム API（衆議院の会議一覧、年 × 100 件ページ）----------------
+
+KOKKAI_TABLE = "staged/kokkai/meetings"
+KOKKAI_MART = "marts/jp_hr_sitting_days"
+
+
+def _fetch_kokkai(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(kokkai.SOURCE):
+        return written, skipped
+    for year in kokkai.YEARS:
+        for page in range(1, kokkai.MAX_PAGES + 1):
+            url, name = kokkai.url(year, page), kokkai.raw_name(year, page)
+            try:
+                payload = ctx.fetcher.fetch(url)
+            except FetchError as e:
+                skipped.append(f"{name}: {e}")
+                break
+            if not payload.lstrip().startswith(kokkai.MAGIC):
+                skipped.append(f"{name}: non-JSON payload")
+                break
+            rec = ctx.raw.put(
+                theme=THEME,
+                source=kokkai.SOURCE,
+                name=name,
+                url=url,
+                license=kokkai.LICENSE,
+                payload=payload,
+            )
+            written.append(rec.relative_path)
+            if not kokkai.has_next(payload):
+                break
+    return written, skipped
+
+
+def _stage_kokkai(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(kokkai.SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    for year in kokkai.YEARS:
+        for page in range(1, kokkai.MAX_PAGES + 1):
+            name = kokkai.raw_name(year, page)
+            payload = ctx.raw.get(theme=THEME, source=kokkai.SOURCE, name=name)
+            if payload is None:
+                if page == 1:
+                    skipped.append(f"{name}: raw missing (run fetch)")
+                break
+            try:
+                rows.extend(
+                    {**r, "source": kokkai.SOURCE} for r in kokkai.parse(payload, year, page)
+                )
+            except ValueError as e:
+                skipped.append(f"{name}: {e}")
+                break
+    if rows:
+        ctx.tables.write_table(KOKKAI_TABLE, rows)
+        written.append(KOKKAI_TABLE)
+    return written, skipped
+
+
+def _mart_kokkai(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(kokkai.SOURCE):
+        return written, skipped
+    if KOKKAI_TABLE not in ctx.tables.list_tables():
+        skipped.append(f"{KOKKAI_MART}: staged missing (run stage)")
+        return written, skipped
+    try:
+        rows = kokkai.build_mart(ctx.tables.read_table(KOKKAI_TABLE))
+    except ValueError as e:
+        skipped.append(f"{KOKKAI_MART}: {e}")
+        return written, skipped
+    ctx.tables.write_table(KOKKAI_MART, rows)
+    written.append(KOKKAI_MART)
     return written, skipped

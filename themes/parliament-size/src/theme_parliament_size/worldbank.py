@@ -34,6 +34,10 @@ POP_INDICATOR = "SP.POP.TOTL"
 POP_DATE_RANGE = "1980:2025"
 POP_URL = indicator_url(POP_INDICATOR, POP_DATE_RANGE)
 POP_RAW_NAME = "population_1980_2025.json"
+# 1 人当たり名目 GDP（現地通貨。H12: 議員基本給の相対水準の分母）
+GDP_PCAP_INDICATOR = "NY.GDP.PCAP.CN"
+GDP_PCAP_URL = indicator_url(GDP_PCAP_INDICATOR, DATE_RANGE)
+GDP_PCAP_RAW_NAME = "gdp_pcap_lcu_2005_2025.json"
 
 
 class _Ref(BaseModel):
@@ -115,3 +119,11 @@ def build_mart(
 
 def build_population_mart(staged: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
     return build_mart(staged, value_col="population")
+
+
+def parse_gdp_pcap(payload: bytes) -> list[dict[str, object]]:
+    return parse(payload, value_col="gdp_pcap_lcu")
+
+
+def build_gdp_pcap_mart(staged: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+    return build_mart(staged, value_col="gdp_pcap_lcu")

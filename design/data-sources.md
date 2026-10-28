@@ -71,6 +71,9 @@
 | Camera dei deputati open data（dati.camera.it SPARQL） | 年別の成立法律数（`ocd:legge`）と本会議回数（`ocd:seduta` × `rif_assemblea`）（parliament-size H7） | SPARQL（集計クエリの JSON 結果を raw に、鍵不要） | CC BY 4.0 | **採用**（parliament-size、2026-10-29。`marts/it_laws_by_year`、`it_sittings_by_year`） |
 | 衆議院規則 第 92 条（衆議院 HP） | 常任委員会 17 の委員定数（parliament-size H10） | HTML（Shift_JIS） | 衆議院 HP の利用規約（出典表示） | **採用**（手入力 `jp_committee_seats.csv`、2026-10-29） |
 | ハンガリー国会（parlament.hu） | 成立法律数（parliament-size H7） | HTML | – | 不採用（2026-10-29 時点でボット UA に CAPTCHA） |
+| 国立国会図書館 国会会議録検索システム API `meeting_list` | 衆議院の会議（本会議・委員会等）の一覧（parliament-size H13: 稼働日数） | REST JSON（年 × 100 件ページ、鍵不要。2013–2025 で 84 ページ） | 出典明示で利用可 | **採用**（parliament-size、2026-10-29。`marts/jp_hr_sitting_days`） |
+| ILOSTAT `EAR_EMTA_SEX_CUR_NB`（平均月収、CUR_TYPE_LCU） | 雇用者の平均月収（現地通貨）（parliament-size H12 の分母） | REST JSON | CC BY 4.0 | **採用**（parliament-size、2026-10-29。`marts/ilo_earnings_monthly`。「現地通貨」に米ドル相当の値が混じる国（HUN・CZE・DNK・ISL・SWE・NOR・POL）は年収 ÷ GDP < 0.3 で除外） |
+| World Bank WDI `NY.GDP.PCAP.CN`（1 人当たり名目 GDP、現地通貨） | 議員基本給の相対水準の分母（parliament-size H12） | REST JSON | CC BY 4.0 | **採用**（parliament-size、2026-10-29。`marts/wdi_gdp_pcap_lcu`） |
 | Bundestag DIP API / Congress.gov API / 열린국회정보 | 独・米・韓の法案（parliament-size H2d） | REST JSON、**API 鍵が要る** | 各機関の規約 | 候補（parliament-size。鍵未取得で未着手） |
 | World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨）、`SP.POP.TOTL`（人口） | 議会費の対 GDP 比の分母（parliament-size H5c）、定数変更の直前 10 年の人口変化（H6b） | REST JSON（`api.worldbank.org/v2`、1 ページ） | CC BY 4.0 | **採用**（parliament-size、2026-10-28。`marts/wdi_gdp_lcu`、`marts/wdi_population`。growth-fertility の adapter と同じ URL 規約だがテーマ内に複製） |
 | V-Dem | 立法府の制約指数 `v2xlg_legcon` 等（parliament-size H2） | CSV（登録の要否 確認要） | CC BY-SA 4.0（確認要） | 候補（parliament-size） |

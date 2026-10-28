@@ -32,16 +32,30 @@ INS_URL = (
     "&format=.json"
 )
 INS_RAW_NAME = "emp_public_sector.json"
+# 雇用者の平均月収（現地通貨、経済活動計。H12 の分母）
+EAR_URL = (
+    f"{BASE}?id=EAR_EMTA_SEX_CUR_NB_A&sex=SEX_T&classif1=CUR_TYPE_LCU&timefrom={TIME_FROM}"
+    "&format=.json"
+)
+EAR_RAW_NAME = "earnings_monthly_total.json"
 METRICS: dict[str, str] = {
     "ECO_ISIC4_O": "emp_public_admin",  # 公務・防衛・社会保障（千人）
     "ECO_ISIC4_TOTAL": "emp_total",  # 総就業者（千人）
     "INS_SECTOR_PUB": "emp_public_sector",  # 公的部門（千人）
 }
+EAR_METRICS: dict[str, str] = {
+    "CUR_TYPE_LCU": "earnings_monthly_lcu"
+}  # 雇用者の平均月収（現地通貨）
 REQUIRED = ("ref_area", "classif1", "time", "obs_value")
 
 
-def parse(payload: bytes) -> list[dict[str, object]]:
-    """JSON 配列 → [{iso3, year, metric, value_thousands, source_note}]（採用 classif1 のみ）。"""
+def parse(
+    payload: bytes, metrics: Mapping[str, str] = METRICS, fixed_metric: str | None = None
+) -> list[dict[str, object]]:
+    """JSON 配列 → [{iso3, year, metric, value_thousands, source_note}]（採用 classif1 のみ）。
+
+    `fixed_metric` を与えると classif1 を見ずに全レコードをその指標にする（賃金。value_thousands
+    には月収（現地通貨）が入り、千人ではない）。"""
     try:
         doc = json.loads(payload)
     except ValueError as e:
@@ -52,10 +66,13 @@ def parse(payload: bytes) -> list[dict[str, object]]:
         raise ValueError(msg)
     rows: list[dict[str, object]] = []
     for rec in doc:
-        if not isinstance(rec, dict) or any(k not in rec for k in REQUIRED):
-            msg = f"ilostat: record without {REQUIRED}"
+        required = (
+            REQUIRED if fixed_metric is None else tuple(k for k in REQUIRED if k != "classif1")
+        )
+        if not isinstance(rec, dict) or any(k not in rec for k in required):
+            msg = f"ilostat: record without {required}"
             raise ValueError(msg)
-        metric = METRICS.get(str(rec["classif1"]))
+        metric = fixed_metric if fixed_metric else metrics.get(str(rec["classif1"]))
         if metric is None or rec["obs_value"] is None:
             continue
         rows.append(
@@ -69,6 +86,10 @@ def parse(payload: bytes) -> list[dict[str, object]]:
         )
     rows.sort(key=lambda r: (str(r["iso3"]), str(r["metric"]), int(str(r["year"]))))
     return rows
+
+
+def parse_earnings(payload: bytes) -> list[dict[str, object]]:
+    return parse(payload, EAR_METRICS)
 
 
 def build_mart(staged: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
