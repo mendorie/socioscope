@@ -1,10 +1,10 @@
 # theme: parliament-size
 設計: `design/themes/parliament-size.md`。
 ```bash
-uv run socioscope run parliament-size fetch   # IPU Parline API、総務省 結果調 Excel（第 45〜51 回 × 5 表）、e-Stat 国勢調査 2020 表 2-1 ＋ 長期人口、財務省 予算書 PDF、内閣法制局 HTML、World Bank WDI 名目 GDP・人口、ParlGov 2024、UK Bills API（41 ページ）、仏 AN ドシエ zip（第 16・17 期）
-uv run socioscope run parliament-size stage   # → data/staged/{ipu,soumu,estat,mof,clb,worldbank,parlgov,ukbills,fran}/*.parquet
-uv run socioscope run parliament-size mart    # → data/marts/{ipu_parliaments,jp_hr_*,jp_census2020_prefecture,jp_population_longterm,jp_budget_by_organ,jp_bill_counts,wdi_gdp_lcu,wdi_population,parlgov_elections,uk_acts,fr_laws}.parquet
-uv run socioscope run parliament-size fetch --only ipu_parline   # ソースを絞る（ipu_parline / soumu_senkyo / estat_census / mof_budget / clb_bills / worldbank_wdi / parlgov / uk_bills / fr_an_dossiers）
+uv run socioscope run parliament-size fetch   # IPU Parline API、総務省 結果調 Excel（第 45〜51 回 × 5 表）、e-Stat 国勢調査 2020 表 2-1 ＋ 長期人口、財務省 予算書 PDF、内閣法制局 HTML、World Bank WDI 名目 GDP・人口、ParlGov 2024、UK Bills API（41 ページ）、仏 AN ドシエ zip（第 16・17 期）、ILOSTAT 公務就業者
+uv run socioscope run parliament-size stage   # → data/staged/{ipu,soumu,estat,mof,clb,worldbank,parlgov,ukbills,fran,ilostat}/*.parquet
+uv run socioscope run parliament-size mart    # → data/marts/{ipu_parliaments,jp_hr_*,jp_census2020_prefecture,jp_population_longterm,jp_budget_by_organ,jp_bill_counts,wdi_gdp_lcu,wdi_population,parlgov_elections,uk_acts,fr_laws,ilo_emp_public_admin,ilo_emp_public_sector}.parquet
+uv run socioscope run parliament-size fetch --only ipu_parline   # ソースを絞る（ipu_parline / soumu_senkyo / estat_census / mof_budget / clb_bills / worldbank_wdi / parlgov / uk_bills / fr_an_dossiers / ilostat）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261027_r1_ratio.py      # R1（H1・H1b・H1c）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261027_r2_pr_blocks.py  # R2（H3・H3b・H3c・H4・H4b）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261027_r3_cost.py       # R3（H5・H5b）
@@ -14,4 +14,5 @@ uv run python themes/parliament-size/src/theme_parliament_size/analysis/a2026102
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261028_r7_roles_gdp.py  # R7（事後追加 H2c・H5c: 質問主意書、議会費の対 GDP 比）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261028_r8_member_bills.py # R8（事後追加 H2d: 日英仏の議員立法シェア）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261028_r9_seats_history.py # R9（事後追加 H6b: 1990 年以降の定数変更 × 人口変化）
+uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261028_r10_bureaucracy.py # R10（事後追加 H2e: 公務就業者 × 議員数）
 ```

@@ -10,7 +10,18 @@ from dataclasses import dataclass
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_parliament_size import clb, estat, fran, ipu, mof, parlgov, soumu, ukbills, worldbank
+from theme_parliament_size import (
+    clb,
+    estat,
+    fran,
+    ilostat,
+    ipu,
+    mof,
+    parlgov,
+    soumu,
+    ukbills,
+    worldbank,
+)
 
 THEME = "parliament-size"
 PANEL_TABLE = "marts/parliament_size_panel"
@@ -53,6 +64,8 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_single(ctx, written, skipped, WDI)
     written, skipped = _fetch_single(ctx, written, skipped, WDI_POP)
     written, skipped = _fetch_single(ctx, written, skipped, PARLGOV)
+    written, skipped = _fetch_single(ctx, written, skipped, ILO_ECO)
+    written, skipped = _fetch_single(ctx, written, skipped, ILO_INS)
     written, skipped = _fetch_ukbills(ctx, written, skipped)
     written, skipped = _fetch_fran(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
@@ -69,6 +82,8 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_single(ctx, written, skipped, WDI)
     written, skipped = _stage_single(ctx, written, skipped, WDI_POP)
     written, skipped = _stage_single(ctx, written, skipped, PARLGOV)
+    written, skipped = _stage_single(ctx, written, skipped, ILO_ECO)
+    written, skipped = _stage_single(ctx, written, skipped, ILO_INS)
     written, skipped = _stage_ukbills(ctx, written, skipped)
     written, skipped = _stage_fran(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
@@ -85,6 +100,8 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_single(ctx, written, skipped, WDI)
     written, skipped = _mart_single(ctx, written, skipped, WDI_POP)
     written, skipped = _mart_single(ctx, written, skipped, PARLGOV)
+    written, skipped = _mart_single(ctx, written, skipped, ILO_ECO)
+    written, skipped = _mart_single(ctx, written, skipped, ILO_INS)
     written, skipped = _mart_ukbills(ctx, written, skipped)
     written, skipped = _mart_fran(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
@@ -480,6 +497,28 @@ PARLGOV = SingleDoc(
     build_mart=parlgov.build_mart,
     table="staged/parlgov/elections",
     mart="marts/parlgov_elections",
+)
+ILO_ECO = SingleDoc(
+    source=ilostat.SOURCE,
+    license=ilostat.LICENSE,
+    url=ilostat.ECO_URL,
+    raw_name=ilostat.ECO_RAW_NAME,
+    magic=ilostat.MAGIC,
+    parse=ilostat.parse,
+    build_mart=ilostat.build_mart,
+    table="staged/ilostat/emp_eco",
+    mart="marts/ilo_emp_public_admin",
+)
+ILO_INS = SingleDoc(
+    source=ilostat.SOURCE,
+    license=ilostat.LICENSE,
+    url=ilostat.INS_URL,
+    raw_name=ilostat.INS_RAW_NAME,
+    magic=ilostat.MAGIC,
+    parse=ilostat.parse,
+    build_mart=ilostat.build_mart,
+    table="staged/ilostat/emp_ins",
+    mart="marts/ilo_emp_public_sector",
 )
 
 
