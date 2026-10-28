@@ -62,6 +62,16 @@
 | Eurostat `demo_nind` / `lfsa_etpgan` / `une_rt_a` / `ilc_lvho07a` | 粗婚姻率・初婚平均年齢・初婚率（1960–）、有期雇用比率 15–24 / 25–34（1995–）、若年失業率 15–24（2003–）、若年層の住宅費過重負担率（2004–） | dissemination API JSON-stat（鍵不要、国別分割） | Eurostat copyright notice（出典明記で再利用可） | **採用**（growth-fertility H10） |
 | 国税庁 統計年報 / 民間給与実態統計 | 所得分布 | Excel | 政府標準利用規約 | 候補（日本） |
 | 野村総研 富裕層レポート等 | 資産階層別世帯数（推計） | PDF（公開レポート） | 引用のみ | 候補（LLM 構造化対象） |
+| IPU Parline（data.ipu.org） | 272 議院の定数・現員・選挙制度・任期（parliament-size H1・H2） | JSON API（鍵の要否は確認要） | **CC BY-NC-SA 4.0**（API `meta.licence`、確認 2026-10-27）。非商用 | **採用**（parliament-size H1。`marts/ipu_parliaments`） |
+| ParlGov | 欧州・OECD の選挙結果（政党別得票・議席）（parliament-size H3c 国際比較） | CSV | CC BY 4.0（確認要） | 候補（parliament-size）。2026-10-28 時点で `parlgov.org/data/` はボット UA に 403、`static/data/...csv` は 404 で取得できず |
+| World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨） | 議会費の対 GDP 比の分母（parliament-size H5c） | REST JSON（`api.worldbank.org/v2`、1 ページ） | CC BY 4.0 | **採用**（parliament-size、2026-10-28。`marts/wdi_gdp_lcu`。growth-fertility の adapter と同じ URL 規約だがテーマ内に複製） |
+| V-Dem | 立法府の制約指数 `v2xlg_legcon` 等（parliament-size H2） | CSV（登録の要否 確認要） | CC BY-SA 4.0（確認要） | 候補（parliament-size） |
+| Eurostat `gov_10a_exp` / OECD COFOG | 執行・立法機関 歳出（COFOG 01.1）（parliament-size H5b） | JSON-stat / SDMX、鍵不要 | Eurostat: CC BY 4.0 / OECD Terms & Conditions | 候補（parliament-size。01.1 は執行機関と合算、立法のみ分離できる国に限る） |
+| 総務省 衆議院議員総選挙 結果調（第 45〜51 回） | 都道府県別・比例ブロック別 有権者数、政党別得票・議席（parliament-size H3・H4・H3d） | **Excel あり**（xls／xlsx、`main_content/<id>.xls(x)`、鍵不要）。第 42〜44 回（2000・2003・2005 年）は Excel 配布なし | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size H3・H4、2026-10-27。第 45〜49 回を 2026-10-28 に追加。`marts/jp_hr_pr_results`, `jp_hr_seats_by_party`, `jp_hr_electorate`） |
+| 内閣法制局「過去の法律案の提出・成立件数一覧」 | 国会回次別（第 183 回 2013 年〜）の 閣法・議員立法の提出・成立件数（parliament-size H2）。衆法・参法の区別はない | HTML 表（1 ページ、鍵不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_bill_counts`）。衆議院 議案審議経過（1947–、衆法・参法別）は候補のまま |
+| 財務省 令和 7 年度 一般会計歳入歳出予算（衆参修正後）PDF、歳費法・秘書給与法（e-Gov 法令 API v1 XML） | 歳出の所管別内訳（国会 1,315 億円、合計 115.2 兆円）、議員 1 人当たり法定経費（parliament-size H5） | PDF（AES 暗号化だが空パスワードで pypdf が読める）/ `laws.e-gov.go.jp/api/1/lawdata/<law_id>` | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size、2026-10-27。`marts/jp_budget_by_organ`。法定額は `jp_member_costs.csv` に手入力） |
+| 衆議院 HP「衆議院議員定数の変遷」（1946–2004）＋ 法令、e-Stat 人口推計 長期時系列 表 1（1920–2000） | 定数の時系列 1890–2022（手入力表 `jp_seats_history.csv`）、総人口 1920–2000（parliament-size H6） | HTML（Shift_JIS）/ `file-download?statInfId=000000090261&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_population_longterm`。2001 年以降の人口は IPU Parline） |
+| e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1 | 都道府県別 国籍総数・日本人 人口（parliament-size H4b: アダムズ方式の基礎人口） | `file-download?statInfId=000032142404&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_census2020_prefecture`） |
 
 ## 採用ソースの記録
 
@@ -566,6 +576,55 @@
 - ライセンス・利用規約（確認 2026-10-22）: いずれも利用規約の記載なし。出典（「全国軽自動車協会連合会調べ」「日本自動車販売協会連合会調べ」「日本自動車輸入組合調べ」）を明記して引用。raw 非コミット。
 - 取得方法: `theme_bicycle_industry.auto_moto`（`xls_rows` → `parse_zenkei_rows`（和暦ラベルの `(yy)` から西暦）、`parse_jada_rows`（「1～12月」列の年計／年計シートの車種行）、`parse_jaia_rows`（帯の見出し順を検査、合計を検算）、`build_*_mart`）＋ `pipeline._fetch/_stage/_mart_pdf_source(ZENKEI / JADA / JAIA)`（`magic` を xls に）。年 1 回。
 - 既知の欠損・断絶: 原付一種・二種の販売統計は協会に公開系列が無い（JAMA DB はフォーム専用）→ 生産動態統計で代理。自販連の年計は 2021 年から。JAIA の「不明」帯は 2021 年以前に数%。2025 年の新基準原付移行で原付一種は断絶しうる。
+
+### IPU Parline API（Inter-Parliamentary Union、parliament-size H1・H2・H5b: 議院の定数・現員・職員数・予算、国の人口）
+- URL / API: `https://api.data.ipu.org/v1/chambers` と `/v1/countries`（JSON:API、`page[size]=100&page[number]=N`、`links.next` で辿る。鍵不要）。chambers 281 件 = 3 ページ（各 7〜10 MB）、countries 193 件 = 2 ページ。`fields[...]` の sparse fieldset は効かない（全属性が返る）。
+- 対象指標・粒度: 議院 × 属性 × 期間（long）。採用した属性は `ipu.CHAMBER_ATTRS`（statutory_members_number / current_members_number / directly_elected_number / designation_mode / electoral_system / electoral_subsystem / major_sys_elect_mems / mixed_sys_elect_mems / permanent_staff_number / is_staff_combined_parl / chamber_budget（`{"type": 通貨, "value": 額}`）/ chamber_budget_ppp / is_budget_combined_parl / basic_salary / basic_salary_ppp / num_days_parl_plen / num_cham_perm_committees。2026-10-28 に役割の補助指標 num_written_question_ask / members_government_number / members_government_percentage / is_carry_out_inquiries / approx_num_government_app を追加）と `ipu.COUNTRY_ATTRS`（country_name / iso_alpha3 / region / subregion / political_system / local_currency / members_per_country / population_in_thousands（1950– 年次）/ inhabitants_per_parliament / parliament_devoted_budget_perc / ppp_conversion_factor / other_groupings（`[{"term": "oecd_members"}]`）。
+- ライセンス・利用規約（確認日）: API レスポンスの `meta.licence` に「Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International」、`meta.terms_of_use` に ipu.org/terms-use（2026-10-27 確認）。**非商用・出典表示・継承**。`data/README.md` に記載。出典表記: 「Inter-Parliamentary Union, Parline: global data on national parliaments, https://data.ipu.org (accessed 2026-10-27)」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.ipu`（`url`/`raw_name`/`parse`/`has_next`/`build_mart`）、`pipeline._fetch_ipu`。レート制限の記載なし。5 リクエストで完了。`data.ipu.org` の HTML ページ（about、terms）はボット UA に 403 を返すが API は返す。
+- 既知の欠損・断絶・定義変更: `statutory_members_number` は OECD 38 か国で欠損なし。`permanent_staff_number` は AUT・CHE・CHL（上院）・IRL が欠損、`chamber_budget_ppp` は OECD 24 議院が欠損（H2・H5b では国数が減る）。人口は 2023 年が 276 議院、2024–25 年が 5 議院。`parliament_structure` は常に null（一院制・二院制は chamber_id の LC/UC 接尾辞で判定）。`country_name` は `{"en", "fr"}` の辞書。
+
+### 総務省 衆議院議員総選挙 結果調 Excel（parliament-size H3・H4: 比例ブロック別 党派別得票・議席配分表・当選人数・都道府県別有権者数）
+- URL / API: `https://www.soumu.go.jp/main_content/<id>.<xls|xlsx>`。第 50 回（2024-10-27、.xls）: 2(1) 000979118、2(2) 000979120、3(1) 000979122、3(10) 000979131、3(12) 000979133。第 51 回（2026-02-08、.xlsx）: 001061471、001061473、001061475、001061484、001061486。第 45〜49 回（2009・2012・2014・2017・2021 年、2026-10-28 追加）の id は `soumu.ELECTIONS`（第 49 回は比例の 2 表のみ xlsx、他は xls）。第 42〜44 回は資料集ページが無いか Excel が無い。資料集ページ `senkyo/senkyo_s/data/shugiin<N>/index.html`（Shift_JIS、ボット UA でも 200）。robots.txt は `ia_archiver` のみ拒否。
+- 対象指標・粒度: 2(1)/2(2) 都道府県 × 選挙当日の有権者数・投票者数（小選挙区／比例代表、比例はブロック付き）。3(10) ブロック × 党派 × 得票数（按分票は小数）・得票率。3(12) ブロック × 党派 × 当選順位（ドント商の表）。3(1) 党派 × 小選挙区／比例代表 当選人数（無所属・本人届出を含む）。
+- ライセンス・利用規約（確認日）: 総務省ホームページは政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。出典表記「総務省『衆議院議員総選挙 結果調』」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.soumu`（`ELECTIONS`/`url`/`raw_name`/`rows_of`、`parse_electorate_smd`/`parse_electorate_pr`/`parse_pr_votes`/`parse_pr_seats`/`parse_winners`、`build_*_mart`）、`pipeline._fetch_soumu`。xls は xlrd、xlsx は openpyxl。レート制限の記載なし。
+- 既知の欠損・断絶・定義変更: 第 50 回は得票数が「694,578.943」のような文字列、第 51 回は数値。3(12) の議席配分表は党が多いと同じブロックが複数チャンクに分かれる。第 45〜49 回の 3(12) は順位の列が党名の 1 列左（第 50・51 回は同じ列）で、`parse_pr_seats` が '順位' 見出し行の位置で判定する。3(1) は党名が 2 行に割れる（第 49 回「ＮＨＫと裁判し／弁護士法７２条」）ことがあり連結する。本人届出シートの小見出し（政党等所属／無所属）は第 47〜49 回で空白のため列位置で割り当てる。法定定数は選挙ごとに違う（小選挙区 300／295／289、比例 180／176）。公式議席は名簿登載者不足による他党への移転を含む（2024 国民民主党 3 議席、2026 自民党 14 議席）ので、純ドントとの差を `jp_hr_pr_results.seats` と比べて確認する。3(1) の「本人届出（政党等所属）」は党名ではないが 1 議席を持つ。ブロック名「東京都」は「東京」に正規化。
+
+### World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨。parliament-size H5c: 議会費の対 GDP 比の分母）
+- URL / API: `https://api.worldbank.org/v2/country/all/indicator/NY.GDP.MKTP.CN?format=json&per_page=20000&date=2005:2025`（1 ページ、約 5,600 点、鍵不要）。
+- 対象指標・粒度: 経済体 × 年（現地通貨、名目）。集計体（iso3 が空）と欠損は落とす。IPU の `chamber_budget`（現地通貨、予算年）と同じ年で割る。
+- ライセンス・利用規約（確認日）: CC BY 4.0（https://datacatalog.worldbank.org/public-licenses、2026-10-28 確認）。出典表記「World Bank, World Development Indicators, NY.GDP.MKTP.CN (accessed 2026-10-28)」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.worldbank`（`URL`/`RAW_NAME`/`parse`/`build_mart`）、`pipeline.WDI`（`SingleDoc`）。growth-fertility の `worldbank.py` と同じ URL 規約だがテーマ間 import はしない（ADR 0001）。レート制限の記載なし。
+- 既知の欠損・断絶・定義変更: ページが分かれたら ValueError（fail-closed）。OECD 38 か国はすべて 2024 年まで値あり（日本は 2025 年も）。IPU の予算の通貨は国の通貨（`local_currency`）と一致することを R7 で確認したうえで割る。
+
+### e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1（parliament-size H4b: 都道府県別 日本人人口）
+- URL / API: `https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032142404&fileKind=0`（xlsx 478 KB、appId 不要）。一覧 `stat-search/files?tclass=000001125102&cycle=0`。
+- 対象指標・粒度: 国籍区分（国籍総数／うち日本人）× 男女 × 地域（全国・都道府県・21 大都市・特別区・人口 50 万以上の市）× 年齢各歳。採るのは 国籍総数・うち日本人 × 総数 × 都道府県（地域識別コード `a`）の総数列。
+- ライセンス・利用規約（確認日）: 政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。出典表記「政府統計の総合窓口(e-Stat)、令和 2 年国勢調査 人口等基本集計（総務省統計局）を加工」。
+- 取得方法（adapter 名）: `theme_parliament_size.estat`（`URL`/`RAW_NAME`/`workbook_rows`/`parse`/`build_mart`）、`pipeline._fetch_estat`。
+- 既知の欠損・断絶・定義変更: 「国籍総数」は国籍不詳を含む（全国 126,146,099）。「うち日本人」の全国計は 121,541,155 で、結果概要の「日本人人口 1 億 2,339 万人」（不詳補完値）とは異なる。画定審の配分はどちらを使ったか本書では未確認だが、アダムズ方式でこの値から現行の 289・176 の配分が完全に再現できる。
+
+### 財務省 令和 7 年度 一般会計歳入歳出予算（衆議院修正＋参議院修正後）PDF（parliament-size H5: 歳出の所管別内訳）
+- URL / API: `https://www.mof.go.jp/policy/budget/budger_workflow/budget/fy2025/0003.pdf`（6 ページ、80 KB）。同ページの 0002.pdf（予算フレーム）も同形式。
+- 対象指標・粒度: 2 ページ目「所管別内訳」: 所管 22 行（皇室費・国会・裁判所・会計検査院・内閣・内閣府（内訳 2 行）・デジタル庁・各省・予備費 2 行）× 前年度当初／令和 7 年度修正後（億円）＋ 合計。
+- ライセンス・利用規約（確認日）: 財務省ホームページは政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。
+- 取得方法（adapter 名）: `theme_parliament_size.mof`（`pdf_pages`（pypdf、AES 暗号化を空パスワードで復号）、`parse`（数値行を `ORGANS` の順に割り当て、主要行の合計 = 合計行で検算）、`build_mart`）、`pipeline.MOF`（`SingleDoc`）。
+- 既知の欠損・断絶・定義変更: PDF は数値行が所管名より先にテキスト化されるため順序依存。ページ番号「－ 2 －」は数値行に見えるので除外。所管の増減（デジタル庁 2021–、こども家庭庁は内閣府の内訳）で年度が変わると `ORGANS` の更新が要る。
+
+### 内閣法制局「過去の法律案の提出・成立件数一覧」HTML（parliament-size H2: 閣法と議員立法の提出・成立件数）
+- URL / API: `https://www.clb.go.jp/recent-laws/number/`（HTML 表 1 枚、鍵不要）。
+- 対象指標・粒度: 国会回次 × 会期種別 × 会期 × 内閣提出法律案（提出・成立）× 議員立法（提出・成立）× 計。第 183 回（2013-01）〜第 221 回（2026-02）の 39 回次。継続審査件数は外数。衆法・参法の区別なし。
+- ライセンス・利用規約（確認日）: 政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。
+- 取得方法（adapter 名）: `theme_parliament_size.clb`（`parse`: `html.parser` で全表を走査し「第 N 回（種別）」と「（継続 n 件） m 件」のセルを読む。計 = 閣法 ＋ 議員立法 で検算）、`pipeline.CLB`。
+- 既知の欠損・断絶・定義変更: 2013 年以前は無い（衆議院「議案審議経過」が 1947– を持つが未採用）。議員立法には委員長提出を含む。
+
+### e-Stat 人口推計 長期時系列 表 1（parliament-size H6: 総人口 1920–2000）
+- URL / API: `https://www.e-stat.go.jp/stat-search/file-download?statInfId=000000090261&fileKind=0`（xlsx 18 KB、appId 不要。一覧は旧 URL `SG1/estat/List.do?bid=000000090004`）。
+- 対象指標・粒度: 各年 10 月 1 日現在の 総人口（男女計・男・女、1920–2000）と日本人人口（1950–2000）、千人。
+- ライセンス・利用規約（確認日）: 政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。出典表記「政府統計の総合窓口(e-Stat)、人口推計（総務省統計局）を加工」。
+- 取得方法（adapter 名）: `theme_parliament_size.estat`（`LONGPOP_URL`、`parse_longpop`、`build_longpop_mart`）。
+- 既知の欠損・断絶・定義変更: 1945・1946 年は注記付き推計（1946 年 75,750 千人）。1920–1945 は内地人口。2001 年以降は IPU Parline の `population_in_thousands`（2016–2020 を欠く）で接続。
 
 ## 記録テンプレート（ソース採用時）
 ```
