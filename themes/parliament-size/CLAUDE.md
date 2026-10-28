@@ -32,6 +32,9 @@ src/theme_parliament_size/
   fran.py       仏 国民議会 Dossiers législatifs zip（第 16・17 期）: `url(leg)`/`raw_name`/`is_law`/`parse`（ドシエ 1 行: 手続・提出種別 PRJL/PION・公布日）/
                 `build_mart`（公布済みのみ、立法期をまたぐ uid は新しい方）
   ilostat.py    ILOSTAT（鍵不要）: `ECO_URL`（ISIC O ＋ 総数）/`INS_URL`（公的部門）/`parse`（JSON 配列 → 国×年×指標 long、採用 classif1 のみ）/`build_mart`（重複キーは ValueError）
+  ipss.py       IPSS 地域別将来推計人口（令和 5 年推計）結果表 1 xlsx: `URL`/`RAW_NAME`/`workbook_rows`/`parse`（都道府県 47 × 2020–2050、2020 年合計を国勢調査で検算）/`build_mart`
+  camera.py     イタリア下院 dati.camera.it SPARQL: `LAWS_URL`/`SITTINGS_URL`（集計クエリ）/`parse_laws`/`parse_sittings`/`build_mart`（年×指標 long）
+  jp_committee_seats.csv  衆院 常任委員会 17 の委員定数（衆議院規則 第 92 条）。出典列あり、手入力
   clb.py        内閣法制局「法律案の提出・成立件数一覧」HTML: `parse`（html.parser で表を走査、「第 N 回（種別）」と
                 「（継続 n 件） m 件」を読み、計 = 閣法 ＋ 議員立法 で検算）、`build_mart`（議員立法の成立シェア付き）
   jp_member_costs.csv   議員 1 人当たりの法定経費（歳費・調査研究広報滞在費・立法事務費・秘書給与の別表）。出典列あり、手入力
@@ -45,7 +48,10 @@ src/theme_parliament_size/
                 a20261028_r7_roles_gdp.py（事後追加 H2c・H5c、質問主意書と議会費の対 GDP 比、図 2 枚）、
                 a20261028_r8_member_bills.py（事後追加 H2d、日英仏の議員立法シェア、図 1 枚）、
                 a20261028_r9_seats_history.py（事後追加 H6b、ParlGov 1990– の定数変更 × 人口変化、図 1 枚。R4 の各国判定を上書き）、
-                a20261028_r10_bureaucracy.py（事後追加 H2e、公務就業者 × 議員数、図 1 枚）
+                a20261028_r10_bureaucracy.py（事後追加 H2e、公務就業者 × 議員数、図 1 枚）、
+                a20261029_r11_alternatives.py（事後追加 H8・H9・H10、修正サンラグ単独・職員増員の費用・委員会兼任率）、
+                a20261029_r12_future_disparity.py（事後追加 H11、IPSS 推計での格差、図 1 枚）、
+                a20261029_r13_after_cuts.py（事後追加 H7、イタリア・ハンガリーの削減前後）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -76,6 +82,8 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 | `staged/fran/dossiers` → `marts/fr_laws` | 法律ドシエ | staged: uid, legislature, procedure, origin, promulgated, promulgation_date。mart は公布済みのみ: iso3(FRA), year, promulgation_date, uid, legislature, procedure, origin, source。297 行 |
 | `staged/ilostat/emp_eco` → `marts/ilo_emp_public_admin` | 国×年×指標（long） | iso3, year(2015–2025), metric（emp_public_admin = ISIC O／emp_total）, value_thousands, source_note, source(`ilostat`) |
 | `staged/ilostat/emp_ins` → `marts/ilo_emp_public_sector` | 国×年×指標（long） | 同列、metric = emp_public_sector |
+| `staged/ipss/prefecture_projection` → `marts/jp_prefecture_projection` | 都道府県×年 | iso3, year(2020–2050、5 年刻み), pref_code, pref, population（総人口）, source(`ipss_regional`)。329 行 |
+| `staged/camera/laws_by_year`・`sittings_by_year` → `marts/it_laws_by_year`・`it_sittings_by_year` | 年×指標 | iso3(ITA), year(2007–2026), metric（laws_promulgated／plenary_sittings）, value, source(`camera_it`)。各 20 行 |
 | `marts/parliament_size_panel` | iso3×year×unit×metric×source（long） | **未作成**（行ができるまで書かない） |
 
 ## 状態
@@ -88,7 +96,8 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 - ⑦ 追加分析（2026-10-28、事後追加の仮説。`docs/specs/parliament-size-followup.md`）: 結果調を第 45〜49 回に拡張、IPU に役割の 5 属性を追加、WDI 名目 GDP を結線。R6（H3d 頑健・H3e 記述・H4c 整合・H4d 記述）: `reports/2026-10-28-r6-pr-history.md`。R7（H2c 不支持・H5c 整合）: `reports/2026-10-28-r7-roles-gdp.md`。
 - ⑧ 追加分析 2 回目（2026-10-28 夕）: ParlGov（Dataverse）・WDI 人口・英 Bills API・仏 AN ドシエを結線。R8（H2d 不支持: 議員立法シェアは英 21.5% ≈ 日 21.8% < 仏 50.9%）: `reports/2026-10-28-r8-member-bills.md`。R9（H6b 不支持: 1990 年以降の定数変更率 × 人口変化率 r = 0.51。**R4 の「人口減少国で減らしたのは日本のみ」を撤回**）: `reports/2026-10-28-r9-seats-history.md`。
 - ⑨ R10（2026-10-28 夜、ユーザー提起 H2e「官僚が多い国ほど議員は少ないか」）: ILOSTAT を結線。ρ = +0.33 で向きは逆（議員が少ない国は公務就業者も少ない）、判定は事前基準で「中間」: `reports/2026-10-28-r10-bureaucracy.md`。
-- 未着手: 独・米・韓の法案 API（鍵が要る）、第 42〜44 回の結果調（PDF のみ）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）、規模を補正した官僚数 × 議員数。
+- ⑩ R11〜R13（2026-10-29、「削減の是非」の立場を支える根拠）: R11（H8 整合: 定数維持＋修正サンラグで Gallagher −2.33 pt、H9: 職員を上位 3 分の 1 に上げる費用 16〜25 億円 ≈ 45 減の節約額、H10: 兼任率 1.24 → 1.37）、R12（H11 整合: 289 でも 2040 年に係数込み 2.24 倍）、R13（H7: イタリア不支持、ハンガリー判定不能）。立場の文書: `reports/2026-10-29-position-parliament-size.md`。H3f（2000 年の前後）は第 42・43 回の資料が無く対象外。
+- 未着手: 独・米・韓の法案 API（鍵が要る）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）、規模を補正した官僚数 × 議員数、削減後の審査の質（修正率・審議時間）。
 
 ## テーマ固有の規約
 - 「議員数」は定数（statutory）と現員（current）を列で分け、混ぜない。上院の選出方法（designation_mode）を注記できるよう議院単位で持つ。
