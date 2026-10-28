@@ -234,3 +234,70 @@ def test_worldbank_gdp_is_wired_as_a_single_document_source() -> None:
             "source": worldbank.SOURCE,
         }
     ]
+
+
+def test_ukbills_and_fran_are_wired_end_to_end() -> None:
+    import io
+    import json
+    import zipfile
+
+    from theme_parliament_size import fran, ukbills
+    from theme_parliament_size.pipeline import FRAN_MART, UKBILLS_MART
+
+    def bill(bid: int, t: int, act: bool) -> dict[str, object]:
+        stage = (
+            {"stageId": 11, "stageSittings": [{"date": "2024-05-24T00:00:00"}]}
+            if act
+            else {"stageId": 7, "stageSittings": []}
+        )
+        return {
+            "billId": bid,
+            "shortTitle": "x",
+            "billTypeId": t,
+            "isAct": act,
+            "currentStage": stage,
+        }
+
+    p1 = json.dumps({"items": [bill(1, 1, True)], "totalResults": 150}).encode()
+    p2 = json.dumps({"items": [bill(2, 7, False)], "totalResults": 150}).encode()
+
+    def fr_zip(uid: str) -> bytes:
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as z:
+            z.writestr(
+                f"json/dossierParlementaire/{uid}.json",
+                json.dumps(
+                    {
+                        "dossierParlementaire": {
+                            "uid": uid,
+                            "procedureParlementaire": {"libelle": "Proposition de loi ordinaire"},
+                            "actesLegislatifs": {
+                                "acteLegislatif": [
+                                    {"codeActe": "AN1-DEPOT", "texteAssocie": "PIONANR5L17B0001"},
+                                    {"codeActe": "PROM-PUB", "dateActe": "2026-04-21T00:00:00"},
+                                ]
+                            },
+                        }
+                    }
+                ),
+            )
+        return buf.getvalue()
+
+    responses = {
+        ukbills.url(1): p1,
+        ukbills.url(2): p2,
+        fran.url(16): fr_zip("A"),
+        fran.url(17): fr_zip("B"),
+    }
+    ctx = make_ctx(responses, sources=frozenset({ukbills.SOURCE, fran.SOURCE}))
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert len(fetched.written) == 4 and fetched.skipped == ()
+    PIPELINE.run(Stage.STAGE, ctx)
+    marted = PIPELINE.run(Stage.MART, ctx)
+    assert marted.written == (UKBILLS_MART, FRAN_MART)
+    assert [r["bill_id"] for r in ctx.tables.read_table(UKBILLS_MART)] == [1]
+    fr_rows = ctx.tables.read_table(FRAN_MART)
+    assert [(r["uid"], r["legislature"], r["origin"]) for r in fr_rows] == [
+        ("A", 16, "member"),
+        ("B", 17, "member"),
+    ]

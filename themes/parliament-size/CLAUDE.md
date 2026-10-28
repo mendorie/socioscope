@@ -24,7 +24,13 @@ src/theme_parliament_size/
                 全国行で検算）、`build_mart`。人口推計 長期時系列 表 1（`LONGPOP_URL`、1920–2000）: `parse_longpop`、`build_longpop_mart`
   mof.py        財務省 令和 7 年度 一般会計予算（衆参修正後）PDF: `pdf_pages`（pypdf、AES を空パスワードで復号）、`parse`（所管別内訳の
                 数値行を `ORGANS` の順に割り当て、主要行の合計 = 合計行で検算）、`build_mart`
-  worldbank.py  World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨、2005–2025）: `URL`/`RAW_NAME`/`parse`（[meta, data]、ページ分割は ValueError）/`build_mart`
+  worldbank.py  World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨、2005–2025）と `SP.POP.TOTL`（人口、1980–2025）: `URL`/`POP_URL`、
+                `parse`（[meta, data]、ページ分割は ValueError）/`parse_population`/`build_mart`/`build_population_mart`
+  parlgov.py    ParlGov 2024（Harvard Dataverse `view_election.tab`、CC0）: `URL`/`RAW_NAME`/`parse`（parliament 選挙 × 国 で 1 行、seats_total）/`build_mart`
+  ukbills.py    UK Parliament Bills API: `url(page)`/`raw_name`/`has_next`（totalResults）/`parse`（法案 1 行、isAct なら Royal Assent 日を必須）/
+                `origin_of`（billTypeId → government/member/other）/`build_mart`（成立法案のみ）
+  fran.py       仏 国民議会 Dossiers législatifs zip（第 16・17 期）: `url(leg)`/`raw_name`/`is_law`/`parse`（ドシエ 1 行: 手続・提出種別 PRJL/PION・公布日）/
+                `build_mart`（公布済みのみ、立法期をまたぐ uid は新しい方）
   clb.py        内閣法制局「法律案の提出・成立件数一覧」HTML: `parse`（html.parser で表を走査、「第 N 回（種別）」と
                 「（継続 n 件） m 件」を読み、計 = 閣法 ＋ 議員立法 で検算）、`build_mart`（議員立法の成立シェア付き）
   jp_member_costs.csv   議員 1 人当たりの法定経費（歳費・調査研究広報滞在費・立法事務費・秘書給与の別表）。出典列あり、手入力
@@ -35,7 +41,9 @@ src/theme_parliament_size/
                 a20261027_r2_pr_blocks.py（H3・H3b・H3c・H4・H4b、図 3 枚。アダムズ方式で現行 176・289 を再現してから試算）、
                 a20261027_r3_cost.py（H5・H5b、図 2 枚）、a20261027_r4_history.py（H6、図 2 枚）、a20261027_r5_roles.py（H2、図 2 枚）、
                 a20261028_r6_pr_history.py（事後追加 H3d・H3e・H4c・H4d、7 選挙の比例試算と小選挙区の格差の下限、図 3 枚）、
-                a20261028_r7_roles_gdp.py（事後追加 H2c・H5c、質問主意書と議会費の対 GDP 比、図 2 枚）
+                a20261028_r7_roles_gdp.py（事後追加 H2c・H5c、質問主意書と議会費の対 GDP 比、図 2 枚）、
+                a20261028_r8_member_bills.py（事後追加 H2d、日英仏の議員立法シェア、図 1 枚）、
+                a20261028_r9_seats_history.py（事後追加 H6b、ParlGov 1990– の定数変更 × 人口変化、図 1 枚。R4 の各国判定を上書き）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -60,6 +68,10 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 | `staged/mof/budget_by_organ` → `marts/jp_budget_by_organ` | 年度×段階×所管 | iso3, fy(2024/2025), stage(initial/revised), organ（皇室費・国会・…・予備費・合計。内閣府の内訳 2 行は in_total=false）, in_total, amount_100m_jpy, source。46 行 |
 | `staged/clb/bill_counts` → `marts/jp_bill_counts` | 国会回次 | iso3, session(183–221), kind（常会／臨時会／特別会）, start_date, year, cabinet_submitted, cabinet_enacted, member_submitted, member_enacted, member_share_of_enacted, source。39 行 |
 | `staged/worldbank/gdp_lcu` → `marts/wdi_gdp_lcu` | 経済体×年 | iso3, year(2005–2025), country, gdp_lcu（名目、現地通貨）, source(`worldbank_wdi`)。4,396 行 |
+| `staged/worldbank/population` → `marts/wdi_population` | 経済体×年 | iso3, year(1980–2025), country, population, source。11,996 行 |
+| `staged/parlgov/elections` → `marts/parlgov_elections` | 国×議会選挙 | iso3, year, election_date, election_id, seats_total（選挙時の実議席）, source(`parlgov`)。845 行・37 か国 |
+| `staged/ukbills/bills` → `marts/uk_acts` | 法案 | staged: bill_id, title, bill_type_id, bill_type, origin, is_act, royal_assent_date, introduced_session_id（4,065 行）。mart は成立法案のみ: iso3(GBR), year, royal_assent_date, bill_id, title, bill_type_id, bill_type, origin, source。695 行 |
+| `staged/fran/dossiers` → `marts/fr_laws` | 法律ドシエ | staged: uid, legislature, procedure, origin, promulgated, promulgation_date。mart は公布済みのみ: iso3(FRA), year, promulgation_date, uid, legislature, procedure, origin, source。297 行 |
 | `marts/parliament_size_panel` | iso3×year×unit×metric×source（long） | **未作成**（行ができるまで書かない） |
 
 ## 状態
@@ -70,7 +82,8 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 - ⑥ 内閣法制局 法律案件数 実装済み。R5 report（H2 (a) 整合 ρ = −0.42、(b) 判定不能）: `reports/2026-10-27-r5-roles.md`。
 - **総括（H1〜H6 を「支える／支えない／規範の選択」に整理）**: `reports/2026-10-27-summary-parliament-size.md`（R6・R7 の結果を 2026-10-28 に追記）。
 - ⑦ 追加分析（2026-10-28、事後追加の仮説。`docs/specs/parliament-size-followup.md`）: 結果調を第 45〜49 回に拡張、IPU に役割の 5 属性を追加、WDI 名目 GDP を結線。R6（H3d 頑健・H3e 記述・H4c 整合・H4d 記述）: `reports/2026-10-28-r6-pr-history.md`。R7（H2c 不支持・H5c 整合）: `reports/2026-10-28-r7-roles-gdp.md`。
-- 未着手: H2 (b) の各国比較（議員立法シェア。各国議会の年報 PDF が要る）、各国の定数履歴の深掘り（ParlGov は 2026-10-28 時点でボット UA に 403／404）、第 42〜44 回の結果調（PDF のみ）、選挙区単位の有権者数（H4c の係数の検証）。
+- ⑧ 追加分析 2 回目（2026-10-28 夕）: ParlGov（Dataverse）・WDI 人口・英 Bills API・仏 AN ドシエを結線。R8（H2d 不支持: 議員立法シェアは英 21.5% ≈ 日 21.8% < 仏 50.9%）: `reports/2026-10-28-r8-member-bills.md`。R9（H6b 不支持: 1990 年以降の定数変更率 × 人口変化率 r = 0.51。**R4 の「人口減少国で減らしたのは日本のみ」を撤回**）: `reports/2026-10-28-r9-seats-history.md`。
+- 未着手: 独・米・韓の法案 API（鍵が要る）、第 42〜44 回の結果調（PDF のみ）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）。
 
 ## テーマ固有の規約
 - 「議員数」は定数（statutory）と現員（current）を列で分け、混ぜない。上院の選出方法（designation_mode）を注記できるよう議院単位で持つ。

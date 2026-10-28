@@ -19,12 +19,21 @@ SOURCE = "worldbank_wdi"
 LICENSE = "CC BY 4.0 (World Bank WDI, https://datacatalog.worldbank.org/public-licenses)"
 INDICATOR = "NY.GDP.MKTP.CN"  # GDP (current LCU)
 DATE_RANGE = "2005:2025"
-URL = (
-    f"https://api.worldbank.org/v2/country/all/indicator/{INDICATOR}"
-    f"?format=json&per_page=20000&date={DATE_RANGE}"
-)
+BASE = "https://api.worldbank.org/v2/country/all/indicator"
+
+
+def indicator_url(indicator: str, date_range: str) -> str:
+    return f"{BASE}/{indicator}?format=json&per_page=20000&date={date_range}"
+
+
+URL = indicator_url(INDICATOR, DATE_RANGE)
 RAW_NAME = "gdp_lcu_2005_2025.json"
 MAGIC = b"["
+# 人口（H6b: 定数変更の直前 10 年の人口変化率）。別 raw・別 mart（`value` 列名は population）
+POP_INDICATOR = "SP.POP.TOTL"
+POP_DATE_RANGE = "1980:2025"
+POP_URL = indicator_url(POP_INDICATOR, POP_DATE_RANGE)
+POP_RAW_NAME = "population_1980_2025.json"
 
 
 class _Ref(BaseModel):
@@ -48,8 +57,8 @@ class _Meta(BaseModel):
     total: int
 
 
-def parse(payload: bytes) -> list[dict[str, object]]:
-    """[meta, data] → [{iso3, country, year, gdp_lcu}]（値のある国のみ、iso3・年でソート）。"""
+def parse(payload: bytes, value_col: str = "gdp_lcu") -> list[dict[str, object]]:
+    """[meta, data] → [{iso3, country, year, <value_col>}]（値のある国のみ、iso3・年でソート）。"""
     try:
         doc = json.loads(payload)
     except ValueError as e:
@@ -76,23 +85,33 @@ def parse(payload: bytes) -> list[dict[str, object]]:
                 "iso3": p.countryiso3code,
                 "country": p.country.value,
                 "year": int(p.date),
-                "gdp_lcu": p.value,
+                value_col: p.value,
             }
         )
     rows.sort(key=lambda r: (str(r["iso3"]), int(str(r["year"]))))
     return rows
 
 
-def build_mart(staged: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+def parse_population(payload: bytes) -> list[dict[str, object]]:
+    return parse(payload, value_col="population")
+
+
+def build_mart(
+    staged: Sequence[Mapping[str, object]], value_col: str = "gdp_lcu"
+) -> list[dict[str, object]]:
     out = [
         {
             "iso3": r["iso3"],
             "year": int(str(r["year"])),
             "country": r["country"],
-            "gdp_lcu": r["gdp_lcu"],
+            value_col: r[value_col],
             "source": SOURCE,
         }
         for r in staged
     ]
     out.sort(key=lambda r: (str(r["iso3"]), int(str(r["year"]))))
     return out
+
+
+def build_population_mart(staged: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+    return build_mart(staged, value_col="population")

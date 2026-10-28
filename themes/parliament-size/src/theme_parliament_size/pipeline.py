@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_parliament_size import clb, estat, ipu, mof, soumu, worldbank
+from theme_parliament_size import clb, estat, fran, ipu, mof, parlgov, soumu, ukbills, worldbank
 
 THEME = "parliament-size"
 PANEL_TABLE = "marts/parliament_size_panel"
@@ -51,6 +51,10 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_single(ctx, written, skipped, MOF)
     written, skipped = _fetch_single(ctx, written, skipped, CLB)
     written, skipped = _fetch_single(ctx, written, skipped, WDI)
+    written, skipped = _fetch_single(ctx, written, skipped, WDI_POP)
+    written, skipped = _fetch_single(ctx, written, skipped, PARLGOV)
+    written, skipped = _fetch_ukbills(ctx, written, skipped)
+    written, skipped = _fetch_fran(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -63,6 +67,10 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_single(ctx, written, skipped, MOF)
     written, skipped = _stage_single(ctx, written, skipped, CLB)
     written, skipped = _stage_single(ctx, written, skipped, WDI)
+    written, skipped = _stage_single(ctx, written, skipped, WDI_POP)
+    written, skipped = _stage_single(ctx, written, skipped, PARLGOV)
+    written, skipped = _stage_ukbills(ctx, written, skipped)
+    written, skipped = _stage_fran(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -75,6 +83,10 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_single(ctx, written, skipped, MOF)
     written, skipped = _mart_single(ctx, written, skipped, CLB)
     written, skipped = _mart_single(ctx, written, skipped, WDI)
+    written, skipped = _mart_single(ctx, written, skipped, WDI_POP)
+    written, skipped = _mart_single(ctx, written, skipped, PARLGOV)
+    written, skipped = _mart_ukbills(ctx, written, skipped)
+    written, skipped = _mart_fran(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it.
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -447,6 +459,28 @@ WDI = SingleDoc(
     table="staged/worldbank/gdp_lcu",
     mart="marts/wdi_gdp_lcu",
 )
+WDI_POP = SingleDoc(
+    source=worldbank.SOURCE,
+    license=worldbank.LICENSE,
+    url=worldbank.POP_URL,
+    raw_name=worldbank.POP_RAW_NAME,
+    magic=worldbank.MAGIC,
+    parse=worldbank.parse_population,
+    build_mart=worldbank.build_population_mart,
+    table="staged/worldbank/population",
+    mart="marts/wdi_population",
+)
+PARLGOV = SingleDoc(
+    source=parlgov.SOURCE,
+    license=parlgov.LICENSE,
+    url=parlgov.URL,
+    raw_name=parlgov.RAW_NAME,
+    magic=parlgov.MAGIC,
+    parse=parlgov.parse,
+    build_mart=parlgov.build_mart,
+    table="staged/parlgov/elections",
+    mart="marts/parlgov_elections",
+)
 
 
 def _fetch_single(
@@ -508,4 +542,153 @@ def _mart_single(
         return written, skipped
     ctx.tables.write_table(doc.mart, rows)
     written.append(doc.mart)
+    return written, skipped
+
+
+# ---- UK Parliament Bills API（Take=100 でページを辿る。IsAct はクライアント側で絞る）------
+
+UKBILLS_TABLE = "staged/ukbills/bills"
+UKBILLS_MART = "marts/uk_acts"
+
+
+def _fetch_ukbills(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(ukbills.SOURCE):
+        return written, skipped
+    for page in range(1, ukbills.MAX_PAGES + 1):
+        url, name = ukbills.url(page), ukbills.raw_name(page)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            break
+        if not payload.lstrip().startswith(b"{"):
+            skipped.append(f"{name}: non-JSON payload")
+            break
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=ukbills.SOURCE,
+            name=name,
+            url=url,
+            license=ukbills.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+        if not ukbills.has_next(payload, page):
+            break
+    return written, skipped
+
+
+def _stage_ukbills(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(ukbills.SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    for page in range(1, ukbills.MAX_PAGES + 1):
+        name = ukbills.raw_name(page)
+        payload = ctx.raw.get(theme=THEME, source=ukbills.SOURCE, name=name)
+        if payload is None:
+            if page == 1:
+                skipped.append(f"{name}: raw missing (run fetch)")
+            break
+        try:
+            rows.extend({**r, "source": ukbills.SOURCE} for r in ukbills.parse(payload, page))
+        except ValueError as e:
+            skipped.append(f"{name}: {e}")
+            rows = []
+            break
+    if rows:
+        ctx.tables.write_table(UKBILLS_TABLE, rows)
+        written.append(UKBILLS_TABLE)
+    return written, skipped
+
+
+def _mart_ukbills(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(ukbills.SOURCE):
+        return written, skipped
+    if UKBILLS_TABLE not in ctx.tables.list_tables():
+        skipped.append(f"{UKBILLS_MART}: staged missing (run stage)")
+        return written, skipped
+    try:
+        rows = ukbills.build_mart(ctx.tables.read_table(UKBILLS_TABLE))
+    except ValueError as e:
+        skipped.append(f"{UKBILLS_MART}: {e}")
+        return written, skipped
+    ctx.tables.write_table(UKBILLS_MART, rows)
+    written.append(UKBILLS_MART)
+    return written, skipped
+
+
+# ---- フランス国民議会 Dossiers législatifs（立法期ごとの zip）------------------------------
+
+FRAN_TABLE = "staged/fran/dossiers"
+FRAN_MART = "marts/fr_laws"
+
+
+def _fetch_fran(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(fran.SOURCE):
+        return written, skipped
+    for leg in fran.LEGISLATURES:
+        url, name = fran.url(leg), fran.raw_name(leg)
+        try:
+            payload = ctx.fetcher.fetch(url)
+        except FetchError as e:
+            skipped.append(f"{name}: {e}")
+            continue
+        if not payload.startswith(fran.MAGIC):
+            skipped.append(f"{name}: non-zip payload")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=fran.SOURCE,
+            name=name,
+            url=url,
+            license=fran.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_fran(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(fran.SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    for leg in fran.LEGISLATURES:
+        name = fran.raw_name(leg)
+        payload = ctx.raw.get(theme=THEME, source=fran.SOURCE, name=name)
+        if payload is None:
+            skipped.append(f"{name}: raw missing (run fetch)")
+            continue
+        try:
+            rows.extend({**r, "source": fran.SOURCE} for r in fran.parse(payload, leg))
+        except ValueError as e:
+            skipped.append(f"{name}: layout not recognised ({e})")
+    if rows:
+        ctx.tables.write_table(FRAN_TABLE, rows)
+        written.append(FRAN_TABLE)
+    return written, skipped
+
+
+def _mart_fran(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    if not ctx.wants(fran.SOURCE):
+        return written, skipped
+    if FRAN_TABLE not in ctx.tables.list_tables():
+        skipped.append(f"{FRAN_MART}: staged missing (run stage)")
+        return written, skipped
+    try:
+        rows = fran.build_mart(ctx.tables.read_table(FRAN_TABLE))
+    except ValueError as e:
+        skipped.append(f"{FRAN_MART}: {e}")
+        return written, skipped
+    ctx.tables.write_table(FRAN_MART, rows)
+    written.append(FRAN_MART)
     return written, skipped
