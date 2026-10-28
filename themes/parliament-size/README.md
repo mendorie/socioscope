@@ -22,4 +22,5 @@ uv run python themes/parliament-size/src/theme_parliament_size/analysis/a2026102
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261029_r15_small_parties.py # R15（事後追加 H14: 小政党の入口機能・阻止条項・泡沫政党の票）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261029_r16_government_size.py # R16（番外編 H15: 議会の大きさ × 政府の大きさ、図 2 枚）
 uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261030_r17_system_oversight_trust.py # R17（番外編 H16: 選挙制度・議員 1 人当たりの監視対象・信頼、図 3 枚）
+uv run python themes/parliament-size/src/theme_parliament_size/analysis/a20261030_r18_distrust_and_cuts.py # R18（番外編 H17: 削減提案の手入力表 × 立法府への信頼、図 1 枚）
 ```

@@ -38,6 +38,7 @@ src/theme_parliament_size/
   jp_committee_seats.csv  衆院 常任委員会 17 の委員定数（衆議院規則 第 92 条）。出典列あり、手入力
   intl_thresholds.csv     OECD 比例・混合制 29 か国の法定阻止条項（各国選挙法・ACE）。出典列あり、手入力
   federal_states.csv      OECD の連邦制 8 か国のフラグ（Forum of Federations）。出典列あり、手入力
+  seat_reduction_proposals.csv  OECD 15 か国の 2000 年以降の下院定数削減の提案・実現（年、状態、定数、提案主体、formal、理由）。出典列あり、手入力
   oecd.py       OECD Data Explorer SDMX-JSON（Government at a Glance 2025）: `Spec`（MEASURE → (metric, 単位)、次元フィルタ、指標別の上書き）、
                 `URL`/`PF_SPEC`（公的財政: GE・GR の % GDP、GE_POP の USD PPP/人、S13）、`TRUST_URL`/`TRUST_SPEC`（信頼調査: TRUST_LE・TRUST_NG は
                 尺度 HMH、TRUST_PVGA は LIK）、`parse`（観測キーを次元の値に戻し ISO3 の国のみ long に）/`parse_trust`/`build_mart`（重複キーは ValueError）
@@ -63,7 +64,8 @@ src/theme_parliament_size/
                 a20261029_r14_pay_and_workload.py（事後追加 H12・H13、基本給の相対水準と稼働日数、図 2 枚）、
                 a20261029_r15_small_parties.py（事後追加 H14a〜c、小政党の入口機能・阻止条項・泡沫政党の票）、
                 a20261029_r16_government_size.py（番外編 H15a〜d、議会の大きさ × 一般政府支出比、図 2 枚）、
-                a20261030_r17_system_oversight_trust.py（番外編 H16a〜c、選挙制度の層別・議員 1 人当たり政府支出・立法府への信頼、図 3 枚）
+                a20261030_r17_system_oversight_trust.py（番外編 H16a〜c、選挙制度の層別・議員 1 人当たり政府支出・立法府への信頼、図 3 枚）、
+                a20261030_r18_distrust_and_cuts.py（番外編 H17a〜c、削減提案の手入力表 × 信頼、図 1 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -118,6 +120,7 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 - ⑫ R15（2026-10-29 夜、ユーザー提起「少数政党保護は守るべき原則か」）: H14a 整合（1〜3 議席で入った 3 政党中 2 が次回 5 議席以上）、H14b 整合（29 か国中 22 か国が法定閾値 3% 以上、日本の実効閾値は 6.6〜12.3%）: `reports/2026-10-29-r15-small-parties.md`。立場文書のキーメッセージを「人数ではなく報酬・手当の水準と透明性」に書き換え。
 - ⑬ R16（2026-10-29 深夜、番外編。ユーザー提起「議会の大きさは小さな政府／大きな政府と関係するか」）: OECD Government at a Glance 2025 を結線。H15a 不支持（素の比率 ρ = +0.16）、H15b 不支持（立方根補正比で ρ = +0.34、相関はむしろ現れる）、H15c 正、H15d 整合: `reports/2026-10-29-r16-government-size.md`。本編の記事には含めない。
 - ⑭ R17（2026-10-30、番外編の深掘り）: OECD Trust Survey を結線。H16a 選挙制度（Persson–Tabellini 再現せず、比例代表制内 ρ = +0.21 中間）、H16b 議員 1 人当たり政府支出（日本 51.7 億 USD で 2 位、整合）、H16c 議会の大きさ × 信頼（+0.23 中間、「小さい議会ほど信頼」は不支持）: `reports/2026-10-30-r17-system-oversight-trust.md`。
+- ⑮ R18（2026-10-30 夜、番外編。ユーザー提起「議員への不信は海外でも削減の推進力か」）: 手入力表 `seat_reduction_proposals.csv` × OECD 信頼。H17a 整合（提案あり 31.1% vs なし 41.5%）だが法案・国民投票に限ると不支持、H17b 不信・費用理由の施行率 23%、H17c 判定不能（イタリア 2021 年値なし）: `reports/2026-10-30-r18-distrust-and-cuts.md`。
 - 未着手: 独・米・韓の法案 API（鍵が要る）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）、規模を補正した官僚数 × 議員数、削減後の審査の質（修正率・審議時間）、手当込みの総報酬の国際比較（IPU に項目なし）。
 
 ## テーマ固有の規約

@@ -1,0 +1,18 @@
+iso3,country,year,status,from_seats,to_seats,formal,proposer,reason,note,source
+ITA,Italy,2019,enacted,630,400,1,五つ星運動と連立与党（憲法改正、2020 年 9 月国民投票 賛成 70%）,不信・費用,「政治のコスト」「カスタ」批判。2022 年総選挙から施行,Wikipedia「2020 Italian constitutional referendum」; ECPR The Loop (2020)（2026-10-30 確認）
+GBR,United Kingdom,2010,repealed,650,600,1,保守党・自民党連立政権（Parliamentary Voting System and Constituencies Act 2011）,費用,「政治のコスト削減」。区割り審査が 2 度止まり 2020 年の Parliamentary Constituencies Act で 650 に戻す,House of Commons Library CBP-8921; Wikipedia「2018 periodic review of Westminster constituencies」（2026-10-30 確認）
+FRA,France,2018,proposed,577,404,1,マクロン大統領・フィリップ内閣（憲法改正案、30% 減）,効率,上院との合意が得られず見送り,Europe 1 (2018); Institut Montaigne; iFRAP（2026-10-30 確認）
+IRL,Ireland,2011,enacted,166,158,1,統一アイルランド党・労働党政権（Electoral (Amendment) Act 2011・2013）,不信・費用,金融危機後。「政治への冷笑に応え、率先して身を切る」。2016 年選挙から 158。2017 年に 160、2024 年に 174 へ戻す,merrionstreet.ie（Hogan 大臣声明）; Wikipedia「Electoral (Amendment) (Dáil Constituencies) Act 2013」（2026-10-30 確認）
+NLD,Netherlands,2010,proposed,150,100,1,ルッテ第 1 次内閣（VVD・CDA 連立合意、2011 年に憲法改正案を閣議決定）,費用,「小さな政府」の一環。第 2 読会の 3 分の 2 に届かず不成立,parlement.com「Hoeveel zetels moet de Tweede Kamer hebben?」; Kamerstuk 33345（2026-10-30 確認）
+DEU,Germany,2023,enacted,736,630,1,SPD・緑の党・FDP 連立（選挙法改正、2023 年 3 月）,効率・肥大化是正,超過議席で 598 → 736 に膨らんだ議会の上限設定。費用も理由。2025 年選挙から施行,OSW「The game has new rules」(2023); FDP 説明資料 (2024)（2026-10-30 確認）
+HUN,Hungary,2011,enacted,386,199,1,フィデス政権（2011 年選挙法 Act CCIII）,効率・制度改革,選挙制度の全面改正の一部。2014 年選挙から施行。区割りの党派性を OSCE が批判,OSCE/ODIHR 2014 年選挙監視報告; Wikipedia「2014 Hungarian parliamentary election」（2026-10-30 確認）
+MEX,Mexico,2010,proposed,500,400,1,カルデロン大統領（政治改革案）,効率,成立せず,Americas Quarterly「Major political reforms proposed in Mexico」(2010)（2026-10-30 確認）
+MEX,Mexico,2025,proposed,500,500,1,シェインバウム政権（選挙改革案。上院 128 → 96、比例下院議員の直接選出化）,費用・不信,下院定数は維持し上院を 25% 減。2026 年 3 月に下院で 3 分の 2 に届かず否決,Itaú Macro Vision (2025-08); RANE Worldview (2026-03-12)（2026-10-30 確認）
+PRT,Portugal,2006,proposed,230,180,0,社会民主党（PSD）,費用・効率,憲法の下限 180 への削減。社会党の支持を得られず。2023 年の憲法改正でも上限 215 を提案し否決,Observador; rr.pt (2023-05-03); Diário de Notícias（2026-10-30 確認）
+KOR,Republic of Korea,2024,proposed,300,250,0,国民の力（韓東勲 非常対策委員長、総選挙公約）,不信,「300 人が税金に見合う働きをしていないと国民は感じている」。総選挙で敗北し提出されず,聯合ニュース・newsis (2024-01-16); Korea Times (2024-02)（2026-10-30 確認）
+AUT,Austria,2012,proposed,183,165,0,社民党・国民党連立（緊縮パッケージ）,費用,270 億ユーロの緊縮策の一部。成立せず（2013 年選挙は 183 で実施）,vienna.at「Sparpaket: Künftig weniger Minister und Parlamentarier」(2012); Wikipedia「2013 Austrian legislative election」（2026-10-30 確認）
+GRC,Greece,2014,proposed,300,200,0,新民主主義党（サマラス首相、憲法改正の検討項目）,効率・費用,200〜250 への削減を検討。成立せず,constitutionnet.org (2014-12); To Vima (2014-04-29); Protothema (2014)（2026-10-30 確認）
+CHL,Chile,2019,proposed,155,120,1,ピニェラ政権（憲法改正案。上院 50 → 40）,費用・効率,2015 年の増員（120 → 155）の巻き戻し。5 分の 3 の定足数に届かず。2024 年にも同趣旨の法案,Emol (2019-12-05); CNN Chile (2019); Diario Constitucional 2024 年法案（2026-10-30 確認）
+POL,Poland,2010,proposed,460,230,0,市民プラットフォーム（下院半減・上院廃止の党綱領）,不信・費用,賭博スキャンダル後。憲法改正に 307 票が要り成立せず。PiS は 360・50 を対案,Rzeczpospolita「PO chce odchudzić Sejm i Senat」(2010); PAP（2026-10-30 確認）
+JPN,Japan,2012,enacted,480,475,1,民主・自民・公明（「身を切る改革」の合意、2013 年 0 増 5 減、2016 年 10 減）,不信・費用,2014 年選挙から 475、2017 年選挙から 465（アダムズ方式への移行の一部）,衆議院 HP 定数の変遷; 公職選挙法改正（2013・2016）; R4・R9
+JPN,Japan,2025,proposed,465,420,1,自民党・日本維新の会（連立合意「1 割減」、2026 年 6 月の比例 45 減法案、10 月の 31 減＋修正サンラグ案）,費用・不信,人口減少と「身を切る改革」。2026 年 10 月時点で未成立,連立合意（2025-10）; 本テーマ R1〜R15
