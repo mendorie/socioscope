@@ -631,6 +631,13 @@
 - 取得方法（adapter 名、レート制限）: `theme_parliament_size.oecd`（`TRUST_URL`/`parse_trust`/`build_mart`、`Spec.metric_filters` で指標別の尺度）、`pipeline.OECD_TRUST`（`SingleDoc`）。
 - 既知の欠損・断絶・定義変更: `TRUST_PVGA` は単位が PT_RESP と宣言されているが値は 0〜1 の割合（最大 0.6）。分析側で 100 倍している。日本・オーストリアは 2021 年のみ。
 
+### Standard Eurobarometer Volume A（data.europa.eu、parliament-size H17c: 国の議会への信頼、半年ごと）
+- URL / API: data.europa.eu の検索 API（`https://data.europa.eu/api/hub/search/search?q=Standard+Eurobarometer+NN`）で各波のデータセットを探し、配布物「Volume A」（xlsx、または xls を含む zip）を `https://webgate.ec.europa.eu/ebsm/api/public/odp/download?key=...`（古い波は `/eurobarometer/api/...`）から取る。鍵は波ごとに固定で `eurobarometer.WAVES` に記録。
+- 対象指標・粒度: 国 × 波。EB91（2019 年春）〜EB103（2025 年春）の 13 波、QA6 系列「(NATIONALITY PARLIAMENT) への信頼」の tend to trust %。EU27 平均を含む（2019 年の 2 波は「EU28-UK」列を EU27 として読む）。
+- ライセンス・利用規約（確認日）: 欧州委員会の再利用方針（Decision 2011/833/EU、出典表示で再利用可。data.europa.eu のデータセット頁、2026-10-31 確認）。出典表記「European Commission, Standard Eurobarometer 91–103, Volume A, via data.europa.eu」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.eurobarometer`（`WAVES`/`parse`/`parse_table`/`build_mart`）、`pipeline._fetch/_stage/_mart_eurobarometer`。1 波 1 ファイル（0.4〜1.1 MB）。
+- 既知の欠損・断絶・定義変更: 表の様式が波で違う（xls／xlsx、「Tend to trust」の行に割合が入る波と次の行に入る波、割合が 0〜1 か %）。`parse_table` が吸収する。EB91・92 は UK を含む（EU28）。OECD Trust Survey とは設問・尺度が違い水準は比べられない。
+
 ### ParlGov 2024 Release（Harvard Dataverse、parliament-size H6b: 選挙ごとの総議席数 1990–）
 - URL / API: `https://dataverse.harvard.edu/api/access/datafile/10437092`（`view_election.tab`、doi:10.7910/DVN/2VZ5ZC、1.2 MB、鍵不要）。parlgov.org 直接（`/data/`、`static/data/*.csv`）は 2026-10-28 時点でボット UA に 403／404。
 - 対象指標・粒度: 選挙 × 政党（得票・議席・総議席）。採用したのは parliament 選挙の 国 × 選挙 × `seats_total`（845 選挙・37 か国）。

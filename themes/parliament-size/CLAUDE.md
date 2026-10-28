@@ -42,6 +42,8 @@ src/theme_parliament_size/
   oecd.py       OECD Data Explorer SDMX-JSON（Government at a Glance 2025）: `Spec`（MEASURE → (metric, 単位)、次元フィルタ、指標別の上書き）、
                 `URL`/`PF_SPEC`（公的財政: GE・GR の % GDP、GE_POP の USD PPP/人、S13）、`TRUST_URL`/`TRUST_SPEC`（信頼調査: TRUST_LE・TRUST_NG は
                 尺度 HMH、TRUST_PVGA は LIK）、`parse`（観測キーを次元の値に戻し ISO3 の国のみ long に）/`parse_trust`/`build_mart`（重複キーは ValueError）
+  eurobarometer.py  Standard Eurobarometer Volume A（data.europa.eu、13 波）: `WAVES`（波・調査時期・URL・raw 名）/`is_magic`（xlsx/zip か xls）/
+                `parse_table`（「Tend to trust」の行を % に揃える）/`parse(payload, wave)`（国の議会への信頼の表を long に）/`build_mart`
   kokkai.py     国会会議録検索システム API: `url(year, page)`/`raw_name`/`has_next`（nextRecordPosition）/`parse`（会議 1 行、衆議院のみ）/
                 `build_mart`（年 × plenary_days／committee_meetings／committee_days／sitting_days）
   clb.py        内閣法制局「法律案の提出・成立件数一覧」HTML: `parse`（html.parser で表を走査、「第 N 回（種別）」と
@@ -65,7 +67,7 @@ src/theme_parliament_size/
                 a20261029_r15_small_parties.py（事後追加 H14a〜c、小政党の入口機能・阻止条項・泡沫政党の票）、
                 a20261029_r16_government_size.py（番外編 H15a〜d、議会の大きさ × 一般政府支出比、図 2 枚）、
                 a20261030_r17_system_oversight_trust.py（番外編 H16a〜c、選挙制度の層別・議員 1 人当たり政府支出・立法府への信頼、図 3 枚）、
-                a20261030_r18_distrust_and_cuts.py（番外編 H17a〜c、削減提案の手入力表 × 信頼、図 1 枚）
+                a20261030_r18_distrust_and_cuts.py（番外編 H17a〜c、削減提案の手入力表 × 信頼、Eurobarometer でイタリアの前後、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -103,6 +105,7 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 | `staged/kokkai/meetings` → `marts/jp_hr_sitting_days` | 会議 → 年×指標 | staged: issue_id, date, name_of_meeting, session, is_plenary（約 6,900 行）。mart: iso3(JPN), year(2013–2025), metric（plenary_days／committee_meetings／committee_days／sitting_days）, value, source(`kokkai_ndl`)。52 行 |
 | `staged/oecd/gov_finance` → `marts/oecd_gov_finance` | 国×年×指標（long） | iso3, year(2007–2024), metric（gov_expenditure_pct_gdp／gov_revenue_pct_gdp／gov_expenditure_pcap_usd_ppp）, value（% of GDP または USD PPP/人、一般政府）, source(`oecd_gov_glance`)。2,250 行・43 か国 |
 | `staged/oecd/gov_trust` → `marts/oecd_gov_trust` | 国×年×指標（long） | iso3, year(2021・2023), metric（trust_legislature_pct／trust_national_government_pct／parliament_holds_gov_accountable_pct）, value（回答者 %。accountable は 0〜1 の割合）, source。131 行・33 か国 |
+| `staged/eurobarometer/trust_parliament` → `marts/eb_trust_parliament` | 国×波 | iso3（EU27・EU28 の集計を含む）, wave(91–103), year, season, fieldwork(yyyy-mm), metric(trust_national_parliament_pct), value（tend to trust %）, source(`eurobarometer`)。379 行・30 か国 |
 | `marts/parliament_size_panel` | iso3×year×unit×metric×source（long） | **未作成**（行ができるまで書かない） |
 
 ## 状態
@@ -120,7 +123,7 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 - ⑫ R15（2026-10-29 夜、ユーザー提起「少数政党保護は守るべき原則か」）: H14a 整合（1〜3 議席で入った 3 政党中 2 が次回 5 議席以上）、H14b 整合（29 か国中 22 か国が法定閾値 3% 以上、日本の実効閾値は 6.6〜12.3%）: `reports/2026-10-29-r15-small-parties.md`。立場文書のキーメッセージを「人数ではなく報酬・手当の水準と透明性」に書き換え。
 - ⑬ R16（2026-10-29 深夜、番外編。ユーザー提起「議会の大きさは小さな政府／大きな政府と関係するか」）: OECD Government at a Glance 2025 を結線。H15a 不支持（素の比率 ρ = +0.16）、H15b 不支持（立方根補正比で ρ = +0.34、相関はむしろ現れる）、H15c 正、H15d 整合: `reports/2026-10-29-r16-government-size.md`。本編の記事には含めない。
 - ⑭ R17（2026-10-30、番外編の深掘り）: OECD Trust Survey を結線。H16a 選挙制度（Persson–Tabellini 再現せず、比例代表制内 ρ = +0.21 中間）、H16b 議員 1 人当たり政府支出（日本 51.7 億 USD で 2 位、整合）、H16c 議会の大きさ × 信頼（+0.23 中間、「小さい議会ほど信頼」は不支持）: `reports/2026-10-30-r17-system-oversight-trust.md`。
-- ⑮ R18（2026-10-30 夜、番外編。ユーザー提起「議員への不信は海外でも削減の推進力か」）: 手入力表 `seat_reduction_proposals.csv` × OECD 信頼。H17a 整合（提案あり 31.1% vs なし 41.5%）だが法案・国民投票に限ると不支持、H17b 不信・費用理由の施行率 23%、H17c 判定不能（イタリア 2021 年値なし）: `reports/2026-10-30-r18-distrust-and-cuts.md`。
+- ⑮ R18（2026-10-30 夜、番外編。ユーザー提起「議員への不信は海外でも削減の推進力か」）: 手入力表 `seat_reduction_proposals.csv` × OECD 信頼。H17a 整合（提案あり 31.1% vs なし 41.5%）だが法案・国民投票に限ると不支持、H17b 不信・費用理由の施行率 23%、H17c は OECD では判定不能、Eurobarometer（13 波、2026-10-31 結線）で補完すると イタリア +5.9 pt vs EU27 +0.4 pt で整合（境界。政権交代と同時）: `reports/2026-10-30-r18-distrust-and-cuts.md`。
 - 未着手: 独・米・韓の法案 API（鍵が要る）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）、規模を補正した官僚数 × 議員数、削減後の審査の質（修正率・審議時間）、手当込みの総報酬の国際比較（IPU に項目なし）。
 
 ## テーマ固有の規約
