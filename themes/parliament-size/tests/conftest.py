@@ -58,6 +58,11 @@ def chamber(cid: str, cc: str, name: str, **over: object) -> dict[str, object]:
         "last_election": {"value": {"from": "2026-02-08T00:00:00.000Z"}, "annotation": None},
         "num_days_parl_plen": [rec(58, "2008-01-01", "2008-12-31"), rec(47, "2025-01-01")],
         "num_cham_perm_committees": [rec(17, "2026-02-18")],
+        "num_written_question_ask": [rec(967, "2008-01-01", "2008-12-31"), rec(1012, "2024-01-01")],
+        "members_government_number": [rec(76, "2013-01-01", "2013-12-31"), rec(70, "2025-01-01")],
+        "members_government_percentage": [rec(15.05, "2025-01-01")],
+        "is_carry_out_inquiries": [rec(True, "2013-01-01", "2022-12-31")],
+        "approx_num_government_app": [rec(274, "2022-01-01")],
         "age_average": [rec(55.1, "2026-02-18")],  # not of interest, must be dropped
     }
     attrs.update(over)

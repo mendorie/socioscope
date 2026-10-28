@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_parliament_size import clb, estat, ipu, mof, soumu
+from theme_parliament_size import clb, estat, ipu, mof, soumu, worldbank
 
 THEME = "parliament-size"
 PANEL_TABLE = "marts/parliament_size_panel"
@@ -50,6 +50,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_estat(ctx, written, skipped)
     written, skipped = _fetch_single(ctx, written, skipped, MOF)
     written, skipped = _fetch_single(ctx, written, skipped, CLB)
+    written, skipped = _fetch_single(ctx, written, skipped, WDI)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -61,6 +62,7 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_estat(ctx, written, skipped)
     written, skipped = _stage_single(ctx, written, skipped, MOF)
     written, skipped = _stage_single(ctx, written, skipped, CLB)
+    written, skipped = _stage_single(ctx, written, skipped, WDI)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -72,6 +74,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_estat(ctx, written, skipped)
     written, skipped = _mart_single(ctx, written, skipped, MOF)
     written, skipped = _mart_single(ctx, written, skipped, CLB)
+    written, skipped = _mart_single(ctx, written, skipped, WDI)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it.
     return StageResult(stage=Stage.MART, written=tuple(written), skipped=tuple(skipped))
@@ -178,8 +181,8 @@ def _fetch_soumu(
             except FetchError as e:
                 skipped.append(f"{name}: {e}")
                 continue
-            if not payload.startswith(soumu.magic(election)):
-                skipped.append(f"{name}: non-{soumu.ELECTIONS[election].ext} payload")
+            if not payload.startswith(soumu.magic(election, key)):
+                skipped.append(f"{name}: non-{soumu.ext_of(election, key)} payload")
                 continue
             rec = ctx.raw.put(
                 theme=THEME,
@@ -220,7 +223,7 @@ def _stage_soumu(
                 skipped.append(f"{name}: raw missing (run fetch)")
                 continue
             try:
-                rows = soumu.rows_of(payload, election)
+                rows = soumu.rows_of(payload, election, key=key)
                 if key == "electorate_smd":
                     electorate += [
                         {**meta, "tier": "smd", "block": None, **r}
@@ -235,8 +238,9 @@ def _stage_soumu(
                 elif key == "pr_seats_table":
                     seats += [{**meta, **r} for r in soumu.parse_pr_seats(rows)]
                 else:
-                    sheets = [soumu.rows_of(payload, election, i) for i in range(2)]
-                    winners += [{**meta, **r} for r in soumu.parse_winners(sheets)]
+                    sheets = [soumu.rows_of(payload, election, i, key=key) for i in range(2)]
+                    totals = soumu.ELECTIONS[election].seats
+                    winners += [{**meta, **r} for r in soumu.parse_winners(sheets, totals)]
             except ValueError as e:
                 skipped.append(f"{name}: layout not recognised ({e})")
     for table, rows_ in (
@@ -431,6 +435,17 @@ CLB = SingleDoc(
     build_mart=clb.build_mart,
     table="staged/clb/bill_counts",
     mart="marts/jp_bill_counts",
+)
+WDI = SingleDoc(
+    source=worldbank.SOURCE,
+    license=worldbank.LICENSE,
+    url=worldbank.URL,
+    raw_name=worldbank.RAW_NAME,
+    magic=worldbank.MAGIC,
+    parse=worldbank.parse,
+    build_mart=worldbank.build_mart,
+    table="staged/worldbank/gdp_lcu",
+    mart="marts/wdi_gdp_lcu",
 )
 
 

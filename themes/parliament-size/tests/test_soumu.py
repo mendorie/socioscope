@@ -122,6 +122,50 @@ def test_url_raw_name_and_magic() -> None:
     assert soumu.magic(50) == b"\xd0\xcf\x11\xe0" and soumu.magic(51) == b"PK"
 
 
+def test_elections_45_to_49_have_per_table_extensions_and_seat_totals() -> None:
+    # 第 49 回は比例の 2 表だけ xlsx、他は xls（資料集ページ 2026-10-27 確認）
+    assert (
+        soumu.url(49, "pr_votes_by_block") == "https://www.soumu.go.jp/main_content/000776976.xlsx"
+    )
+    assert soumu.url(49, "electorate_pr") == "https://www.soumu.go.jp/main_content/000776965.xls"
+    assert soumu.raw_name(49, "pr_seats_table") == "shugiin49_pr_seats_table.xlsx"
+    assert soumu.magic(49, "pr_seats_table") == b"PK" and soumu.magic(49, "electorate_smd") == (
+        b"\xd0\xcf\x11\xe0"
+    )
+    assert sorted(soumu.ELECTIONS) == [45, 46, 47, 48, 49, 50, 51]
+    assert soumu.ELECTIONS[45].seats == (300, 180)
+    assert soumu.ELECTIONS[47].seats == (295, 180)
+    assert soumu.ELECTIONS[48].seats == (289, 176) == soumu.ELECTIONS[51].seats
+    assert soumu.ELECTIONS[45].date == "2009-08-30" and soumu.ELECTIONS[49].date == "2021-10-31"
+
+
+def pr_seats_rows_rank_left() -> soumu.Rows:
+    """第 49 回 (xlsx) の様式: 党名は商の列にあり、順位はその 1 列左（'順位' 見出しも左）。"""
+    rows: soumu.Rows = [["（12）党派別議席配分表（比例代表）"], []]
+    for block in PREFS_BY_BLOCK:
+        rows += [
+            [3.0, f"<{block}選挙区>"],
+            ["", "     ", "", "     ", "", "     "],
+            ["除数", "", "甲党", "", "乙党", "", "丙党"],
+            [],
+            ["", "順位", 2.0, "順位", 1.0, "順位", ""],
+            [1.0, 1.0, 60000.5, 2.0, 30000.0, "", 10000.0],
+            [2.0, 3.0, 30000.25, "", 15000.0, "", ""],
+            [3.0, "", 20000.167, "", "", "", ""],
+            [4.0, "", "", "", "", "", ""],
+        ]
+    return rows
+
+
+def test_parse_pr_seats_handles_rank_column_left_of_the_party_name() -> None:
+    out = soumu.parse_pr_seats(pr_seats_rows_rank_left())
+    assert len(out) == 22
+    assert out[:2] == [
+        {"block": "北海道", "party": "甲党", "seats": 2},
+        {"block": "北海道", "party": "乙党", "seats": 1},
+    ]
+
+
 def test_parse_electorate_smd_reads_47_prefectures_and_checks_the_total() -> None:
     out = soumu.parse_electorate_smd(smd_rows())
     assert len(out) == 47
@@ -290,3 +334,61 @@ def test_parse_winners_reads_smd_and_pr_seats_per_party_and_checks_totals() -> N
     )
     assert mart[0]["total_seats"] == 300.0 and mart[0]["iso3"] == "JPN"
     assert [r["party"] for r in mart][:2] == ["甲党", "乙党"]
+
+
+def winners_sheets_2021() -> list[soumu.Rows]:
+    """第 49 回の様式: 党名が 2 行に割れる（ＮＨＫ党）、本人届出の小見出しが空白、定数 289・176。"""
+    main: soumu.Rows = [
+        ["3. 開票結果", "", "", "", "", "（１）届出政党等別"],
+        [],
+        ["", "", "甲党", "", "", "ＮＨＫと裁判し", "", ""],
+        ["区  分", "", "", "", "", "弁護士法７２条", "", ""],
+        ["", "", "男", "女", "計", "男", "女", "計"],
+        ["小", "新", 1.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+        ["選", "前", 269.0, 0.0, 269.0, 0.0, 0.0, 0.0],
+        ["挙", "元", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ["区", "計", 270.0, 0.0, 270.0, 0.0, 0.0, 0.0],
+        ["比", "新", 0.0, 0.0, 0.0, 1.0, 0.0, 1.0],
+        ["例", "前", 175.0, 0.0, 175.0, 0.0, 0.0, 0.0],
+        ["代", "元", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ["表", "計", 175.0, 0.0, 175.0, 1.0, 0.0, 1.0],
+        ["", "新", 1.0, 0.0, 1.0, 1.0, 0.0, 1.0],
+        ["合", "前", 444.0, 0.0, 444.0, 0.0, 0.0, 0.0],
+        ["計", "元", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ["", "計", 445.0, 0.0, 445.0, 1.0, 0.0, 1.0],
+    ]
+    other: soumu.Rows = [
+        ["3. 開票結果", "", "", "", "", "（１）届出政党等別"],
+        ["", "", "本人･推薦届出"],
+        ["", "", "", "", "", "", "", "", "", "", "", "　　     "],
+        ["区  分", "", "       ", "", "", "       ", "", "", "       "],
+        ["", "", "男", "女", "計", "男", "女", "計", "男", "女", "計", "男", "女", "計"],
+        ["小", "新", "", "", "", 4.0, "", 4.0, 4.0, "", 4.0, 38.0, 2.0, 40.0],
+        ["選", "前", "", "", "", 10.0, "", 10.0, 10.0, "", 10.0, 217.0, 21.0, 238.0],
+        ["挙", "元", 1.0, "", 1.0, 4.0, "", 4.0, 5.0, "", 5.0, 10.0, 1.0, 11.0],
+        ["区", "計", 1.0, "", 1.0, 18.0, "", 18.0, 19.0, "", 19.0, 265.0, 24.0, 289.0],
+        ["比", "新"],
+        ["例", "前"],
+        ["代", "元"],
+        ["表", "計", "", "", "", "", "", "", "", "", "", 155.0, 21.0, 176.0],
+        ["", "新"],
+        ["合", "前"],
+        ["計", "元"],
+        ["", "計", 1.0, "", 1.0, 18.0, "", 18.0, 19.0, "", 19.0, 420.0, 45.0, 465.0],
+    ]
+    return [main, other]
+
+
+def test_parse_winners_joins_two_line_party_names_and_unlabelled_self_nominated_columns() -> None:
+    out = soumu.parse_winners(winners_sheets_2021(), totals=(289, 176))
+    assert sorted(out, key=lambda r: str(r["party"])) == sorted(
+        [
+            {"party": "甲党", "smd_seats": 270.0, "pr_seats": 175.0},
+            {"party": "無所属", "smd_seats": 18.0, "pr_seats": 0.0},
+            {"party": "ＮＨＫと裁判し弁護士法７２条", "smd_seats": 0.0, "pr_seats": 1.0},
+            {"party": "本人届出（政党等所属）", "smd_seats": 1.0, "pr_seats": 0.0},
+        ],
+        key=lambda r: str(r["party"]),
+    )
+    with pytest.raises(ValueError, match="winners: smd 289.0 / pr 176.0 != 300 / 180"):
+        soumu.parse_winners(winners_sheets_2021(), totals=(300, 180))

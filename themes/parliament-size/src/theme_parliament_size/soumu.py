@@ -12,7 +12,7 @@ from __future__ import annotations
 import io
 import re
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 SOURCE = "soumu_senkyo"
 LICENSE = (
@@ -40,11 +40,53 @@ KEYS: tuple[str, ...] = (
 class Election:
     number: int
     date: str
-    ext: str  # xls / xlsx
+    ext: str  # xls / xlsx（既定）
     files: dict[str, str]  # key -> main_content id
+    seats: tuple[int, int] = (289, 176)  # (小選挙区, 比例代表) の法定定数。当選人数表の検算に使う
+    exts: dict[str, str] = field(default_factory=dict)  # key -> ext（既定と違う表だけ）
 
 
+def _ids(prefix: str, numbers: Sequence[str]) -> dict[str, str]:
+    return dict(zip(KEYS, [f"{prefix}{n}" for n in numbers], strict=True))
+
+
+# 資料集ページ senkyo/senkyo_s/data/shugiin<N>/index.html の Excel リンク（2026-10-27 確認）。
+# 第 42〜44 回（2000・2003・2005 年）は Excel 配布がない（ページ無しまたは PDF のみ）。
 ELECTIONS: dict[int, Election] = {
+    45: Election(
+        45,
+        "2009-08-30",
+        "xls",
+        _ids("0000", ("37612", "37614", "37637", "37639", "37622")),
+        seats=(300, 180),
+    ),
+    46: Election(
+        46,
+        "2012-12-16",
+        "xls",
+        _ids("000", ("194180", "194182", "194192", "194198", "194183")),
+        seats=(300, 180),
+    ),
+    47: Election(
+        47,
+        "2014-12-14",
+        "xls",
+        _ids("000", ("328940", "328942", "328952", "328954", "328943")),
+        seats=(295, 180),
+    ),
+    48: Election(
+        48,
+        "2017-10-22",
+        "xls",
+        _ids("000", ("516715", "516717", "516728", "516730", "516719")),
+    ),
+    49: Election(
+        49,
+        "2021-10-31",
+        "xls",
+        _ids("000", ("776963", "776965", "776976", "776978", "776967")),
+        exts={"pr_votes_by_block": "xlsx", "pr_seats_table": "xlsx"},
+    ),
     50: Election(
         50,
         "2024-10-27",
@@ -88,17 +130,21 @@ BLOCKS: tuple[str, ...] = (
 N_PREFS = 47
 
 
-def url(election: int, key: str) -> str:
+def ext_of(election: int, key: str | None = None) -> str:
     e = ELECTIONS[election]
-    return f"{BASE}{e.files[key]}.{e.ext}"
+    return e.exts.get(key, e.ext) if key else e.ext
+
+
+def url(election: int, key: str) -> str:
+    return f"{BASE}{ELECTIONS[election].files[key]}.{ext_of(election, key)}"
 
 
 def raw_name(election: int, key: str) -> str:
-    return f"shugiin{election}_{key}.{ELECTIONS[election].ext}"
+    return f"shugiin{election}_{key}.{ext_of(election, key)}"
 
 
-def magic(election: int) -> bytes:
-    return MAGIC[ELECTIONS[election].ext]
+def magic(election: int, key: str | None = None) -> bytes:
+    return MAGIC[ext_of(election, key)]
 
 
 Rows = list[list[object]]
@@ -127,8 +173,8 @@ def xlsx_rows(payload: bytes, sheet: int = 0) -> Rows:
     return [list(r) for r in ws.iter_rows(values_only=True)]
 
 
-def rows_of(payload: bytes, election: int, sheet: int = 0) -> Rows:
-    return (xls_rows if ELECTIONS[election].ext == "xls" else xlsx_rows)(payload, sheet)
+def rows_of(payload: bytes, election: int, sheet: int = 0, key: str | None = None) -> Rows:
+    return (xls_rows if ext_of(election, key) == "xls" else xlsx_rows)(payload, sheet)
 
 
 # ---- helpers -----------------------------------------
@@ -291,18 +337,22 @@ def parse_pr_seats(rows: Rows) -> list[dict[str, object]]:
     """→ [{block, party, seats}]（議席 0 の党は出ない）。順位が 1..S を漏れなく埋めることで検算。
 
     レイアウト: '<ブロック選挙区>' の後、党名の行（各党は 2 列: 順位 | 商）、'順位' 見出し行、
-    除数 1..50 の行。党名と同じ列に順位（当選順）が入る。党が多いと同じブロックが複数回続く。
+    除数 1..50 の行。党が多いと同じブロックが複数回続く。
+    順位（当選順）の列は第 50・51 回では党名と同じ列（商はその右）、第 45〜49 回では党名の 1 列左
+    （党名は商の列にある）。'順位' 見出し行で '順位' が党名の 1 列左にあれば後者と判定する。
     """
     seats: dict[tuple[str, str], int] = {}
     ranks: dict[str, set[int]] = {}
     block = ""
     party_cols: list[tuple[int, str]] = []
+    rank_offset = 0
     for row in rows:
         marks = [_BLOCK_MARK.search(_text(c)) for c in row[:3]]
         mk = next((m for m in marks if m), None)
         if mk:
             block = _block_name(mk.group(1))
             party_cols = []
+            rank_offset = 0
             continue
         if not block:
             continue
@@ -313,9 +363,13 @@ def parse_pr_seats(rows: Rows) -> list[dict[str, object]]:
                 party_cols = names
             continue
         if _num(_cell(row, 0)) is None:
+            if "順位" in texts and all(
+                _text(_cell(row, col - 1)) == "順位" for col, _ in party_cols if col >= 1
+            ):
+                rank_offset = -1
             continue  # 見出し（順位 行）など
         for col, party in party_cols:
-            r = _num(_cell(row, col))
+            r = _num(_cell(row, col + rank_offset))
             if r is None:
                 continue
             seats[(block, party)] = seats.get((block, party), 0) + 1
@@ -351,17 +405,27 @@ _NOT_PARTY = {
 _RENAME = {"政党等所属": "本人届出（政党等所属）"}
 
 
-def parse_winners(sheets: Sequence[Rows]) -> list[dict[str, object]]:
-    """→ [{party, smd_seats, pr_seats}]（無所属を含む）。小選挙区 289・比例 176 で検算。
+_SELF_NOMINATED = {"本人･推薦届出", "本人・推薦届出"}
+# 本人届出シートの小見出しが空白のとき（第 47〜49 回）の列: 政党等所属 | 無所属 | 小計 | 合計
+_SELF_DEFAULT_COLS: list[tuple[int, str]] = [(2, "本人届出（政党等所属）"), (5, "無所属")]
+
+
+def parse_winners(
+    sheets: Sequence[Rows], totals: tuple[int, int] = (SMD_SEATS, PR_SEATS)
+) -> list[dict[str, object]]:
+    """→ [{party, smd_seats, pr_seats}]（無所属を含む）。小選挙区・比例の法定定数 `totals` で検算。
 
     レイアウト: 党名の行（党名の 2 列右に '計' 列）の後、'小選挙区' 新/前/元/計、
     '比例代表' 新/前/元/計、
     '合計' 新/前/元/計 の 12 行。列 1 が '計' の行が順に 小選挙区・比例代表・合計 の計。
+    党名が 2 行に割れる（第 49 回「ＮＨＫと裁判し／弁護士法７２条」）ときは連結する。
+    本人届出シートの小見出し（政党等所属／無所属／小計）が空白のときは列位置で割り当てる。
     """
     seats: dict[str, dict[str, float]] = {}
     for rows in sheets:
         party_cols: list[tuple[int, str]] = []
         n_total_rows = 0
+        self_sheet = False
         for row in rows:
             texts = [_text(c) for c in row]
             if _text(_cell(row, 1)) == "計" and party_cols:
@@ -376,22 +440,35 @@ def parse_winners(sheets: Sequence[Rows]) -> list[dict[str, object]]:
                     party_cols = []
                     n_total_rows = 0
                 continue
+            if _text(_cell(row, 2)) in _SELF_NOMINATED:
+                self_sheet = True
+            if self_sheet and not party_cols and texts[2:5] == ["男", "女", "計"]:
+                party_cols = list(_SELF_DEFAULT_COLS)
+                n_total_rows = 0
+                continue
             names = [
                 (i, t.replace(" ", ""))
                 for i, t in enumerate(texts)
                 if i >= 2 and t and _num(t) is None and t not in ("男", "女", "計")
             ]
             names = [
-                (i, _RENAME.get(t, t)) for i, t in names if t.replace(" ", "") not in _NOT_PARTY
+                (i, _RENAME.get(t, t))
+                for i, t in names
+                if t.replace(" ", "") not in _NOT_PARTY and not t.startswith(("（", "("))  # 表題
             ]
             if names and all(_num(_cell(row, i + 2)) is None for i, _ in names):
-                party_cols = names
+                second = dict(names)
+                if party_cols and n_total_rows == 0 and set(second) <= {c for c, _ in party_cols}:
+                    # 党名の 2 行目（列が 1 行目の部分集合）: 同じ列の名前に連結する
+                    party_cols = [(i, p + second.get(i, "")) for i, p in party_cols]
+                else:
+                    party_cols = names
                 n_total_rows = 0
     out = [{"party": p, **v} for p, v in seats.items()]
     smd = sum(float(str(r["smd_seats"])) for r in out)
     pr = sum(float(str(r["pr_seats"])) for r in out)
-    if (smd, pr) != (float(SMD_SEATS), float(PR_SEATS)):
-        msg = f"winners: smd {smd} / pr {pr} != {SMD_SEATS} / {PR_SEATS}"
+    if (smd, pr) != (float(totals[0]), float(totals[1])):
+        msg = f"winners: smd {smd} / pr {pr} != {totals[0]} / {totals[1]}"
         raise ValueError(msg)
     out.sort(
         key=lambda r: (-(float(str(r["smd_seats"])) + float(str(r["pr_seats"]))), str(r["party"]))

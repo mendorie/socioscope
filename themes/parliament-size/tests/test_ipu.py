@@ -135,6 +135,11 @@ def test_build_mart_takes_the_latest_record_per_attribute_and_joins_the_country(
         0.0963,
     )
     assert (lc["plenary_days"], lc["plenary_year"], lc["committees"]) == (47.0, 2025, 17.0)
+    # 役割の補助指標（追加 2026-10-27）: 最新レコードと年
+    assert (lc["written_questions"], lc["written_questions_year"]) == (1012.0, 2024)
+    assert (lc["members_in_government"], lc["members_in_government_pct"]) == (70.0, 15.05)
+    assert lc["carries_out_inquiries"] is True
+    assert lc["government_appointments"] == 274.0
     assert (lc["population_thousands"], lc["population_year"]) == (124371.0, 2023)
     assert lc["members_per_country"] == 713.0
     assert lc["electoral_system"] == "mixed_system" and lc["source"] == ipu.SOURCE

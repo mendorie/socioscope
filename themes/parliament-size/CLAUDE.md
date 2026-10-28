@@ -14,15 +14,17 @@ src/theme_parliament_size/
                 `parse(payload, kind, page)`（属性ごとの時間付きレコードを long に。`{"type": 通貨, "value": 額}` は value_num＋unit、
                 `[{"term": …}]` は `;` 結合。data 無し・type 不一致・value 無しは ValueError）、`has_next`、
                 `build_mart`（議院 1 行、各属性の最新レコード、国の人口・OECD 加盟を結合。国が無い議院は ValueError）
-  soumu.py      総務省 結果調 Excel: `ELECTIONS`（50: xls、51: xlsx）/`KEYS`/`url`/`raw_name`/`magic`/`rows_of`、
+  soumu.py      総務省 結果調 Excel: `ELECTIONS`（45〜51 回。`seats` = 法定定数、`exts` = 表ごとの拡張子の例外）/`KEYS`/`url`/`raw_name`/`magic`/`ext_of`/`rows_of`、
                 `parse_electorate_smd`（47 都道府県、計で検算）、`parse_electorate_pr`（ブロック付き、ブロック計で検算）、
                 `parse_pr_votes`（＜ブロック選挙区＞ごとの党派別得票、得票総数で検算）、`parse_pr_seats`（議席配分表の
-                順位セルを数える。順位 1..S が埋まることで検算）、`parse_winners`（党派別 小選挙区／比例 当選人数、289・176 で検算）、
+                順位セルを数える。順位の列は党名と同じ列（50・51）か 1 列左（45〜49）。順位 1..S が埋まることで検算）、
+                `parse_winners`（党派別 小選挙区／比例 当選人数、選挙ごとの法定定数で検算。2 行党名の連結、本人届出の空白小見出しに対応）、
                 `build_electorate_mart`/`build_pr_mart`/`build_winners_mart`。`BLOCKS`（11 ブロック、「東京都」→「東京」）
   estat.py      e-Stat 国勢調査 2020 表 2-1 xlsx: `URL`/`RAW_NAME`、`workbook_rows`、`parse`（国籍総数／うち日本人 × 総数 × 都道府県、
                 全国行で検算）、`build_mart`。人口推計 長期時系列 表 1（`LONGPOP_URL`、1920–2000）: `parse_longpop`、`build_longpop_mart`
   mof.py        財務省 令和 7 年度 一般会計予算（衆参修正後）PDF: `pdf_pages`（pypdf、AES を空パスワードで復号）、`parse`（所管別内訳の
                 数値行を `ORGANS` の順に割り当て、主要行の合計 = 合計行で検算）、`build_mart`
+  worldbank.py  World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨、2005–2025）: `URL`/`RAW_NAME`/`parse`（[meta, data]、ページ分割は ValueError）/`build_mart`
   clb.py        内閣法制局「法律案の提出・成立件数一覧」HTML: `parse`（html.parser で表を走査、「第 N 回（種別）」と
                 「（継続 n 件） m 件」を読み、計 = 閣法 ＋ 議員立法 で検算）、`build_mart`（議員立法の成立シェア付き）
   jp_member_costs.csv   議員 1 人当たりの法定経費（歳費・調査研究広報滞在費・立法事務費・秘書給与の別表）。出典列あり、手入力
@@ -31,7 +33,9 @@ src/theme_parliament_size/
                 `adams`（切り上げ、各単位 1 以上、除数は二分探索）、`gallagher`、`threshold_share`（1 議席の最小得票率）
   analysis/     report 用スクリプト（決定的、1 report 1 ファイル）: a20261027_r1_ratio.py（H1・H1b・H1c、図 3 枚）、
                 a20261027_r2_pr_blocks.py（H3・H3b・H3c・H4・H4b、図 3 枚。アダムズ方式で現行 176・289 を再現してから試算）、
-                a20261027_r3_cost.py（H5・H5b、図 2 枚）、a20261027_r4_history.py（H6、図 2 枚）、a20261027_r5_roles.py（H2、図 2 枚）
+                a20261027_r3_cost.py（H5・H5b、図 2 枚）、a20261027_r4_history.py（H6、図 2 枚）、a20261027_r5_roles.py（H2、図 2 枚）、
+                a20261028_r6_pr_history.py（事後追加 H3d・H3e・H4c・H4d、7 選挙の比例試算と小選挙区の格差の下限、図 3 枚）、
+                a20261028_r7_roles_gdp.py（事後追加 H2c・H5c、質問主意書と議会費の対 GDP 比、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -42,29 +46,31 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 |---|---|---|
 | `staged/ipu/chamber_attributes` | 議院×属性×レコード（long） | kind(chambers), entity_id（JP-LC01 など）, attribute（`ipu.CHAMBER_ATTRS`）, seq, value（文字列）, value_num, unit（通貨など）, date_from, date_to, source(`ipu_parline`)。281 議院（2026-10-27 取得） |
 | `staged/ipu/country_attributes` | 国×属性×レコード（long） | 同列、kind(countries), entity_id（JP など）, attribute（`ipu.COUNTRY_ATTRS`。population_in_thousands は 1950– 年次） |
-| `marts/ipu_parliaments` | 議院 | iso3, country, region, subregion, oecd_member, chamber_id, chamber_type(lower/upper), chamber_name, electoral_system, electoral_subsystem, designation_mode, statutory_seats, statutory_seats_since, current_members, directly_elected, majoritarian_tier_seats, proportional_tier_seats, permanent_staff, staff_year, staff_combined_parl, chamber_budget, budget_currency, chamber_budget_ppp, budget_year, budget_combined_parl, basic_salary_ppp, salary_year, plenary_days, plenary_year, committees, members_per_country, population_thousands, population_year, parliament_budget_pct_gov, source。281 行（OECD 38 か国 58 議院、2026-10-27 取得） |
+| `marts/ipu_parliaments` | 議院 | iso3, country, region, subregion, oecd_member, chamber_id, chamber_type(lower/upper), chamber_name, electoral_system, electoral_subsystem, designation_mode, statutory_seats, statutory_seats_since, current_members, directly_elected, majoritarian_tier_seats, proportional_tier_seats, permanent_staff, staff_year, staff_combined_parl, chamber_budget, budget_currency, chamber_budget_ppp, budget_year, budget_combined_parl, basic_salary_ppp, salary_year, plenary_days, plenary_year, committees, written_questions, written_questions_year, members_in_government, members_in_government_pct, carries_out_inquiries, government_appointments, members_per_country, population_thousands, population_year, parliament_budget_pct_gov, source。281 行（OECD 38 か国 58 議院、2026-10-28 取得。既存列は 2026-10-27 取得分と同値） |
 | `staged/soumu/electorate` | 選挙×層×都道府県 | election, election_date, tier(smd/pr), block（pr のみ）, pref, electorate, voters, source(`soumu_senkyo`) |
 | `staged/soumu/pr_votes` | 選挙×ブロック×党派 | election, election_date, block, rank, party, votes, share_pct |
 | `staged/soumu/pr_seats` | 選挙×ブロック×党派（議席 > 0） | election, election_date, block, party, seats |
 | `staged/soumu/winners_by_party` | 選挙×党派 | election, election_date, party, smd_seats, pr_seats |
-| `marts/jp_hr_electorate` | 選挙×都道府県 | iso3(JPN), election, election_date, pref, block, electorate_smd, voters_smd, electorate_pr, voters_pr, source。94 行（第 50・51 回） |
-| `marts/jp_hr_pr_results` | 選挙×ブロック×党派 | iso3, election, election_date, block, party, rank, votes, share_pct, seats（公式、名簿不足の移転込み、0 を含む）, block_seats, block_votes, source。224 行 |
-| `marts/jp_hr_seats_by_party` | 選挙×党派 | iso3, election, election_date, party（無所属・本人届出（政党等所属）を含む）, smd_seats, pr_seats, total_seats, source。28 行 |
+| `marts/jp_hr_electorate` | 選挙×都道府県 | iso3(JPN), election, election_date, pref, block, electorate_smd, voters_smd, electorate_pr, voters_pr, source。329 行（第 45〜51 回） |
+| `marts/jp_hr_pr_results` | 選挙×ブロック×党派 | iso3, election, election_date, block, party, rank, votes, share_pct, seats（公式、名簿不足の移転込み、0 を含む）, block_seats, block_votes, source。710 行（第 45〜51 回） |
+| `marts/jp_hr_seats_by_party` | 選挙×党派 | iso3, election, election_date, party（無所属・本人届出（政党等所属）を含む）, smd_seats, pr_seats, total_seats, source。77 行（第 45〜51 回） |
 | `staged/estat/census2020_prefecture` | 都道府県 | pref_code, pref, population_total, population_japanese, source(`estat_census`) |
 | `marts/jp_census2020_prefecture` | 都道府県 | iso3, year(2020), pref_code, pref, population_total, population_japanese, source。47 行 |
 | `staged/estat/population_longterm` → `marts/jp_population_longterm` | 年 | iso3, year(1920–2000), population_total_thousands, population_japanese_thousands（1950–）, source。81 行 |
 | `staged/mof/budget_by_organ` → `marts/jp_budget_by_organ` | 年度×段階×所管 | iso3, fy(2024/2025), stage(initial/revised), organ（皇室費・国会・…・予備費・合計。内閣府の内訳 2 行は in_total=false）, in_total, amount_100m_jpy, source。46 行 |
 | `staged/clb/bill_counts` → `marts/jp_bill_counts` | 国会回次 | iso3, session(183–221), kind（常会／臨時会／特別会）, start_date, year, cabinet_submitted, cabinet_enacted, member_submitted, member_enacted, member_share_of_enacted, source。39 行 |
+| `staged/worldbank/gdp_lcu` → `marts/wdi_gdp_lcu` | 経済体×年 | iso3, year(2005–2025), country, gdp_lcu（名目、現地通貨）, source(`worldbank_wdi`)。4,396 行 |
 | `marts/parliament_size_panel` | iso3×year×unit×metric×source（long） | **未作成**（行ができるまで書かない） |
 
 ## 状態
 - ① IPU Parline（**CC BY-NC-SA 4.0**、非商用）fetch/stage/mart 実装済み。R1 report（H1 整合・H1b 整合・H1c 整合）: `reports/2026-10-27-r1-ratio.md`。
-- ② 総務省 結果調 Excel（第 50・51 回）＋ ③ e-Stat 国勢調査 2020 実装済み。R2 report（H3・H3b・H3c 整合、H4・H4b 不支持）: `reports/2026-10-27-r2-pr-blocks.md`。
+- ② 総務省 結果調 Excel（第 50・51 回。2026-10-28 に第 45〜49 回を追加）＋ ③ e-Stat 国勢調査 2020 実装済み。R2 report（H3・H3b・H3c 整合、H4・H4b 不支持）: `reports/2026-10-27-r2-pr-blocks.md`。
 - ④ 財務省 予算書 PDF ＋ 法定額 CSV 実装済み。R3 report（H5 整合、H5b 整合）: `reports/2026-10-27-r3-cost.md`。
 - ⑤ 定数の変遷 CSV ＋ e-Stat 長期人口 実装済み。R4 report（H6 日本は僅差で不支持、各国は整合）: `reports/2026-10-27-r4-history.md`。
 - ⑥ 内閣法制局 法律案件数 実装済み。R5 report（H2 (a) 整合 ρ = −0.42、(b) 判定不能）: `reports/2026-10-27-r5-roles.md`。
-- **総括（H1〜H6 を「支える／支えない／規範の選択」に整理）**: `reports/2026-10-27-summary-parliament-size.md`。
-- 未着手: H2 (b) の各国比較（議員立法シェア）、H5b の対 GDP 比、各国の定数履歴の深掘り（IPU は 2005 年以降のみ）。
+- **総括（H1〜H6 を「支える／支えない／規範の選択」に整理）**: `reports/2026-10-27-summary-parliament-size.md`（R6・R7 の結果を 2026-10-28 に追記）。
+- ⑦ 追加分析（2026-10-28、事後追加の仮説。`docs/specs/parliament-size-followup.md`）: 結果調を第 45〜49 回に拡張、IPU に役割の 5 属性を追加、WDI 名目 GDP を結線。R6（H3d 頑健・H3e 記述・H4c 整合・H4d 記述）: `reports/2026-10-28-r6-pr-history.md`。R7（H2c 不支持・H5c 整合）: `reports/2026-10-28-r7-roles-gdp.md`。
+- 未着手: H2 (b) の各国比較（議員立法シェア。各国議会の年報 PDF が要る）、各国の定数履歴の深掘り（ParlGov は 2026-10-28 時点でボット UA に 403／404）、第 42〜44 回の結果調（PDF のみ）、選挙区単位の有権者数（H4c の係数の検証）。
 
 ## テーマ固有の規約
 - 「議員数」は定数（statutory）と現員（current）を列で分け、混ぜない。上院の選出方法（designation_mode）を注記できるよう議院単位で持つ。
