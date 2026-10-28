@@ -20,6 +20,7 @@ from theme_parliament_size import (
     ipu,
     kokkai,
     mof,
+    oecd,
     parlgov,
     soumu,
     ukbills,
@@ -74,6 +75,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_single(ctx, written, skipped, CAMERA_SITTINGS)
     written, skipped = _fetch_single(ctx, written, skipped, ILO_EAR)
     written, skipped = _fetch_single(ctx, written, skipped, WDI_GDP_PCAP)
+    written, skipped = _fetch_single(ctx, written, skipped, OECD_GOV)
     written, skipped = _fetch_kokkai(ctx, written, skipped)
     written, skipped = _fetch_ukbills(ctx, written, skipped)
     written, skipped = _fetch_fran(ctx, written, skipped)
@@ -98,6 +100,7 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_single(ctx, written, skipped, CAMERA_SITTINGS)
     written, skipped = _stage_single(ctx, written, skipped, ILO_EAR)
     written, skipped = _stage_single(ctx, written, skipped, WDI_GDP_PCAP)
+    written, skipped = _stage_single(ctx, written, skipped, OECD_GOV)
     written, skipped = _stage_kokkai(ctx, written, skipped)
     written, skipped = _stage_ukbills(ctx, written, skipped)
     written, skipped = _stage_fran(ctx, written, skipped)
@@ -122,6 +125,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_single(ctx, written, skipped, CAMERA_SITTINGS)
     written, skipped = _mart_single(ctx, written, skipped, ILO_EAR)
     written, skipped = _mart_single(ctx, written, skipped, WDI_GDP_PCAP)
+    written, skipped = _mart_single(ctx, written, skipped, OECD_GOV)
     written, skipped = _mart_kokkai(ctx, written, skipped)
     written, skipped = _mart_ukbills(ctx, written, skipped)
     written, skipped = _mart_fran(ctx, written, skipped)
@@ -595,6 +599,17 @@ WDI_GDP_PCAP = SingleDoc(
     build_mart=worldbank.build_gdp_pcap_mart,
     table="staged/worldbank/gdp_pcap_lcu",
     mart="marts/wdi_gdp_pcap_lcu",
+)
+OECD_GOV = SingleDoc(
+    source=oecd.SOURCE,
+    license=oecd.LICENSE,
+    url=oecd.URL,
+    raw_name=oecd.RAW_NAME,
+    magic=oecd.MAGIC,
+    parse=oecd.parse,
+    build_mart=oecd.build_mart,
+    table="staged/oecd/gov_finance",
+    mart="marts/oecd_gov_finance",
 )
 
 

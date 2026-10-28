@@ -4,7 +4,7 @@
 読む順は `design/themes/parliament-size.md` → 本書 → `themes/parliament-size/CLAUDE.md`。R10（公務就業者 × 議員数）の延長線にある。
 
 ## 0. 状態
-- **未着手**（プランのみ）。着手時は、本書の仮説と判定基準を `design/themes/parliament-size.md` の事後追加節に写してから計算する（本書の §2 をそのまま写せばよい。基準は本書で固定済み）。
+- **実施済み（2026-10-29 深夜）**: R16 `themes/parliament-size/reports/2026-10-29-r16-government-size.md`。H15a 不支持（ρ = +0.16）、H15b 不支持（立方根補正比で ρ = +0.34、相関はむしろ現れる）、H15c 正、H15d 整合。税収は Revenue Statistics の SDMX が空応答のため政府収入比で代替。番外編の記事は未作成。
 - 着手する場合のブランチ: `feat/parliament-size-r16-government-size`。
 
 ## 1. 問い

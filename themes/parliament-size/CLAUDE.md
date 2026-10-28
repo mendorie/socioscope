@@ -37,6 +37,9 @@ src/theme_parliament_size/
   camera.py     イタリア下院 dati.camera.it SPARQL: `LAWS_URL`/`SITTINGS_URL`（集計クエリ）/`parse_laws`/`parse_sittings`/`build_mart`（年×指標 long）
   jp_committee_seats.csv  衆院 常任委員会 17 の委員定数（衆議院規則 第 92 条）。出典列あり、手入力
   intl_thresholds.csv     OECD 比例・混合制 29 か国の法定阻止条項（各国選挙法・ACE）。出典列あり、手入力
+  federal_states.csv      OECD の連邦制 8 か国のフラグ（Forum of Federations）。出典列あり、手入力
+  oecd.py       OECD Data Explorer SDMX-JSON（Government at a Glance 2025 公的財政）: `URL`（`format=jsondata`、AllDimensions）/`parse`（観測キーを
+                次元の値に戻し、GE・GR の % GDP・S13・ISO3 の国のみ long に）/`build_mart`（重複キーは ValueError）
   kokkai.py     国会会議録検索システム API: `url(year, page)`/`raw_name`/`has_next`（nextRecordPosition）/`parse`（会議 1 行、衆議院のみ）/
                 `build_mart`（年 × plenary_days／committee_meetings／committee_days／sitting_days）
   clb.py        内閣法制局「法律案の提出・成立件数一覧」HTML: `parse`（html.parser で表を走査、「第 N 回（種別）」と
@@ -57,7 +60,8 @@ src/theme_parliament_size/
                 a20261029_r12_future_disparity.py（事後追加 H11、IPSS 推計での格差、図 1 枚）、
                 a20261029_r13_after_cuts.py（事後追加 H7、イタリア・ハンガリーの削減前後）、
                 a20261029_r14_pay_and_workload.py（事後追加 H12・H13、基本給の相対水準と稼働日数、図 2 枚）、
-                a20261029_r15_small_parties.py（事後追加 H14a〜c、小政党の入口機能・阻止条項・泡沫政党の票）
+                a20261029_r15_small_parties.py（事後追加 H14a〜c、小政党の入口機能・阻止条項・泡沫政党の票）、
+                a20261029_r16_government_size.py（番外編 H15a〜d、議会の大きさ × 一般政府支出比、図 2 枚）
 queries/        DuckDB 用 SQL（? バインド）
 reports/        <yyyy-mm-dd>-<slug>.md ＋ figures/
 tests/          conftest.py（実 API の形を写した合成ページ）＋ Fake による状態テスト。結果調・国勢調査は実ファイルの様式を縮約した合成行
@@ -93,6 +97,7 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 | `staged/worldbank/gdp_pcap_lcu` → `marts/wdi_gdp_pcap_lcu` | 経済体×年 | iso3, year(2005–2025), country, gdp_pcap_lcu, source |
 | `staged/ilostat/earnings` → `marts/ilo_earnings_monthly` | 国×年 | iso3, year(2015–2025), metric(earnings_monthly_lcu), value_thousands（月収、現地通貨。千人ではない）, source_note, source |
 | `staged/kokkai/meetings` → `marts/jp_hr_sitting_days` | 会議 → 年×指標 | staged: issue_id, date, name_of_meeting, session, is_plenary（約 6,900 行）。mart: iso3(JPN), year(2013–2025), metric（plenary_days／committee_meetings／committee_days／sitting_days）, value, source(`kokkai_ndl`)。52 行 |
+| `staged/oecd/gov_finance` → `marts/oecd_gov_finance` | 国×年×指標（long） | iso3, year(2007–2024), metric（gov_expenditure_pct_gdp／gov_revenue_pct_gdp）, value（% of GDP、一般政府）, source(`oecd_gov_glance`)。1,500 行・43 か国 |
 | `marts/parliament_size_panel` | iso3×year×unit×metric×source（long） | **未作成**（行ができるまで書かない） |
 
 ## 状態
@@ -108,6 +113,7 @@ tests/          conftest.py（実 API の形を写した合成ページ）＋ Fa
 - ⑩ R11〜R13（2026-10-29、「削減の是非」の立場を支える根拠）: R11（H8 整合: 定数維持＋修正サンラグで Gallagher −2.33 pt、H9: 職員を上位 3 分の 1 に上げる費用 16〜25 億円 ≈ 45 減の節約額、H10: 兼任率 1.24 → 1.37）、R12（H11 整合: 289 でも 2040 年に係数込み 2.24 倍）、R13（H7: イタリア不支持、ハンガリー判定不能）。立場の文書: `reports/2026-10-29-position-parliament-size.md`。H3f（2000 年の前後）は第 42・43 回の資料が無く対象外。
 - ⑪ R14（2026-10-29 夕、世論「議員 1 人の収入は多く働きは少ない」の検証）: H12 整合（歳費 ÷ 1 人当たり GDP 2.9 倍で 38 か国中 7 位、÷ 平均年収 4.2 倍で 31 か国中 7 位）、H13 整合（稼働日数 124 日 = 本会議 51 日の 2.43 倍）: `reports/2026-10-29-r14-pay-and-workload.md`。
 - ⑫ R15（2026-10-29 夜、ユーザー提起「少数政党保護は守るべき原則か」）: H14a 整合（1〜3 議席で入った 3 政党中 2 が次回 5 議席以上）、H14b 整合（29 か国中 22 か国が法定閾値 3% 以上、日本の実効閾値は 6.6〜12.3%）: `reports/2026-10-29-r15-small-parties.md`。立場文書のキーメッセージを「人数ではなく報酬・手当の水準と透明性」に書き換え。
+- ⑬ R16（2026-10-29 深夜、番外編。ユーザー提起「議会の大きさは小さな政府／大きな政府と関係するか」）: OECD Government at a Glance 2025 を結線。H15a 不支持（素の比率 ρ = +0.16）、H15b 不支持（立方根補正比で ρ = +0.34、相関はむしろ現れる）、H15c 正、H15d 整合: `reports/2026-10-29-r16-government-size.md`。本編の記事には含めない。
 - 未着手: 独・米・韓の法案 API（鍵が要る）、選挙区単位の有権者数（H4c の係数の検証）、仏 第 15 立法期以前（zip 無し）、規模を補正した官僚数 × 議員数、削減後の審査の質（修正率・審議時間）、手当込みの総報酬の国際比較（IPU に項目なし）。
 
 ## テーマ固有の規約
