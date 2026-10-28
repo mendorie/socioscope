@@ -1,11 +1,15 @@
-"""OECD Data Explorer SDMX-JSON（sdmx.oecd.org、鍵不要）: Government at a Glance 2025 の公的財政。
+"""OECD Data Explorer SDMX-JSON（sdmx.oecd.org、鍵不要）: Government at a Glance 2025。
 
-番外編 R16（H15a〜d）に使う。一般政府（S13）の支出 `GE` と収入 `GR` の対 GDP 比（`PT_B1GQ`）、
-2007〜2024 年を 1 リクエストで取る（`format=jsondata` で Accept ヘッダなしでも SDMX-JSON）。
-Pure transforms only (no I/O)。`parse` は
-dimensionAtObservation=AllDimensions の観測キー（`i:j:k:...`）を次元の値に戻し、
-国 × 年 × 指標 の long 行にする。構造が無い・次元が足りない・単位が % GDP 以外の行は捨て、
-JSON でない・観測が無い場合は ValueError（fail-closed）。
+番外編 R16・R17（H15・H16）に使う。Pure transforms only (no I/O)。
+- 公的財政（`DF_GOV_PF_2025`）: 一般政府（S13）の支出 `GE`・収入 `GR` の対 GDP 比（`PT_B1GQ`）と
+  1 人当たり支出 `GE_POP`（`USD_PPP_PS`）、2007〜2024 年。
+- 信頼（`DF_GOV_TDG_2025`）: 立法府への信頼 `TRUST_LE`、議会が政府に責任を問う `TRUST_PVGA`、
+  国の政府への信頼 `TRUST_NG`（回答者比率 `PT_RESP`、尺度 `HMH` = 高い＋やや高い。`TRUST_PVGA` は
+  `LIK` = そう思う）、2021・2023 年。
+`parse` は dimensionAtObservation=AllDimensions の観測キー（`i:j:k:...`）を次元の値に戻し、
+国 × 年 × 指標 の long 行にする（`format=jsondata` で Accept ヘッダなしでも SDMX-JSON）。
+採用外の指標・単位・尺度・集計地域（ISO3 でない）の行は捨て、JSON でない・観測が無い・
+フィルタの次元が無い場合は ValueError（fail-closed）。
 
 License: OECD Terms & Conditions（2024-07-01 改定。出典表示で商用含め自由利用。
 https://www.oecd.org/en/about/terms-conditions.html、2026-10-29 確認）。
@@ -16,6 +20,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from typing import Any
 
 SOURCE = "oecd_gov_glance"
@@ -23,19 +28,51 @@ LICENSE = (
     "OECD Terms & Conditions 2024-07-01 (free use with attribution, "
     "https://www.oecd.org/en/about/terms-conditions.html)"
 )
-FLOW = "OECD.GOV.GIP,DSD_GOV@DF_GOV_PF_2025,1.0"
+BASE = "https://sdmx.oecd.org/public/rest/data"
+MAGIC = b"{"
+
+
+@dataclass(frozen=True)
+class Spec:
+    """1 dataflow の取り込み仕様。metrics は MEASURE → (metric 名, 必要な UNIT_MEASURE)。"""
+
+    metrics: Mapping[str, tuple[str, str]]
+    filters: Mapping[str, str] = field(default_factory=dict)  # 次元 → 採用する値
+    metric_filters: Mapping[str, Mapping[str, str]] = field(
+        default_factory=dict
+    )  # MEASURE 別の上書き
+
+
+PF_FLOW = "OECD.GOV.GIP,DSD_GOV@DF_GOV_PF_2025,1.0"
+PF_SPEC = Spec(
+    metrics={
+        "GE": ("gov_expenditure_pct_gdp", "PT_B1GQ"),
+        "GR": ("gov_revenue_pct_gdp", "PT_B1GQ"),
+        "GE_POP": ("gov_expenditure_pcap_usd_ppp", "USD_PPP_PS"),
+    },
+    filters={"SECTOR": "S13"},
+)
 URL = (
-    f"https://sdmx.oecd.org/public/rest/data/{FLOW}/A..GE+GR....?startPeriod=2007&endPeriod=2024"
+    f"{BASE}/{PF_FLOW}/A..GE+GR+GE_POP....?startPeriod=2007&endPeriod=2024"
     "&dimensionAtObservation=AllDimensions&format=jsondata"
 )
-RAW_NAME = "gov_pf_2025_ge_gr.json"
-MAGIC = b"{"
-UNIT = "PT_B1GQ"  # % of GDP
-SECTOR = "S13"  # general government
-METRICS: dict[str, str] = {
-    "GE": "gov_expenditure_pct_gdp",
-    "GR": "gov_revenue_pct_gdp",
-}
+RAW_NAME = "gov_pf_2025_ge_gr_gepop.json"
+
+TRUST_FLOW = "OECD.GOV.GIP,DSD_GOV_INT@DF_GOV_TDG_2025,1.1"
+TRUST_SPEC = Spec(
+    metrics={
+        "TRUST_LE": ("trust_legislature_pct", "PT_RESP"),
+        "TRUST_PVGA": ("parliament_holds_gov_accountable_pct", "PT_RESP"),
+        "TRUST_NG": ("trust_national_government_pct", "PT_RESP"),
+    },
+    filters={"SCALE": "HMH"},
+    metric_filters={"TRUST_PVGA": {"SCALE": "LIK"}},  # 「問うと思う（likely）」の比率
+)
+TRUST_URL = (
+    f"{BASE}/{TRUST_FLOW}/A..TRUST_LE+TRUST_PVGA+TRUST_NG......"
+    "?dimensionAtObservation=AllDimensions&format=jsondata"
+)
+TRUST_RAW_NAME = "gov_tdg_2025_trust.json"
 
 
 def _dimensions(doc: Mapping[str, Any]) -> list[tuple[str, list[str]]]:
@@ -54,8 +91,8 @@ def _dimensions(doc: Mapping[str, Any]) -> list[tuple[str, list[str]]]:
     return [(str(d["id"]), [str(v["id"]) for v in d["values"]]) for d in dims]
 
 
-def parse(payload: bytes) -> list[dict[str, object]]:
-    """SDMX-JSON → [{iso3, year, metric, value}]（% GDP・一般政府・ISO3 の国のみ）。"""
+def parse(payload: bytes, spec: Spec = PF_SPEC) -> list[dict[str, object]]:
+    """SDMX-JSON → [{iso3, year, metric, value}]（採用指標・単位・フィルタ・ISO3 の国のみ）。"""
     try:
         doc = json.loads(payload)
     except ValueError as e:
@@ -66,7 +103,7 @@ def parse(payload: bytes) -> list[dict[str, object]]:
         raise ValueError(msg)
     dims = _dimensions(doc)
     ids = [d[0] for d in dims]
-    needed = ("REF_AREA", "MEASURE", "UNIT_MEASURE", "SECTOR", "TIME_PERIOD")
+    needed = ("REF_AREA", "MEASURE", "UNIT_MEASURE", "TIME_PERIOD", *spec.filters)
     if any(k not in ids for k in needed):
         msg = f"oecd: dimensions {needed} required, got {ids}"
         raise ValueError(msg)
@@ -82,12 +119,13 @@ def parse(payload: bytes) -> list[dict[str, object]]:
             msg = f"oecd: key {key!r} does not match {len(dims)} dimensions"
             raise ValueError(msg)
         at = {ids[n]: dims[n][1][i] for n, i in enumerate(idx)}
-        metric = METRICS.get(at["MEASURE"])
+        found = spec.metrics.get(at["MEASURE"])
         value = vals[0] if isinstance(vals, list) and vals else None
+        filters = {**spec.filters, **spec.metric_filters.get(at["MEASURE"], {})}
         if (
-            metric is None
-            or at["UNIT_MEASURE"] != UNIT
-            or at["SECTOR"] != SECTOR
+            found is None
+            or at["UNIT_MEASURE"] != found[1]
+            or any(at[k] != v for k, v in filters.items())
             or len(at["REF_AREA"]) != 3
             or value is None
         ):
@@ -96,12 +134,16 @@ def parse(payload: bytes) -> list[dict[str, object]]:
             {
                 "iso3": at["REF_AREA"],
                 "year": int(at["TIME_PERIOD"]),
-                "metric": metric,
+                "metric": found[0],
                 "value": float(value),
             }
         )
     rows.sort(key=lambda r: (str(r["iso3"]), str(r["metric"]), int(str(r["year"]))))
     return rows
+
+
+def parse_trust(payload: bytes) -> list[dict[str, object]]:
+    return parse(payload, TRUST_SPEC)
 
 
 def build_mart(staged: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:

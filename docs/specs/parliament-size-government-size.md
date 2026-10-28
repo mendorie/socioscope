@@ -4,7 +4,8 @@
 読む順は `design/themes/parliament-size.md` → 本書 → `themes/parliament-size/CLAUDE.md`。R10（公務就業者 × 議員数）の延長線にある。
 
 ## 0. 状態
-- **実施済み（2026-10-29 深夜）**: R16 `themes/parliament-size/reports/2026-10-29-r16-government-size.md`。H15a 不支持（ρ = +0.16）、H15b 不支持（立方根補正比で ρ = +0.34、相関はむしろ現れる）、H15c 正、H15d 整合。税収は Revenue Statistics の SDMX が空応答のため政府収入比で代替。番外編の記事 `docs/articles/2026-10-29-note-parliament-size-extra-government-size.md` を作成済み（note 未投稿）。
+- **実施済み（2026-10-29 深夜）**: R16 `themes/parliament-size/reports/2026-10-29-r16-government-size.md`。H15a 不支持（ρ = +0.16）、H15b 不支持（立方根補正比で ρ = +0.34、相関はむしろ現れる）、H15c 正、H15d 整合。税収は Revenue Statistics の SDMX が空応答のため政府収入比で代替。番外編の記事 `docs/articles/2026-10-29-note-parliament-size-extra-government-size.md` を作成済み（note 下書き n89c35e24b20f、未公開）。
+- **R17（2026-10-30）**: 深掘り 3 本（選挙制度の層別・議員 1 人当たりの監視対象・議会への信頼）を `themes/parliament-size/reports/2026-10-30-r17-system-oversight-trust.md` に。H16a (i) 再現せず・(ii) 中間、H16b 整合（日本 2 位）、H16c 中間（向きは逆）。記事未反映。
 - 着手する場合のブランチ: `feat/parliament-size-r16-government-size`。
 
 ## 1. 問い

@@ -618,11 +618,18 @@
 - 既知の欠損・断絶・定義変更: ISIC O は警察・軍人・自治体職員を含む。CAN は ISIC O 無し（NAICS）。公的部門は CZE・DEU・ISL・ITA・NZL・PRT が欠損。日本の最新は 2023 年、NZ は 2015 年。
 
 ### OECD Government at a Glance 2025 公的財政（SDMX-JSON、parliament-size H15: 一般政府の支出・収入 対 GDP 比）
-- URL / API: `https://sdmx.oecd.org/public/rest/data/OECD.GOV.GIP,DSD_GOV@DF_GOV_PF_2025,1.0/A..GE+GR....?startPeriod=2007&endPeriod=2024&dimensionAtObservation=AllDimensions&format=jsondata`（鍵不要。`format=jsondata` で SDMX-JSON）。次元は FREQ.REF_AREA.MEASURE.UNIT_MEASURE.SECTOR.EDITION.CATEGORY。
-- 対象指標・粒度: 国 × 年（2007〜2024）。`GE`（一般政府支出）・`GR`（一般政府収入）の `PT_B1GQ`（% of GDP）、S13。USD PPP の行と OECD 集計（OECD / OECD_REP / EUOECD）は捨てる。
+- URL / API: `https://sdmx.oecd.org/public/rest/data/OECD.GOV.GIP,DSD_GOV@DF_GOV_PF_2025,1.0/A..GE+GR+GE_POP....?startPeriod=2007&endPeriod=2024&dimensionAtObservation=AllDimensions&format=jsondata`（鍵不要。`format=jsondata` で SDMX-JSON）。次元は FREQ.REF_AREA.MEASURE.UNIT_MEASURE.SECTOR.EDITION.CATEGORY。
+- 対象指標・粒度: 国 × 年（2007〜2024）。`GE`（一般政府支出）・`GR`（一般政府収入）の `PT_B1GQ`（% of GDP）と `GE_POP`（1 人当たり支出、`USD_PPP_PS`）、S13（2026-10-30 に `GE_POP` を追加、raw 名 `gov_pf_2025_ge_gr_gepop.json`）。他の単位の行と OECD 集計（OECD / OECD_REP / EUOECD）は捨てる。
 - ライセンス・利用規約（確認日）: OECD Terms & Conditions（2024-07-01 改定。出典表示で商用含め自由利用。2026-10-29 確認）。出典表記「OECD (2025), Government at a Glance 2025, https://sdmx.oecd.org (accessed 2026-10-29)」。
 - 取得方法（adapter 名、レート制限）: `theme_parliament_size.oecd`（`URL`/`parse`/`build_mart`）、`pipeline.OECD_GOV`（`SingleDoc`）。
 - 既知の欠損・断絶・定義変更: 税収（Revenue Statistics `DSD_REV_COMP_OECD@DF_RSOECD`）は SDMX が観測なしの応答を返したため未採用。H15 の補助指標は税収でなく政府収入で代替。2020〜2021 年は COVID で支出比が跳ねる（複数年平均と 2019 年単独で確認）。
+
+### OECD Trust Survey 2023「Trust, security and dignity」（SDMX-JSON、parliament-size H16c: 立法府への信頼）
+- URL / API: `https://sdmx.oecd.org/public/rest/data/OECD.GOV.GIP,DSD_GOV_INT@DF_GOV_TDG_2025,1.1/A..TRUST_LE+TRUST_PVGA+TRUST_NG......?dimensionAtObservation=AllDimensions&format=jsondata`（鍵不要）。次元は FREQ.REF_AREA.MEASURE.UNIT_MEASURE.SECTOR.EDITION.SCALE.CATEGORY。
+- 対象指標・粒度: 国 × 年（2021・2023）。`TRUST_LE`（立法府への信頼）・`TRUST_NG`（国の政府への信頼）は尺度 `HMH`（高い＋やや高い）の回答者 %、`TRUST_PVGA`（議会が政府に責任を問うと思う）は尺度 `LIK`。33 か国（OECD 加盟のうち 30〜32 か国）。
+- ライセンス・利用規約（確認日）: OECD Terms & Conditions（2026-10-29 確認）。出典表記「OECD (2025), OECD Survey on Drivers of Trust in Public Institutions 2023, https://sdmx.oecd.org (accessed 2026-10-30)」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.oecd`（`TRUST_URL`/`parse_trust`/`build_mart`、`Spec.metric_filters` で指標別の尺度）、`pipeline.OECD_TRUST`（`SingleDoc`）。
+- 既知の欠損・断絶・定義変更: `TRUST_PVGA` は単位が PT_RESP と宣言されているが値は 0〜1 の割合（最大 0.6）。分析側で 100 倍している。日本・オーストリアは 2021 年のみ。
 
 ### ParlGov 2024 Release（Harvard Dataverse、parliament-size H6b: 選挙ごとの総議席数 1990–）
 - URL / API: `https://dataverse.harvard.edu/api/access/datafile/10437092`（`view_election.tab`、doi:10.7910/DVN/2VZ5ZC、1.2 MB、鍵不要）。parlgov.org 直接（`/data/`、`static/data/*.csv`）は 2026-10-28 時点でボット UA に 403／404。
