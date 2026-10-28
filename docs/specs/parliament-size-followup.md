@@ -2,6 +2,14 @@
 
 次セッションで追加分析を始める人（エージェント）向けのメモ。このテーマの現状、使えるもの、未着手の論点、落とし穴を一枚にまとめる。読む順は `design/themes/parliament-size.md` → 本書 → `themes/parliament-size/CLAUDE.md`。
 
+## 0. 追加分析の進捗（2026-10-28）
+- 論点 2（比例試算の 7 選挙への拡張。行動変化の識別は 2017 年の 4 減では不可能と判明、記述のみ）→ **R6** `themes/parliament-size/reports/2026-10-28-r6-pr-history.md`（H3d 頑健・H3e 記述）。結果調 Excel を第 45〜49 回に拡張（第 42〜44 回は Excel 無し）。
+- 論点 3（選挙区単位の格差）→ **R6**（H4c 整合: 都道府県単位の下限は 230 まで 2 倍未満だが、2022 年区割りの上乗せ係数 1.19 で 260 は 2.26 倍）。
+- 論点 5（H5b の対 GDP 比）→ **R7** `themes/parliament-size/reports/2026-10-28-r7-roles-gdp.md`（H5c 整合、4/17 位）。WDI `NY.GDP.MKTP.CN` を `worldbank.py` で結線。
+- 論点 6（役割指標の補強）→ **R7**（H2c 不支持 ρ = 0.06。質問主意書は議員数と無関係）。IPU に 5 属性を追加。
+- 論点 1（議員立法シェアの国際比較）、論点 4（ParlGov。2026-10-28 時点で 403／404）、論点 7（記事の仕上げ）は未着手。
+- 事後追加の仮説と判定基準は `design/themes/parliament-size.md`「事後追加の仮説（2026-10-28）」に、結果の計算前に固定した。
+
 ## 1. 現状
 
 - PR: https://github.com/mendorie/socioscope/pull/118（ブランチ `claude/japan-parliament-reduction-analysis-d74n37`、main 未マージ）。追加分析は **main にマージされた後に新ブランチで** 行う。マージ前に着手するなら同ブランチの先頭から派生する。

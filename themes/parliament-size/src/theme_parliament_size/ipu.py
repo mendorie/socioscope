@@ -50,6 +50,12 @@ CHAMBER_ATTRS: tuple[str, ...] = (
     "basic_salary_ppp",
     "num_days_parl_plen",
     "num_cham_perm_committees",
+    # 役割の補助指標（追加 2026-10-27、R7）
+    "num_written_question_ask",  # written questions put to the government per year
+    "members_government_number",  # members holding a government post
+    "members_government_percentage",
+    "is_carry_out_inquiries",  # chamber conducts inquiries / investigations
+    "approx_num_government_app",  # government appointments the chamber scrutinises
 )
 COUNTRY_ATTRS: tuple[str, ...] = (
     "country_name",
@@ -238,6 +244,12 @@ MART_COLUMNS: tuple[str, ...] = (
     "plenary_days",
     "plenary_year",
     "committees",
+    "written_questions",
+    "written_questions_year",
+    "members_in_government",
+    "members_in_government_pct",
+    "carries_out_inquiries",
+    "government_appointments",
     "members_per_country",
     "population_thousands",
     "population_year",
@@ -258,6 +270,10 @@ _NUMERIC_LATEST: dict[str, tuple[str, str | None, str | None]] = {
     "basic_salary_ppp": ("basic_salary_ppp", "salary_year", None),
     "num_days_parl_plen": ("plenary_days", "plenary_year", None),
     "num_cham_perm_committees": ("committees", None, None),
+    "num_written_question_ask": ("written_questions", "written_questions_year", None),
+    "members_government_number": ("members_in_government", None, None),
+    "members_government_percentage": ("members_in_government_pct", None, None),
+    "approx_num_government_app": ("government_appointments", None, None),
 }
 _TEXT_LATEST = {
     "chamber_name": "chamber_name",
@@ -268,6 +284,7 @@ _TEXT_LATEST = {
 _BOOL_LATEST = {
     "is_staff_combined_parl": "staff_combined_parl",
     "is_budget_combined_parl": "budget_combined_parl",
+    "is_carry_out_inquiries": "carries_out_inquiries",
 }
 
 

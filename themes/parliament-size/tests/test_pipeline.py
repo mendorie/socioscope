@@ -202,3 +202,35 @@ def test_build_panel_rejects_duplicate_keys() -> None:
     }
     with pytest.raises(ValueError, match="duplicate panel key"):
         build_panel([row, dict(row, value=466)])
+
+
+def test_worldbank_gdp_is_wired_as_a_single_document_source() -> None:
+    import json
+
+    from theme_parliament_size import worldbank
+    from theme_parliament_size.pipeline import WDI
+
+    point = {
+        "indicator": {"id": "NY.GDP.MKTP.CN", "value": "GDP (current LCU)"},
+        "country": {"id": "JP", "value": "Japan"},
+        "countryiso3code": "JPN",
+        "date": "2024",
+        "value": 634226000000000.0,
+    }
+    body = json.dumps([{"page": 1, "pages": 1, "total": 1}, [point]]).encode()
+    ctx = make_ctx({worldbank.URL: body}, sources=frozenset({worldbank.SOURCE}))
+    fetched = PIPELINE.run(Stage.FETCH, ctx)
+    assert fetched.written == (f"{THEME}/{worldbank.SOURCE}/{worldbank.RAW_NAME}",)
+    assert "CC BY 4.0" in ctx.raw.records()[0].license
+    PIPELINE.run(Stage.STAGE, ctx)
+    marted = PIPELINE.run(Stage.MART, ctx)
+    assert marted.written == (WDI.mart,) and WDI.mart == "marts/wdi_gdp_lcu"
+    assert ctx.tables.read_table(WDI.mart) == [
+        {
+            "iso3": "JPN",
+            "year": 2024,
+            "country": "Japan",
+            "gdp_lcu": 634226000000000.0,
+            "source": worldbank.SOURCE,
+        }
+    ]
