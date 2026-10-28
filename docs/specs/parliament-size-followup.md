@@ -10,7 +10,7 @@
 - 論点 1（議員立法シェアの国際比較）→ **R8** `themes/parliament-size/reports/2026-10-28-r8-member-bills.md`（H2d 不支持: 英 21.5% ≈ 日 21.8% < 仏 50.9%）。UK Bills API と仏 AN ドシエ zip を結線。独（DIP）・米（Congress.gov）・韓は API 鍵が要り未着手。
 - 論点 4（ParlGov）→ **R9** `themes/parliament-size/reports/2026-10-28-r9-seats-history.md`（H6b 不支持 r = 0.51。**R4 の各国判定を撤回**）。parlgov.org は 403 だが Harvard Dataverse の 2024 Release（CC0）から取れた。
 - 論点 7（記事の仕上げ）→ 2026-10-28 に R6〜R9 を反映して `.final.md` とヘッダー画像を作成。
-- 追加（ユーザー提起 H2e、2026-10-28 夜）→ **R10** `themes/parliament-size/reports/2026-10-28-r10-bureaucracy.md`（ILOSTAT 公務就業者 × 議員数、ρ = +0.33 で向きは逆、判定は中間）。記事には未反映。
+- 追加（ユーザー提起 H2e、2026-10-28 夜）→ **R10** `themes/parliament-size/reports/2026-10-28-r10-bureaucracy.md`（ILOSTAT 公務就業者 × 議員数、ρ = +0.33 で向きは逆、判定は中間）。記事（論点 2・総括）にも反映済み。
 - 事後追加の仮説と判定基準は `design/themes/parliament-size.md`「事後追加の仮説（2026-10-28）」に、結果の計算前に固定した。
 
 ## 1. 現状
