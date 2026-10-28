@@ -70,6 +70,7 @@
 | 国立社会保障・人口問題研究所『日本の地域別将来推計人口（令和 5 年推計）』結果表 1 | 都道府県別 総人口 2020–2050（5 年刻み）（parliament-size H11） | `pp-shicyoson/j/shicyoson23/2gaiyo_hyo/kekkahyo1.xlsx`（xlsx 1 シート、鍵不要） | 出典明示で利用可 | **採用**（parliament-size、2026-10-29。`marts/jp_prefecture_projection`。総人口で日本人人口ではない） |
 | Camera dei deputati open data（dati.camera.it SPARQL） | 年別の成立法律数（`ocd:legge`）と本会議回数（`ocd:seduta` × `rif_assemblea`）（parliament-size H7） | SPARQL（集計クエリの JSON 結果を raw に、鍵不要） | CC BY 4.0 | **採用**（parliament-size、2026-10-29。`marts/it_laws_by_year`、`it_sittings_by_year`） |
 | 衆議院規則 第 92 条（衆議院 HP） | 常任委員会 17 の委員定数（parliament-size H10） | HTML（Shift_JIS） | 衆議院 HP の利用規約（出典表示） | **採用**（手入力 `jp_committee_seats.csv`、2026-10-29） |
+| 各国選挙法の法定阻止条項（ACE Electoral Knowledge Network で確認） | OECD の比例・混合制 29 か国の法定閾値（parliament-size H14b） | 手入力 `intl_thresholds.csv`（出典列あり） | – | **採用**（手入力、2026-10-29。改正の追跡は要確認） |
 | ハンガリー国会（parlament.hu） | 成立法律数（parliament-size H7） | HTML | – | 不採用（2026-10-29 時点でボット UA に CAPTCHA） |
 | 国立国会図書館 国会会議録検索システム API `meeting_list` | 衆議院の会議（本会議・委員会等）の一覧（parliament-size H13: 稼働日数） | REST JSON（年 × 100 件ページ、鍵不要。2013–2025 で 84 ページ） | 出典明示で利用可 | **採用**（parliament-size、2026-10-29。`marts/jp_hr_sitting_days`） |
 | ILOSTAT `EAR_EMTA_SEX_CUR_NB`（平均月収、CUR_TYPE_LCU） | 雇用者の平均月収（現地通貨）（parliament-size H12 の分母） | REST JSON | CC BY 4.0 | **採用**（parliament-size、2026-10-29。`marts/ilo_earnings_monthly`。「現地通貨」に米ドル相当の値が混じる国（HUN・CZE・DNK・ISL・SWE・NOR・POL）は年収 ÷ GDP < 0.3 で除外） |
