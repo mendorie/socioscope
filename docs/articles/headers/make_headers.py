@@ -1178,6 +1178,84 @@ def bicycle_part3() -> Path:
     return out
 
 
+def parliament_size() -> Path:
+    ipu = pl.read_parquet(MARTS / "ipu_parliaments.parquet")
+    lower = ipu.filter(pl.col("oecd_member") & (pl.col("chamber_type") == "lower"))
+    per_m = {
+        str(r["iso3"]): float(r["statutory_seats"]) / (float(r["population_thousands"]) / 1000)
+        for r in lower.iter_rows(named=True)
+    }
+    cube = {
+        str(r["iso3"]): float(r["statutory_seats"])
+        / (float(r["population_thousands"]) * 1000) ** (1 / 3)
+        for r in lower.iter_rows(named=True)
+    }
+    picks = [
+        ("USA", "米国"),
+        ("JPN", "日本"),
+        ("MEX", "メキシコ"),
+        ("KOR", "韓国"),
+        ("ITA", "イタリア"),
+        ("DEU", "ドイツ"),
+        ("FRA", "フランス"),
+        ("GBR", "英国"),
+        ("SWE", "スウェーデン"),
+    ]
+    rank_pm = sorted(per_m, key=lambda k: per_m[k]).index("JPN") + 1
+    rank_cb = sorted(cube, key=lambda k: cube[k]).index("JPN") + 1
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "国会議員は多すぎるのか、少なすぎるのか",
+        "定数削減の 6 つの論点を、国内外の公開データで一つずつ確かめる",
+    )
+    ax = fig.add_axes([0.11, 0.10, 0.46, 0.58])
+    ys = np.arange(len(picks))[::-1]
+    for y, (iso, name) in zip(ys, picks, strict=True):
+        c = ORANGE if iso == "JPN" else BLUE
+        ax.barh(y, per_m[iso], color=c, height=0.62)
+        ax.text(per_m[iso] + 0.3, y, f"{per_m[iso]:.1f}", va="center", fontsize=12, color=INK)
+        ax.text(-0.4, y, name, va="center", ha="right", fontsize=13, color=INK)
+    ax.set_xlim(0, 40)
+    ax.set_yticks([])
+    ax.set_xticks([])
+    _bare(ax)
+    bg.text(64, 470, "人口 100 万人当たりの下院議員数", fontsize=14, color=MUTED, va="center")
+
+    x0 = 790
+    bg.add_patch(
+        FancyBboxPatch(
+            (x0, 100), 430, 350, boxstyle="round,pad=0,rounding_size=18", fc="white", ec="none"
+        )
+    )
+    bg.text(x0 + 28, 420, "日本の位置（OECD 38 か国）", fontsize=14, color=MUTED, va="center")
+    items = [
+        ("人口当たりでは", f"少ない方から {rank_pm} 位", ORANGE),
+        ("人口規模を補正すると", f"{rank_cb} 位（真ん中）", BLUE),
+        ("比例 45 減で浮く国費", "国民 1 人 25 円/年", INK),
+        ("比例削減で小政党の議席は", "3 分の 1 減（7 選挙で同じ）", INK),
+    ]
+    for i, (label, value, color) in enumerate(items):
+        y = 372 - i * 78
+        bg.text(x0 + 28, y, label, fontsize=13, color=MUTED, va="center")
+        bg.text(x0 + 28, y - 30, value, fontsize=19, fontweight="bold", color=color, va="center")
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: IPU Parline（CC BY-NC-SA 4.0）・総務省 衆議院議員総選挙 結果調・"
+        "財務省 予算書を加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-27-note-parliament-size.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     for p in (
         growth_fertility(),
@@ -1191,5 +1269,6 @@ if __name__ == "__main__":
         bicycle_part1(),
         bicycle_part2(),
         bicycle_part3(),
+        parliament_size(),
     ):
         print(p)

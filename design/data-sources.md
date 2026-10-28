@@ -63,8 +63,11 @@
 | 国税庁 統計年報 / 民間給与実態統計 | 所得分布 | Excel | 政府標準利用規約 | 候補（日本） |
 | 野村総研 富裕層レポート等 | 資産階層別世帯数（推計） | PDF（公開レポート） | 引用のみ | 候補（LLM 構造化対象） |
 | IPU Parline（data.ipu.org） | 272 議院の定数・現員・選挙制度・任期（parliament-size H1・H2） | JSON API（鍵の要否は確認要） | **CC BY-NC-SA 4.0**（API `meta.licence`、確認 2026-10-27）。非商用 | **採用**（parliament-size H1。`marts/ipu_parliaments`） |
-| ParlGov | 欧州・OECD の選挙結果（政党別得票・議席）（parliament-size H3c 国際比較） | CSV | CC BY 4.0（確認要） | 候補（parliament-size）。2026-10-28 時点で `parlgov.org/data/` はボット UA に 403、`static/data/...csv` は 404 で取得できず |
-| World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨） | 議会費の対 GDP 比の分母（parliament-size H5c） | REST JSON（`api.worldbank.org/v2`、1 ページ） | CC BY 4.0 | **採用**（parliament-size、2026-10-28。`marts/wdi_gdp_lcu`。growth-fertility の adapter と同じ URL 規約だがテーマ内に複製） |
+| ParlGov 2024 Release（Harvard Dataverse） | 選挙ごとの総議席数 `seats_total`（parliament-size H6b 定数履歴 1990–）。政党別得票・議席も含む | Dataverse API `api/access/datafile/10437092`（`view_election.tab`、鍵不要） | **CC0 1.0**（Dataverse 上。parlgov.org 本体は CC BY 4.0、出典表示） | **採用**（parliament-size、2026-10-28。`marts/parlgov_elections`。parlgov.org 直接はボット UA に 403／404） |
+| UK Parliament Bills API | 法案 1 件ごとの種別（Government／Private Members' Bill）と成立（Royal Assent）（parliament-size H2d） | REST JSON `bills-api.parliament.uk/api/v1/Bills`（Take=100 でページング、鍵不要） | Open Parliament Licence v3.0 | **採用**（parliament-size、2026-10-28。`marts/uk_acts`） |
+| Assemblée nationale open data「Dossiers législatifs」 | 法律ドシエの手続種別・提出種別（projet／proposition）・公布（parliament-size H2d） | 立法期ごとの zip（JSON、第 16・17 期のみ） | Licence Ouverte 2.0（Etalab） | **採用**（parliament-size、2026-10-28。`marts/fr_laws`） |
+| Bundestag DIP API / Congress.gov API / 열린국회정보 | 独・米・韓の法案（parliament-size H2d） | REST JSON、**API 鍵が要る** | 各機関の規約 | 候補（parliament-size。鍵未取得で未着手） |
+| World Bank WDI `NY.GDP.MKTP.CN`（名目 GDP、現地通貨）、`SP.POP.TOTL`（人口） | 議会費の対 GDP 比の分母（parliament-size H5c）、定数変更の直前 10 年の人口変化（H6b） | REST JSON（`api.worldbank.org/v2`、1 ページ） | CC BY 4.0 | **採用**（parliament-size、2026-10-28。`marts/wdi_gdp_lcu`、`marts/wdi_population`。growth-fertility の adapter と同じ URL 規約だがテーマ内に複製） |
 | V-Dem | 立法府の制約指数 `v2xlg_legcon` 等（parliament-size H2） | CSV（登録の要否 確認要） | CC BY-SA 4.0（確認要） | 候補（parliament-size） |
 | Eurostat `gov_10a_exp` / OECD COFOG | 執行・立法機関 歳出（COFOG 01.1）（parliament-size H5b） | JSON-stat / SDMX、鍵不要 | Eurostat: CC BY 4.0 / OECD Terms & Conditions | 候補（parliament-size。01.1 は執行機関と合算、立法のみ分離できる国に限る） |
 | 総務省 衆議院議員総選挙 結果調（第 45〜51 回） | 都道府県別・比例ブロック別 有権者数、政党別得票・議席（parliament-size H3・H4・H3d） | **Excel あり**（xls／xlsx、`main_content/<id>.xls(x)`、鍵不要）。第 42〜44 回（2000・2003・2005 年）は Excel 配布なし | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size H3・H4、2026-10-27。第 45〜49 回を 2026-10-28 に追加。`marts/jp_hr_pr_results`, `jp_hr_seats_by_party`, `jp_hr_electorate`） |
@@ -596,7 +599,28 @@
 - 対象指標・粒度: 経済体 × 年（現地通貨、名目）。集計体（iso3 が空）と欠損は落とす。IPU の `chamber_budget`（現地通貨、予算年）と同じ年で割る。
 - ライセンス・利用規約（確認日）: CC BY 4.0（https://datacatalog.worldbank.org/public-licenses、2026-10-28 確認）。出典表記「World Bank, World Development Indicators, NY.GDP.MKTP.CN (accessed 2026-10-28)」。
 - 取得方法（adapter 名、レート制限）: `theme_parliament_size.worldbank`（`URL`/`RAW_NAME`/`parse`/`build_mart`）、`pipeline.WDI`（`SingleDoc`）。growth-fertility の `worldbank.py` と同じ URL 規約だがテーマ間 import はしない（ADR 0001）。レート制限の記載なし。
-- 既知の欠損・断絶・定義変更: ページが分かれたら ValueError（fail-closed）。OECD 38 か国はすべて 2024 年まで値あり（日本は 2025 年も）。IPU の予算の通貨は国の通貨（`local_currency`）と一致することを R7 で確認したうえで割る。
+- 既知の欠損・断絶・定義変更: ページが分かれたら ValueError（fail-closed）。OECD 38 か国はすべて 2024 年まで値あり（日本は 2025 年も）。IPU の予算の通貨は国の通貨（`local_currency`）と一致することを R7 で確認したうえで割る。人口 `SP.POP.TOTL`（1980–2025、`POP_URL`／`POP_RAW_NAME`、`marts/wdi_population`）も同じ adapter で取る。
+
+### ParlGov 2024 Release（Harvard Dataverse、parliament-size H6b: 選挙ごとの総議席数 1990–）
+- URL / API: `https://dataverse.harvard.edu/api/access/datafile/10437092`（`view_election.tab`、doi:10.7910/DVN/2VZ5ZC、1.2 MB、鍵不要）。parlgov.org 直接（`/data/`、`static/data/*.csv`）は 2026-10-28 時点でボット UA に 403／404。
+- 対象指標・粒度: 選挙 × 政党（得票・議席・総議席）。採用したのは parliament 選挙の 国 × 選挙 × `seats_total`（845 選挙・37 か国）。
+- ライセンス・利用規約（確認日）: Dataverse のデータセットは CC0 1.0（2026-10-28 確認）。出典表記「Döring, Holger and Philip Manow. 2024. Parliaments and governments database (ParlGov), parlgov.org」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.parlgov`（`URL`/`RAW_NAME`/`parse`/`build_mart`）、`pipeline.PARLGOV`（`SingleDoc`）。
+- 既知の欠損・断絶・定義変更: `seats_total` は選挙時の実議席（ドイツは超過議席込み 603〜736、NZ・豪州は ±1）。日本 2021 年は 176（比例のみ）で誤り。OECD の CHL・COL・CRI・KOR・MEX・USA は収録なし。R9 では日本を手入力表、ドイツを法定定数で置き換えた。
+
+### UK Parliament Bills API（parliament-size H2d: 法案の種別と成立）
+- URL / API: `https://bills-api.parliament.uk/api/v1/Bills?Take=100&Skip=N`（JSON、鍵不要。4,065 件・41 ページ、2026-10-28）。`/BillTypes`・`/Stages` で種別と段階の一覧。`IsAct` クエリは効かない（parse 側で `isAct` を見る）。`/Sessions` は 404。
+- 対象指標・粒度: 法案 1 件（billId、billTypeId、isAct、currentStage）。成立法案は currentStage が Royal Assent（stageId 11）で、その `stageSittings[].date` が成立日。
+- ライセンス・利用規約（確認日）: Open Parliament Licence v3.0（2026-10-28 確認）。出典表記「Contains Parliamentary information licensed under the Open Parliament Licence v3.0」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.ukbills`（`url`/`raw_name`/`has_next`/`parse`/`build_mart`）、`pipeline._fetch/_stage/_mart_ukbills`。レート制限の記載なし。41 リクエスト。
+- 既知の欠損・断絶・定義変更: 収録は 2005 年ごろから（2006–07 年は部分）。Private Members' Bill は 4 類型（billTypeId 2・5・7・8）、Private Bill（6）・Hybrid（4）・Consolidation（3）は議員提出でも政府提出でもない「その他」。
+
+### Assemblée nationale open data「Dossiers législatifs」（parliament-size H2d: 法律ドシエの提出種別と公布）
+- URL / API: `https://data.assemblee-nationale.fr/static/openData/repository/<legislature>/loi/dossiers_legislatifs/Dossiers_Legislatifs.json.zip`（第 16 期 9 MB、第 17 期 11 MB。第 15 期以前は 404）。
+- 対象指標・粒度: ドシエ 1 件（`json/dossierParlementaire/*.json`）。手続種別 `procedureParlementaire.libelle`、提出種別は文書 uid の接頭辞（PRJL = projet、PION = proposition）、公布は acte `PROM-PUB` の `dateActe`。
+- ライセンス・利用規約（確認日）: Licence Ouverte / Open Licence 2.0（Etalab、2026-10-28 確認）。出典表記「Assemblée nationale, open data」。
+- 取得方法（adapter 名、レート制限）: `theme_parliament_size.fran`（`url`/`raw_name`/`parse`/`build_mart`）、`pipeline._fetch/_stage/_mart_fran`。
+- 既知の欠損・断絶・定義変更: 条約批准法の libelle は「Projet de ratification des traités et conventions」で「loi」を含まないため `is_law` で明示的に含める。立法期をまたぐドシエは両方の zip に同じ uid で入るので新しい立法期の記録を残す。`json/document/` は法案本文のメタで対象外。
 
 ### e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1（parliament-size H4b: 都道府県別 日本人人口）
 - URL / API: `https://www.e-stat.go.jp/stat-search/file-download?statInfId=000032142404&fileKind=0`（xlsx 478 KB、appId 不要）。一覧 `stat-search/files?tclass=000001125102&cycle=0`。
