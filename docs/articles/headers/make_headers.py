@@ -1369,6 +1369,81 @@ def parliament_size_extra() -> Path:
     return out
 
 
+def parliament_size_extra2() -> Path:
+    eb = pl.read_parquet(MARTS / "eb_trust_parliament.parquet")
+    it = {
+        int(r["wave"]): float(r["value"])
+        for r in eb.filter(pl.col("iso3") == "ITA").iter_rows(named=True)
+    }
+    eu = {
+        int(r["wave"]): float(r["value"])
+        for r in eb.filter(pl.col("iso3") == "EU27").iter_rows(named=True)
+    }
+    waves = sorted(w for w in it if w in eu)
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "不信が議員を減らすのは、日本だけか",
+        "OECD 15 か国 17 件の定数削減の提案と、減らしたイタリアの信頼の前後を追う",
+    )
+    ax = fig.add_axes([0.10, 0.13, 0.52, 0.54])
+    ax.plot(waves, [it[w] for w in waves], marker="o", color=ORANGE, linewidth=2, label="イタリア")
+    ax.plot(waves, [eu[w] for w in waves], marker="o", color=BLUE, linewidth=2, label="EU27 平均")
+    ax.axvline(97.5, color=INK, linewidth=1, linestyle="--")
+    ax.text(97.7, 41.5, "630 → 400 施行", fontsize=11, color=INK)
+    ax.set_xticks([91, 94, 97, 100, 103])
+    ax.set_xticklabels(["2019", "2021", "2022", "2023", "2025"], fontsize=11, color=MUTED)
+    ax.set_yticks([25, 30, 35, 40])
+    ax.set_ylim(22, 44)
+    ax.tick_params(colors=MUTED, labelsize=11)
+    ax.legend(frameon=False, fontsize=11, loc="upper left")
+    _bare(ax)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_visible(True)
+        ax.spines[side].set_color("#dddddd")
+    bg.text(
+        64,
+        470,
+        "国の議会を信頼する人の割合（%、Eurobarometer 半年ごと）",
+        fontsize=13,
+        color=MUTED,
+        va="center",
+    )
+
+    x0 = 790
+    bg.add_patch(
+        FancyBboxPatch(
+            (x0, 100), 430, 350, boxstyle="round,pad=0,rounding_size=18", fc="white", ec="none"
+        )
+    )
+    bg.text(x0 + 28, 420, "OECD 38 か国、2000 年以降", fontsize=14, color=MUTED, va="center")
+    items = [
+        ("削減を提案した国の信頼", "31% vs しない国 42%", ORANGE),
+        ("法案・国民投票に限ると", "差は消える", INK),
+        ("不信・費用を理由にした 13 件", "施行は 3 件", INK),
+        ("減らしたイタリアの信頼", "+6 pt（政権交代と同時）", BLUE),
+    ]
+    for i, (label, value, color) in enumerate(items):
+        y = 372 - i * 78
+        bg.text(x0 + 28, y, label, fontsize=13, color=MUTED, va="center")
+        bg.text(x0 + 28, y - 30, value, fontsize=19, fontweight="bold", color=color, va="center")
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: Standard Eurobarometer 91–103（data.europa.eu）・"
+        "OECD Trust Survey 2023 を加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-10-31-note-parliament-size-extra2-distrust.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     for p in (
         growth_fertility(),
@@ -1384,5 +1459,6 @@ if __name__ == "__main__":
         bicycle_part3(),
         parliament_size(),
         parliament_size_extra(),
+        parliament_size_extra2(),
     ):
         print(p)

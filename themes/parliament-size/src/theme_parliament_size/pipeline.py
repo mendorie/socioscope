@@ -14,6 +14,7 @@ from theme_parliament_size import (
     camera,
     clb,
     estat,
+    eurobarometer,
     fran,
     ilostat,
     ipss,
@@ -78,6 +79,7 @@ def fetch(ctx: Context) -> StageResult:
     written, skipped = _fetch_single(ctx, written, skipped, OECD_GOV)
     written, skipped = _fetch_single(ctx, written, skipped, OECD_TRUST)
     written, skipped = _fetch_kokkai(ctx, written, skipped)
+    written, skipped = _fetch_eurobarometer(ctx, written, skipped)
     written, skipped = _fetch_ukbills(ctx, written, skipped)
     written, skipped = _fetch_fran(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
@@ -104,6 +106,7 @@ def stage(ctx: Context) -> StageResult:
     written, skipped = _stage_single(ctx, written, skipped, OECD_GOV)
     written, skipped = _stage_single(ctx, written, skipped, OECD_TRUST)
     written, skipped = _stage_kokkai(ctx, written, skipped)
+    written, skipped = _stage_eurobarometer(ctx, written, skipped)
     written, skipped = _stage_ukbills(ctx, written, skipped)
     written, skipped = _stage_fran(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
@@ -130,6 +133,7 @@ def mart(ctx: Context) -> StageResult:
     written, skipped = _mart_single(ctx, written, skipped, OECD_GOV)
     written, skipped = _mart_single(ctx, written, skipped, OECD_TRUST)
     written, skipped = _mart_kokkai(ctx, written, skipped)
+    written, skipped = _mart_eurobarometer(ctx, written, skipped)
     written, skipped = _mart_ukbills(ctx, written, skipped)
     written, skipped = _mart_fran(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
@@ -898,6 +902,77 @@ def _stage_kokkai(
     if rows:
         ctx.tables.write_table(KOKKAI_TABLE, rows)
         written.append(KOKKAI_TABLE)
+    return written, skipped
+
+
+EB_TABLE = "staged/eurobarometer/trust_parliament"
+EB_MART = "marts/eb_trust_parliament"
+
+
+def _fetch_eurobarometer(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(eurobarometer.SOURCE):
+        return written, skipped
+    for wave in eurobarometer.WAVES:
+        try:
+            payload = ctx.fetcher.fetch(wave.url)
+        except FetchError as e:
+            skipped.append(f"{wave.raw_name}: {e}")
+            continue
+        if not eurobarometer.is_magic(payload):
+            skipped.append(f"{wave.raw_name}: unexpected payload (magic mismatch)")
+            continue
+        rec = ctx.raw.put(
+            theme=THEME,
+            source=eurobarometer.SOURCE,
+            name=wave.raw_name,
+            url=wave.url,
+            license=eurobarometer.LICENSE,
+            payload=payload,
+        )
+        written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_eurobarometer(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(eurobarometer.SOURCE):
+        return written, skipped
+    rows: list[dict[str, object]] = []
+    for wave in eurobarometer.WAVES:
+        payload = ctx.raw.get(theme=THEME, source=eurobarometer.SOURCE, name=wave.raw_name)
+        if payload is None:
+            skipped.append(f"{wave.raw_name}: raw missing (run fetch)")
+            continue
+        try:
+            rows.extend(
+                {**r, "source": eurobarometer.SOURCE} for r in eurobarometer.parse(payload, wave)
+            )
+        except ValueError as e:
+            skipped.append(f"{wave.raw_name}: {e}")
+    if rows:
+        ctx.tables.write_table(EB_TABLE, rows)
+        written.append(EB_TABLE)
+    return written, skipped
+
+
+def _mart_eurobarometer(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(eurobarometer.SOURCE):
+        return written, skipped
+    if EB_TABLE not in ctx.tables.list_tables():
+        skipped.append(f"{EB_MART}: staged missing (run stage)")
+        return written, skipped
+    try:
+        rows = eurobarometer.build_mart(ctx.tables.read_table(EB_TABLE))
+    except ValueError as e:
+        skipped.append(f"{EB_MART}: {e}")
+        return written, skipped
+    ctx.tables.write_table(EB_MART, rows)
+    written.append(EB_MART)
     return written, skipped
 
 

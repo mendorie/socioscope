@@ -7,9 +7,12 @@
   H17b: 表向きの理由が「不信」「費用」を含む提案と、それ以外の提案の実現（施行）率。記述。
   H17c: 2021〜2023 年に削減が施行された国（イタリア）の信頼の変化（2021 → 2023）が、
         同じ 2 時点がある他国の変化の中央値を 5 pt 以上上回れば整合、±5 pt で不支持、下回れば逆。
+        補完（2026-10-31 固定）: OECD 調査にイタリアの 2021 年値が無いため、Eurobarometer の
+        国の議会への信頼（EB91〜103、半年ごと）で、施行前（EB91〜97）と施行後（EB98〜103）の
+        平均の差を イタリア − EU27 で比べる。+5 pt 以上で整合、±5 pt で不支持、−5 pt 以下で逆。
 
 決定的スクリプト。入力は src/theme_parliament_size/seat_reduction_proposals.csv
-（手入力、出典列あり）と data/marts/{oecd_gov_trust, ipu_parliaments}.parquet。
+（手入力、出典列あり）と data/marts/{oecd_gov_trust, eb_trust_parliament, ipu_parliaments}.parquet。
 純粋ヘルパは tests/test_analysis_r18.py で検証する。
 """
 
@@ -36,6 +39,10 @@ GRID = "#e6e6e6"
 JP = "JPN"
 SINCE = 2000
 ENACTED = "enacted"  # 施行された（repealed は成立後に撤回、proposed は未成立）
+EB_PRE = (91, 97)  # 施行前: 2019 年春〜2022 年夏
+EB_POST = (98, 103)  # 施行後: 2022 年冬〜2025 年春（イタリアは 2022 年 9 月の総選挙から 400）
+EB_REF = (91, 92)  # 国民投票前（2020 年 9 月）
+EB_MID = (93, 97)  # 国民投票後・施行前
 
 
 # ---- pure helpers -------------------------------------------------------------------------------
@@ -48,6 +55,12 @@ def is_distrust_or_cost(reason: str) -> bool:
 def enacted_rate(rows: Sequence[Mapping[str, str]]) -> tuple[int, int]:
     """(施行された件数, 件数)。"""
     return sum(1 for r in rows if r["status"] == ENACTED), len(rows)
+
+
+def period_mean(series: Mapping[int, float], waves: tuple[int, int]) -> float:
+    """{波: 値} → 波の範囲（両端含む）の平均。無ければ nan。"""
+    vals = [v for w, v in series.items() if waves[0] <= w <= waves[1]]
+    return sum(vals) / len(vals) if vals else math.nan
 
 
 def judge_h17a(diff_pt: float) -> str:
@@ -132,6 +145,46 @@ def fig_strip(
     plt.close(fig)
 
 
+def fig_eb(
+    it: Mapping[int, float], eu: Mapping[int, float], labels: Mapping[int, str], path: Path
+) -> None:
+    import matplotlib.pyplot as plt
+
+    waves = sorted(w for w in it if w in eu)
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    ax.plot(waves, [it[w] for w in waves], marker="o", color=SERIES[1], label="イタリア")
+    ax.plot(waves, [eu[w] for w in waves], marker="o", color="#7f9cc4", label="EU27 平均")
+    ax.axvline(92.5, color=INK, linewidth=0.8, linestyle="--")
+    ax.text(92.6, 20.5, "国民投票（2020 年 9 月）", fontsize=7, color=INK)
+    ax.axvline(97.5, color=INK, linewidth=0.8, linestyle="--")
+    ax.text(97.6, 20.5, "630 → 400 施行（2022 年 9 月）", fontsize=7, color=INK)
+    ax.set_xticks(waves)
+    ax.set_xticklabels([labels[w] for w in waves], fontsize=6.5, rotation=45, ha="right")
+    ax.set_ylim(20, 45)
+    ax.set_ylabel("国の議会を信頼する人の割合（%）", fontsize=8, color=INK)
+    ax.set_title(
+        "イタリアの国会への信頼: 定数削減の前後（Eurobarometer）",
+        fontsize=10,
+        color=INK,
+        loc="left",
+    )
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    ax.grid(axis="y", color=GRID, linewidth=0.6)
+    ax.set_axisbelow(True)
+    fig.text(
+        0.01,
+        0.005,
+        "出典: European Commission, Standard Eurobarometer 91–103, Volume A（data.europa.eu）",
+        fontsize=7,
+        color=MUTED,
+    )
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
+
+
 # ---- main ----------------------------------------------------------------------------------------
 
 
@@ -149,6 +202,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     marts = args.data_dir / "marts"
     ipu = pl.read_parquet(marts / "ipu_parliaments.parquet")
     trust_df = pl.read_parquet(marts / "oecd_gov_trust.parquet")
+    eb_df = pl.read_parquet(marts / "eb_trust_parliament.parquet")
     lower = ipu.filter(pl.col("oecd_member") & (pl.col("chamber_type") == "lower"))
     names = {str(r["iso3"]): str(r["country"]) for r in lower.iter_rows(named=True)}
     with PROPOSALS_CSV.open(encoding="utf-8") as f:
@@ -295,8 +349,64 @@ def main(argv: Sequence[str] | None = None) -> None:
             f"**H17c {judge_h17c(math.nan)}**。他 {len(others)} か国の変化の中央値は "
             f"{med_o:+.1f} pt（2023 年のイタリアの信頼は {trust['ITA']:.1f}%）"
         )
+    # ---- H17c 補完（Eurobarometer）
+    print("\n## H17c 補完: Eurobarometer の国会への信頼（イタリア vs EU27、半年ごと）")
+    eb: dict[str, dict[int, float]] = {}
+    labels: dict[int, str] = {}
+    for r in eb_df.iter_rows(named=True):
+        eb.setdefault(str(r["iso3"]), {})[int(r["wave"])] = float(r["value"])
+        labels[int(r["wave"])] = f"EB{r['wave']} {r['fieldwork']}"
+    it, eu = eb["ITA"], eb["EU27"]
+    print(md_row(["波", "調査時期", "イタリア %", "EU27 %", "差 pt"]))
+    print("|" + "---|" * 5)
+    for w in sorted(it):
+        print(
+            md_row(
+                [
+                    f"EB{w}",
+                    labels[w].split()[1],
+                    f"{it[w]:.0f}",
+                    f"{eu[w]:.0f}",
+                    f"{it[w] - eu[w]:+.0f}",
+                ]
+            )
+        )
+    it_pre, it_post = period_mean(it, EB_PRE), period_mean(it, EB_POST)
+    eu_pre, eu_post = period_mean(eu, EB_PRE), period_mean(eu, EB_POST)
+    d_eb = (it_post - it_pre) - (eu_post - eu_pre)
+    print(
+        f"\n- 施行前（EB{EB_PRE[0]}〜{EB_PRE[1]}）→ 施行後（EB{EB_POST[0]}〜{EB_POST[1]}）: "
+        f"イタリア {it_pre:.1f}% → {it_post:.1f}%（{it_post - it_pre:+.1f} pt）、"
+        f"EU27 {eu_pre:.1f}% → {eu_post:.1f}%（{eu_post - eu_pre:+.1f} pt）。"
+        f"差 {d_eb:+.1f} pt → **H17c（補完）{judge_h17c(d_eb)}**（+5 pt 以上で整合。n = 1）"
+    )
+    it_ref, it_mid = period_mean(it, EB_REF), period_mean(it, EB_MID)
+    eu_ref, eu_mid = period_mean(eu, EB_REF), period_mean(eu, EB_MID)
+    print(
+        f"- 補助: 国民投票前（EB{EB_REF[0]}〜{EB_REF[1]}）→ "
+        f"国民投票後・施行前（EB{EB_MID[0]}〜{EB_MID[1]}）: "
+        f"イタリア {it_ref:.1f}% → {it_mid:.1f}%（{it_mid - it_ref:+.1f} pt）、"
+        f"EU27 {eu_ref:.1f}% → {eu_mid:.1f}%（{eu_mid - eu_ref:+.1f} pt）"
+    )
+    eb_deltas: dict[str, float] = {}
+    for cc, series in eb.items():
+        if cc in ("ITA", "EU27", "EU28"):
+            continue
+        dv = period_mean(series, EB_POST) - period_mean(series, EB_PRE)
+        if not math.isnan(dv):
+            eb_deltas[cc] = dv
+    rank = sorted(eb_deltas, key=lambda c: -eb_deltas[c])
+    it_delta = it_post - it_pre
+    it_rank = sum(1 for dv in eb_deltas.values() if dv > it_delta) + 1
+    top = "、".join(f"{c} {eb_deltas[c]:+.1f}" for c in rank[:3])
+    print(
+        f"- 補助: 同じ前後比較で EU 各国の変化の中央値は "
+        f"{median(list(eb_deltas.values())):+.1f} pt。イタリアの {it_delta:+.1f} pt は "
+        f"{len(eb_deltas) + 1} か国中 大きい方から {it_rank} 位（上位: {top}）"
+    )
     fig_strip(trust, proposed, enacted, names, args.fig_dir / "r18_trust_by_proposal.png")
-    print(f"\n図: {args.fig_dir}/r18_trust_by_proposal.png")
+    fig_eb(it, eu, labels, args.fig_dir / "r18_italy_trust_eurobarometer.png")
+    print(f"\n図: {args.fig_dir}/r18_trust_by_proposal.png, r18_italy_trust_eurobarometer.png")
 
 
 if __name__ == "__main__":
