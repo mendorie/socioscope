@@ -4,8 +4,10 @@
   H3  : 職業別有効求人倍率と職業別賃金の年次変化率を回帰すると、P=1 の職業（介護・保育・看護）の
         残差は負で、13 年のうち 9 年以上で回帰線より下（≈ 69%）なら整合、5 年以下なら不支持。
         介護職の有効求人倍率は全職業の上位 10% に入り続けている。
-  H3b : 介護職員処遇改善の改定（2009-10 交付金、2012-04 加算、2015-04 拡充、2017-04 加算 I、
-        2019-10 特定加算、2022-02/10 補助金→加算、2024-06 一本化）の前後で、介護職の所定内給与の
+  H3b : 介護職員処遇改善の改定（事前登録は 5 回: 2009-10 交付金、2012-04 加算、
+        2019-10 特定加算、2022-10 ベースアップ加算、2024-06 一本化。
+        2015-04 拡充・2017-04 加算 I は事後追加）の前後で、
+        介護職の所定内給与の
         変化を対照職業（販売店員・警備員・ビル清掃員・調理）と差分の差分で比べる。
         改定の翌調査年の相対上昇 ≥ 2% が 5 回中 4 回以上、かつ改定の無い年の相対変化の中央値が
         ±1% 以内なら整合。改定年と非改定年で差が無ければ不支持。非改定年にも上がっていれば中間。
@@ -38,7 +40,7 @@ import csv
 import logging
 import math
 from pathlib import Path
-from typing import cast
+from typing import TypedDict, cast
 
 import matplotlib
 
@@ -66,15 +68,27 @@ TREAT_NEW = "介護職員（医療・福祉施設等）"
 TREAT_OLD = "福祉施設介護員"
 CONTROLS_NEW = ("販売店員", "警備員", "ビル・建物清掃員", "飲食物調理従事者")
 CONTROLS_OLD = ("販売店員(百貨店店員を除く。)", "警備員", "ビル清掃員", "調理士")
-EVENT_YEARS = {
+# 事前登録の 5 改定（設計書 H3b）を「翌調査年」（6 月分賃金）に対応させたもの。
+# 2022-10 は 2023 年調査、2024-06-01 施行は 2024 年調査
+# （同月。効果が出るには早いので 2025 年も併記）
+EVENTS_PRE = {
     2010: "2009-10 交付金",
     2012: "2012-04 加算",
-    2015: "2015-04 拡充",
-    2017: "2017-04 加算 I",
     2020: "2019-10 特定加算",
-    2022: "2022-02/10 補助金→加算",
+    2023: "2022-10 ベースアップ加算",
     2024: "2024-06 一本化",
 }
+# 事後の代替対応: 2022-02 の補助金（月 9,000 円）が 2022 年 6 月調査に入るとみなす
+EVENTS_PRE_ALT = {
+    2010: "2009-10 交付金",
+    2012: "2012-04 加算",
+    2020: "2019-10 特定加算",
+    2022: "2022-02 補助金",
+    2024: "2024-06 一本化",
+}
+# 事後追加（2015-04 拡充、2017-04 加算 I を加えた 7 回。設計には無い）
+EVENTS_ALL = {**EVENTS_PRE_ALT, 2015: "2015-04 拡充", 2017: "2017-04 加算 I"}
+EVENT_YEARS = EVENTS_ALL  # 表示用のタグ
 JOB_YEARS = (2013, 2014, 2015, 2016, 2017, 2018, 2019, 2022, 2023, 2024, 2025)
 
 
@@ -211,6 +225,131 @@ def did_series(bsws: pl.DataFrame) -> pl.DataFrame:
     )
 
 
+class H3bResult(TypedDict):
+    hits: int
+    n_events: int
+    event_median: float
+    event_values: list[float]
+    non_event_median: float
+    non_event_values: list[float]
+    skipped: list[str]
+    verdict: str
+
+
+def h3b_judge(ds: pl.DataFrame, events: dict[int, str], col: str = "rel_change") -> H3bResult:
+    """事前登録の規則: 改定の翌調査年の相対上昇 ≥ 2% が 4 回以上 かつ
+    非改定年の中央値が ±1% 以内 → 整合。
+    「改定年と非改定年で差が無い」（事後の操作化: 中央値の差 < 0.5 pt）→ 不支持。それ以外 → 中間。
+    2019→2020 は分類改定をまたぐので改定年の計数から除き、別に示す。"""
+    ev: list[float] = []
+    non: list[float] = []
+    hits = 0
+    skipped: list[str] = []
+    for row in ds.iter_rows(named=True):
+        y, rc = int(row["year"]), row[col]
+        if rc is None:
+            continue
+        if y in events:
+            if y == 2020:
+                skipped.append(f"2020（{100 * rc:+.1f}%、分類改定をまたぐため除外）")
+                continue
+            ev.append(float(rc))
+            hits += int(rc >= 0.02)
+        else:
+            non.append(float(rc))
+    ev_med = float(np.median(ev)) if ev else math.nan
+    non_med = float(np.median(non)) if non else math.nan
+    n_ev = len(ev)
+    if hits >= 4 and abs(non_med) <= 0.01:
+        v = "整合"
+    elif abs(ev_med - non_med) < 0.005:
+        v = "不支持（改定年と非改定年で差が無い）"
+    else:
+        v = "中間（改定年の上昇は 2% 未満だが非改定年より大きい）" if ev_med > non_med else "中間"
+    return {
+        "hits": hits,
+        "n_events": n_ev,
+        "event_median": ev_med,
+        "event_values": ev,
+        "non_event_median": non_med,
+        "non_event_values": non,
+        "skipped": skipped,
+        "verdict": v,
+    }
+
+
+def event_study(
+    ds: pl.DataFrame, events: dict[int, str], col: str = "rel_change"
+) -> list[tuple[int, float, int]]:
+    """改定年 k=0 の前後 2 年の相対変化の平均（事前登録のイベントスタディ図用）。"""
+    by_year = {int(r["year"]): r[col] for r in ds.iter_rows(named=True) if r[col] is not None}
+    out = []
+    for k in range(-2, 3):
+        vals = [by_year[y + k] for y in events if (y + k) in by_year and (y + k) != 2020]
+        out.append((k, float(np.mean(vals)) if vals else math.nan, len(vals)))
+    return out
+
+
+def did_series_controls(
+    bsws: pl.DataFrame, new: tuple[str, ...], old: tuple[str, ...]
+) -> pl.DataFrame:
+    """対照職業を差し替えた did_series（頑健性: 賃金水準が介護に最も近い 2 職業）。"""
+    b = bsws.filter((pl.col("sex") == "T") & (pl.col("size_class") == "all"))
+    rows = []
+    for year in sorted(b["year"].unique().to_list()):
+        treat = TREAT_NEW if year >= 2020 else TREAT_OLD
+        ctrls = new if year >= 2020 else old
+        sub = b.filter(pl.col("year") == year)
+        t = sub.filter(pl.col("occupation") == treat)
+        c = sub.filter(pl.col("occupation").is_in(list(ctrls)))
+        w = c["workers"].cast(pl.Float64).to_numpy()
+        rows.append(
+            {
+                "year": year,
+                "gap": math.log(float(t["scheduled_wage_thousand_yen"][0]))
+                - math.log(
+                    float((w * c["scheduled_wage_thousand_yen"].to_numpy()).sum() / w.sum())
+                ),
+            }
+        )
+    d = pl.DataFrame(rows).sort("year")
+    return d.with_columns((pl.col("gap") - pl.col("gap").shift(1)).alias("rel_change"))
+
+
+def regression_variants(d: pl.DataFrame) -> list[tuple[str, float, float]]:
+    """b の感度: 年固定効果 + HC1（主）、年固定効果 + 区分クラスタ、
+    固定効果なし + クラスタ、重みなし。"""
+    years = sorted(d["year"].unique().to_list())
+    x_fe = [d["log_ratio"].to_numpy()] + [
+        (d["year"] == y).cast(pl.Float64).to_numpy() for y in years[1:]
+    ]
+    x_nofe = [d["log_ratio"].to_numpy()]
+    groups = d["key"].rank("dense").to_numpy()
+    y = d["dlog_wage"].to_numpy()
+    w = d["workers"].to_numpy()
+    out = []
+    for name, cols, weights, kw in (
+        ("年 FE・HC1（主）", x_fe, w, {"cov_type": "HC1"}),
+        ("年 FE・区分クラスタ", x_fe, w, {"cov_type": "cluster", "cov_kwds": {"groups": groups}}),
+        (
+            "FE なし・区分クラスタ",
+            x_nofe,
+            w,
+            {"cov_type": "cluster", "cov_kwds": {"groups": groups}},
+        ),
+        (
+            "年 FE・重みなし・クラスタ",
+            x_fe,
+            np.ones_like(w),
+            {"cov_type": "cluster", "cov_kwds": {"groups": groups}},
+        ),
+    ):
+        x = sm.add_constant(np.column_stack(cols), has_constant="add")
+        res = sm.WLS(y, x, weights=weights).fit(**kw)
+        out.append((name, float(res.params[1]), float(res.bse[1])))
+    return out
+
+
 # ---- main -----------------------------------------------------------------------------------
 
 
@@ -266,8 +405,16 @@ def main() -> None:
 
     # ---- H3: regression and residuals
     dr, b, se = residuals_with_year_fe(d)
+    print("\n### H3: 傾き b の感度")
     print(
-        "\n### H3: Δlog(所定内給与) = 年固定効果 + b·log(有効求人倍率)（労働者数加重、HC1）: "
+        md_table(
+            ["仕様", "b", "SE"],
+            [[n, f"{bb:+.4f}", f"{ss:.4f}"] for n, bb, ss in regression_variants(d)],
+        )
+    )
+    print(
+        "\n### H3: 区分の間で、人手不足と賃金変化に関係があるか。"
+        "Δlog(所定内給与) = 年固定効果 + b·log(有効求人倍率)（労働者数加重、HC1）: "
         f"b = {b:+.4f} (SE {se:.4f})"
     )
     rows = []
@@ -326,8 +473,6 @@ def main() -> None:
     ds = did_series(bsws)
     print("\n### H3b: 介護職 vs 対照 4 職業（所定内給与、log 差分の差分）")
     rows = []
-    event_hits = 0
-    non_event: list[float] = []
     for row in ds.iter_rows(named=True):
         y = int(row["year"])
         rc = row["rel_change"]
@@ -337,10 +482,6 @@ def main() -> None:
             )
             continue
         tag = EVENT_YEARS.get(y, "")
-        if tag:
-            event_hits += int(rc >= 0.02)
-        else:
-            non_event.append(rc)
         rows.append(
             [
                 y,
@@ -366,20 +507,95 @@ def main() -> None:
             rows,
         )
     )
-    non_event_med = float(np.median(non_event)) if non_event else math.nan
-    n_events = len(EVENT_YEARS)
-    v = (
-        "整合"
-        if event_hits >= 4 and abs(non_event_med) <= 0.01
-        else (
-            "中間（改定年も非改定年も上がっている）"
-            if event_hits >= 4
-            else ("不支持" if event_hits <= 2 else "中間")
+    print("\n#### H3b の判定（事前登録の規則。改定年 = 改定の翌調査年）")
+    rows = []
+    results = {}
+    for name, events in (
+        ("事前登録 5 回（2022-10 → 2023 年調査）", EVENTS_PRE),
+        ("事前登録 5 回・代替対応（2022-02 補助金 → 2022 年調査）", EVENTS_PRE_ALT),
+        ("事後追加 7 回（2015・2017 を加える）", EVENTS_ALL),
+    ):
+        j = h3b_judge(ds, events)
+        results[name] = j
+        rows.append(
+            [
+                name,
+                f"{j['hits']}/{j['n_events']}",
+                f"{100 * j['event_median']:+.2f}%",
+                " ".join(f"{100 * x:+.1f}" for x in j["event_values"]),
+                f"{100 * j['non_event_median']:+.2f}%",
+                j["verdict"],
+            ]
+        )
+    print(
+        md_table(
+            [
+                "改定の数え方",
+                "翌年 ≥ +2% の回数",
+                "改定年の中央値",
+                "改定年の値（%）",
+                "非改定年の中央値",
+                "判定",
+            ],
+            rows,
         )
     )
+    j0 = results["事前登録 5 回（2022-10 → 2023 年調査）"]
     print(
-        f"判定: 改定の翌調査年に相対上昇 ≥ 2% だった回数 {event_hits}/{n_events}（基準 4 以上）、"
-        f"非改定年の相対変化の中央値 {100 * non_event_med:+.2f}%（基準 ±1%）→ {v}"
+        f"除外: {'; '.join(j0['skipped'])}。非改定年の値（%）: "
+        + " ".join(f"{100 * x:+.1f}" for x in j0["non_event_values"])
+    )
+    print(f"**H3b 判定（事前登録 5 回）: {j0['verdict']}**")
+    jc = h3b_judge(ds, EVENTS_PRE, col="rel_change_cash")
+    print(
+        f"きまって支給する現金給与で: 翌年 ≥ +2% {jc['hits']}/{jc['n_events']}、"
+        f"改定年の中央値 {100 * jc['event_median']:+.2f}%、"
+        f"非改定年 {100 * jc['non_event_median']:+.2f}% → {jc['verdict']}"
+    )
+    # event study (pre-registered figure)
+    print("\n#### イベントスタディ（改定年 k=0 の前後 2 年、相対変化の平均、2020 を除く）")
+    for name, events in (("事前登録 5 回", EVENTS_PRE), ("事後追加 7 回", EVENTS_ALL)):
+        es = event_study(ds, events)
+        print(name + ": " + ", ".join(f"k={k:+d} {100 * m:+.2f}% (n={n})" for k, m, n in es))
+    # robustness: controls closest in wage level to care in 2009
+    # (pre-registered: 最低賃金比率の近い対照)
+    b2009 = bsws.filter(
+        (pl.col("year") == 2009) & (pl.col("sex") == "T") & (pl.col("size_class") == "all")
+    )
+    care0 = float(b2009.filter(pl.col("occupation") == TREAT_OLD)["scheduled_wage_thousand_yen"][0])
+    dist = sorted(
+        (
+            abs(
+                float(b2009.filter(pl.col("occupation") == o)["scheduled_wage_thousand_yen"][0])
+                - care0
+            ),
+            i,
+        )
+        for i, o in enumerate(CONTROLS_OLD)
+    )
+    pick = [dist[0][1], dist[1][1]]
+    ctrl_old2 = tuple(CONTROLS_OLD[i] for i in pick)
+    ctrl_new2 = tuple(CONTROLS_NEW[i] for i in pick)
+    ds2 = did_series_controls(bsws, ctrl_new2, ctrl_old2)
+    j2 = h3b_judge(ds2, EVENTS_PRE)
+    ctrl_old2_label = "・".join(ctrl_old2)
+    ctrl_new2_label = "・".join(ctrl_new2)
+    print(
+        f"\n#### 頑健性: 2009 年の所定内給与が介護（{care0:.0f} 千円）に最も近い 2 職業を対照に"
+        f"（{ctrl_old2_label} → {ctrl_new2_label}）"
+    )
+    gap2_2009 = float(ds2.filter(pl.col("year") == 2009)["gap"][0])
+    gap2_2019 = float(ds2.filter(pl.col("year") == 2019)["gap"][0])
+    gap2_2025 = float(ds2.filter(pl.col("year") == 2025)["gap"][0])
+    print(
+        f"翌年 ≥ +2% {j2['hits']}/{j2['n_events']}、"
+        f"改定年の中央値 {100 * j2['event_median']:+.2f}%、"
+        f"非改定年 {100 * j2['non_event_median']:+.2f}% → {j2['verdict']}。"
+        f" gap: 2009 {gap2_2009:+.3f} → 2019 {gap2_2019:+.3f} → 2025 {gap2_2025:+.3f}"
+    )
+    print(
+        "最低賃金近傍比率の職業別データは無いため、賃金水準の近さで代替した（事後の具体化）。"
+        "並行トレンドの事前期間は無い（改定が 2009 年から連続）ため検証できない。"
     )
     gap0, gap1 = (
         float(ds.filter(pl.col("year") == 2009)["gap"][0]),

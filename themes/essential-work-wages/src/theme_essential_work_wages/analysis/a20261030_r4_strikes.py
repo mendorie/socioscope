@@ -138,6 +138,9 @@ def jp_rates(disp: pl.DataFrame, unions: pl.DataFrame) -> pl.DataFrame:
         (pl.col("participants") / pl.col("employees") * 1000 / pl.col("n_years")).alias(
             "participants_per_1000_yr"
         ),
+        (pl.col("days_lost") / pl.col("participants")).alias("days_per_participant"),
+        (pl.col("days_lost") / pl.col("disputes_action")).alias("days_per_action_dispute"),
+        (pl.col("disputes_action") / pl.col("disputes")).alias("action_share"),
     )
     return out.sort("industry_code")
 
@@ -164,6 +167,7 @@ def main() -> None:
     unions = pl.read_parquet(args.marts / "jp_union_density_by_industry.parquet")
     ilo = pl.read_parquet(args.marts / "ilo_strikes_by_industry.parquet")
     remun = pl.read_parquet(args.marts / "oecd_health_remuneration.parquet")
+    nama = pl.read_parquet(args.marts / "nama_industry_value_added_employment.parquet")
 
     print("# R4 倫理的人質: 第三者被害がスト能力を奪っているか（H4）")
     years = sorted(disp["year"].unique().to_list())
@@ -226,6 +230,43 @@ def main() -> None:
         "満たす" if r_days <= 0.5 else ("不支持（1.0 前後以上）" if r_days >= 0.8 else "満たさない")
     )
     print(f"日本の判定（件数・損失日数とも ≤ 0.5 で整合）: 件数 {v_jp_disp}、損失日数 {v_jp_days}")
+    print("\n### 日本: 争議の「長さ」の代理（13 年合計。参加人員は争議行為を伴う争議のもの）")
+    rows = []
+    for r in jp.filter(pl.col("industry_code").is_in(list(JP_T1 + JP_T0 + ("I", "G")))).iter_rows(
+        named=True
+    ):
+        rows.append(
+            [
+                f"{r['industry_code']} {JP_LABEL.get(r['industry_code'], '')}",
+                "T=1"
+                if r["industry_code"] in JP_T1
+                else ("T=0" if r["industry_code"] in JP_T0 else ""),
+                f"{r['action_share']:.2f}" if r["action_share"] is not None else "–",
+                f"{r['days_per_action_dispute']:.1f}"
+                if r["days_per_action_dispute"] is not None
+                else "–",
+                f"{r['days_per_participant']:.2f}"
+                if r["days_per_participant"] is not None
+                else "–",
+            ]
+        )
+    print(
+        md_table(
+            [
+                "産業",
+                "群",
+                "争議行為を伴う割合",
+                "損失日数 ÷ 争議行為を伴う争議（日/件）",
+                "損失日数 ÷ 参加人員（日/人）",
+            ],
+            rows,
+        )
+    )
+    print(
+        "注: 損失日数は半日以上の同盟罷業・作業所閉鎖のみ。"
+        "「損失日数 ÷ 参加人員」は参加者 1 人当たりの"
+        "平均ストライキ日数の近似（半日未満の行為は分子に入らない）。"
+    )
 
     # international
     print("\n### 国際（ILOSTAT、2015〜2024 年合計、雇用規模で割らない粗い比）")
@@ -255,13 +296,56 @@ def main() -> None:
     print(md_table(["国", "件数 T=1÷T=0", "損失日数 T=1÷T=0"], rows))
     for metric, (less, n) in counts.items():
         print(f"{metric}: T=1 の方が少ない国 {less}/{n}（基準: 10 か国以上のうち 7 か国以上）")
+    # employment-normalised version where Eurostat employment by section is available (EU/EFTA)
+    print(
+        "\n### 国際（雇用で割った比。Eurostat 国民経済計算の産業別就業者がある国のみ、"
+        "2015〜2023 年平均）"
+    )
+    emp = (
+        nama.filter(
+            (pl.col("year") >= 2015)
+            & pl.col("nace_r2").is_in(list(ISIC_T1 + ISIC_T0))
+            & pl.col("iso3").is_not_null()
+        )
+        .group_by("iso3", "nace_r2")
+        .agg(pl.col("employment_ths").mean().alias("emp"))
+    )
+    rows = []
+    norm_counts = {"strikes_n": [0, 0], "days_not_worked": [0, 0]}
+    for iso in sorted(set(emp["iso3"].to_list()) & set(per_country)):
+        if iso not in OECD:
+            continue
+        e = emp.filter(pl.col("iso3") == iso)
+        e1 = float(e.filter(pl.col("nace_r2").is_in(list(ISIC_T1)))["emp"].sum())
+        e0 = float(e.filter(pl.col("nace_r2").is_in(list(ISIC_T0)))["emp"].sum())
+        if e1 <= 0 or e0 <= 0:
+            continue
+        cells = [iso, f"{e1 / e0:.2f}"]
+        for metric in ("strikes_n", "days_not_worked"):
+            raw = per_country[iso].get(metric)
+            if raw is None:
+                cells.append("–")
+                continue
+            normed = raw / (e1 / e0)
+            norm_counts[metric][0] += int(normed < 1)
+            norm_counts[metric][1] += 1
+            cells.append(f"{normed:.2f}")
+        rows.append(cells)
+    print(
+        md_table(
+            ["国", "雇用 T=1÷T=0", "件数（雇用当たり）T=1÷T=0", "損失日数（雇用当たり）T=1÷T=0"],
+            rows,
+        )
+    )
+    for metric, (less, n) in norm_counts.items():
+        print(f"{metric}（雇用当たり）: T=1 の方が少ない国 {less}/{n}")
     jp_i = per_country.get("JPN", {})
     print(
         f"日本（ILOSTAT）: 件数比 {jp_i.get('strikes_n', math.nan):.2f}、"
         f"損失日数比 {jp_i.get('days_not_worked', math.nan):.2f}"
     )
-    intl_ok = counts["days_not_worked"][1] >= 10 and counts["days_not_worked"][0] >= 7
-    intl_ok_n = counts["strikes_n"][1] >= 10 and counts["strikes_n"][0] >= 7
+    intl_ok = norm_counts["days_not_worked"][1] >= 10 and norm_counts["days_not_worked"][0] >= 7
+    intl_ok_n = norm_counts["strikes_n"][1] >= 10 and norm_counts["strikes_n"][0] >= 7
     both_jp = r_disp <= 0.5 and r_days <= 0.5
     if both_jp and intl_ok and intl_ok_n:
         overall = "整合"
@@ -271,7 +355,9 @@ def main() -> None:
         overall = "中間（指標で向きが割れる）"
     print(
         f"\n**H4 総合判定: {overall}**（日本 件数比 {r_disp:.2f}・日数比 {r_days:.2f}、"
-        f"国際 件数 {counts['strikes_n'][0]}/{counts['strikes_n'][1]}"
+        f"国際（雇用当たり）件数 {norm_counts['strikes_n'][0]}/{norm_counts['strikes_n'][1]}"
+        f"・日数 {norm_counts['days_not_worked'][0]}/{norm_counts['days_not_worked'][1]}、"
+        f"雇用で割らない参考値 件数 {counts['strikes_n'][0]}/{counts['strikes_n'][1]}"
         f"・日数 {counts['days_not_worked'][0]}/{counts['days_not_worked'][1]}）"
     )
 

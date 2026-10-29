@@ -92,6 +92,13 @@ def premium_table(ses: pl.DataFrame, geo: str, year: int, isco: str) -> dict[str
     return out
 
 
+def spearman_excluding(
+    prem: dict[str, float], va: dict[str, float], drop: tuple[str, ...]
+) -> float:
+    pairs = [(prem[s], va[s]) for s in SECTIONS if s in prem and s in va and s not in drop]
+    return spearman(pairs)
+
+
 def value_added_by_section(nama: pl.DataFrame, geo: str, year: int) -> dict[str, float]:
     d = nama.filter(
         (pl.col("geo") == geo)
@@ -128,6 +135,8 @@ def judge_country(prem: dict[str, float], va: dict[str, float]) -> dict[str, flo
     return {
         "premium_min_KJM": rent_prem,
         "premium_max_KJM": rent_max,
+        "rho_ex_L": spearman_excluding(prem, va, ("L",)),
+        "rho_ex_LO": spearman_excluding(prem, va, ("L", "O")),
         "premium_K": prem.get("K", math.nan),
         "premium_J": prem.get("J", math.nan),
         "premium_M": prem.get("M", math.nan),
@@ -215,10 +224,14 @@ def main() -> None:
         med_j = as_float(sub["premium_J"].median())
         med_m = as_float(sub["premium_M"].median())
         med_rho = as_float(sub["rho"].drop_nans().median())
+        med_rho_l = as_float(sub["rho_ex_L"].drop_nans().median())
+        med_rho_lo = as_float(sub["rho_ex_LO"].drop_nans().median())
         print(
             f"集計: n={n}、{summary}。"
             f"プレミアムの中央値 K {med_k:.3f} / J {med_j:.3f} / M {med_m:.3f}、"
-            f"ρ の中央値 {med_rho:.3f}、ρ ≥ 0.5 の割合 {as_float((sub['rho'] >= 0.5).mean()):.2f}、"
+            f"ρ の中央値 {med_rho:.3f}（不動産 L を除くと {med_rho_l:.3f}、"
+            f"L と公務 O を除くと {med_rho_lo:.3f}）、"
+            f"ρ ≥ 0.5 の割合 {as_float((sub['rho'] >= 0.5).mean()):.2f}、"
             f"K・J・M すべて ≥ 1.30 の割合 "
             f"{as_float((sub['premium_min_KJM'] >= 1.30).mean()):.2f}、"
             f"少なくとも 1 つ ≥ 1.30 の割合 {as_float((sub['premium_max_KJM'] >= 1.30).mean()):.2f}"
@@ -296,9 +309,14 @@ def main() -> None:
     c2_med = weighted_median(c2["size_premium"].to_list(), c2["n_all"].cast(pl.Float64).to_list())
     el_med = weighted_median(el["size_premium"].to_list(), el["n_all"].cast(pl.Float64).to_list())
     print(
-        f"判定（control2 の加重中央値 ≥ 1.30 で整合、< 1.10 で不支持）: {c2_med:.3f} → "
-        + ("整合" if c2_med >= 1.30 else ("不支持" if c2_med < 1.10 else "中間"))
-        + f"。essential_low は {el_med:.3f}"
+        "探索的（H6 の事前登録変数ではない。1.30 を目安に読む）: "
+        f"control2 の加重中央値 {c2_med:.3f}"
+        + (
+            "（≥ 1.30）"
+            if c2_med >= 1.30
+            else ("（< 1.10）" if c2_med < 1.10 else "（1.10〜1.30）")
+        )
+        + f"、essential_low は {el_med:.3f}"
     )
 
     # figure: premium by section for OC2, DE/NL/PL/ES 2022 and ρ scatter
@@ -326,6 +344,8 @@ def main() -> None:
     ax = axes[1]
     pts_x: list[float] = []
     pts_y: list[float] = []
+    all_x: list[float] = []
+    all_y: list[float] = []
     for g, y in geos:
         prem = premium_table(ses, g, y, "OC2")
         va = value_added_by_section(nama, g, y)
@@ -336,9 +356,12 @@ def main() -> None:
             continue
         base = float(tot["value_added_per_person_keur"][0])
         for s in SECTIONS:
-            if s in prem and s in va and s != "L":  # 不動産は帰属家賃で付加価値が極端
-                pts_x.append(va[s] / base)
-                pts_y.append(prem[s])
+            if s in prem and s in va:
+                all_x.append(va[s] / base)
+                all_y.append(prem[s])
+                if s != "L":  # 不動産は帰属家賃で付加価値が極端（図と主結果は除く、含めた値も報告）
+                    pts_x.append(va[s] / base)
+                    pts_y.append(prem[s])
     ax.scatter(pts_x, pts_y, s=10, color=SERIES[0], alpha=0.5, edgecolor="none")
     ax.set_xscale("log")
     ax.set_xlabel("産業の 1 人当たり付加価値 ÷ 全産業（対数）", color=INK)
@@ -357,7 +380,15 @@ def main() -> None:
     fig.tight_layout()
     fig.savefig(args.figures / "r2_h6_industry_premium.png", dpi=150)
     plt.close(fig)
-    print(f"\nプール全体の ρ（OC2、不動産を除く、{len(pts_x)} セル）: {rho_all:.3f}")
+    rho_incl = spearman(list(zip(all_x, all_y, strict=True)))
+    print(
+        f"\nプール全体の ρ（OC2）: 不動産を除く {rho_all:.3f}（{len(pts_x)} セル）、"
+        f"不動産を含む {rho_incl:.3f}（{len(all_x)} セル）"
+    )
+    print(
+        "図 1 左の 6 か国は、2022 年に値があり人口の大きい順に"
+        "西欧 2（DE NL）・南欧 1（ES）・中東欧 2（PL CZ）・北欧 1（NO）を選んだ"
+    )
     print("figures: r2_h6_industry_premium.png")
 
 

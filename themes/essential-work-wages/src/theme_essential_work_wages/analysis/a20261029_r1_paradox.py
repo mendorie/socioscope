@@ -45,6 +45,7 @@ from theme_essential_work_wages.analysis.common import (
     INK,
     MARTS,
     MUTED,
+    PKG_DIR,
     SERIES,
     describe,
     group_ratio,
@@ -160,6 +161,53 @@ def _wmed(values: list[float], weights: list[float]) -> float:
     return weighted_median(values, weights)
 
 
+def add_census_female_share(d: pl.DataFrame, census: pl.DataFrame) -> pl.DataFrame:
+    """女性比率の頑健性: 国勢調査 2020 職業（小分類）× 性の全就業者ベース。名称が一致する職種は
+    そのまま、残りは jp_bsws2020_census_map.csv の対応で小分類を合算。対応が無い職種は None。"""
+    import csv
+    import re
+    import unicodedata
+
+    def norm(x: str) -> str:
+        return unicodedata.normalize("NFKC", re.sub(r"[\s（）()・，,、]", "", x))
+
+    minors = {
+        norm(str(r["occupation"])): (float(r["workers_total"]), float(r["workers_female"]))
+        for r in census.filter(pl.col("level") == "minor").iter_rows(named=True)
+        if r["workers_total"] is not None and r["workers_female"] is not None
+    }
+    with (PKG_DIR / "jp_bsws2020_census_map.csv").open(encoding="utf-8", newline="") as f:
+        cmap = {
+            r["bsws_occupation"]: r["census_minor_occupations"].split(";")
+            for r in csv.DictReader(f)
+        }
+    shares: list[float | None] = []
+    n_direct = n_mapped = 0
+    for occ in d["occupation"].to_list():
+        key = norm(str(occ))
+        if key in minors:
+            t, fm = minors[key]
+            n_direct += 1
+        elif occ in cmap:
+            parts = [minors[norm(m)] for m in cmap[occ] if norm(m) in minors]
+            if not parts:  # 小分類が秘匿（None）のみの場合は欠損にする
+                shares.append(None)
+                continue
+            t, fm = sum(x[0] for x in parts), sum(x[1] for x in parts)
+            n_mapped += 1
+        else:
+            shares.append(None)
+            continue
+        shares.append(fm / t if t > 0 else None)
+    LOG.info(
+        "census female share: direct %d, mapped %d, missing %d",
+        n_direct,
+        n_mapped,
+        len(shares) - n_direct - n_mapped,
+    )
+    return d.with_columns(pl.Series("female_share_census", shares, dtype=pl.Float64))
+
+
 # ---- hypothesis blocks -----------------------------------------------------------------------
 
 
@@ -245,10 +293,13 @@ def h2_block(label: str, d: pl.DataFrame) -> dict[str, float]:
     return out
 
 
-def h5_block(label: str, d: pl.DataFrame, controls: list[str]) -> dict[str, float]:
+def h5_block(
+    label: str, d: pl.DataFrame, controls: list[str], fcol: str = "female_share"
+) -> dict[str, float]:
+    d = d.filter(pl.col(fcol).is_not_null()).with_columns((pl.col(fcol) * 10).alias("_f10"))
     e = d.filter(pl.col("essential") == 1)
-    hi = e.filter(pl.col("female_share") >= 0.7)
-    lo = e.filter(pl.col("female_share") <= 0.3)
+    hi = e.filter(pl.col(fcol) >= 0.7)
+    lo = e.filter(pl.col(fcol) <= 0.3)
     print(f"\n### H5 {label}（E=1 の中で女性比率）")
     out: dict[str, float] = {}
     if hi.height >= 3 and lo.height >= 3:
@@ -258,9 +309,9 @@ def h5_block(label: str, d: pl.DataFrame, controls: list[str]) -> dict[str, floa
             f"女性 ≥70% の職業 {hi.height}（中央値 {mh:,.1f}）、"
             f"≤30% の職業 {lo.height}（中央値 {ml:,.1f}）、比 {mh / ml:.3f}"
         )
-        hl = e.filter(
-            (pl.col("female_share") >= 0.7) | (pl.col("female_share") <= 0.3)
-        ).with_columns((pl.col("female_share") >= 0.7).cast(pl.Int64).alias("fem_dom"))
+        hl = e.filter((pl.col(fcol) >= 0.7) | (pl.col(fcol) <= 0.3)).with_columns(
+            (pl.col(fcol) >= 0.7).cast(pl.Int64).alias("fem_dom")
+        )
         reg = wls(hl, "log_wage", ["fem_dom", *controls], "workers")
         out["fem_dom"] = reg["fem_dom"][0]
         print(
@@ -273,9 +324,9 @@ def h5_block(label: str, d: pl.DataFrame, controls: list[str]) -> dict[str, floa
     rows = []
     for flag, name in ((1, "E=1"), (0, "E=0")):
         sub = d.filter(pl.col("essential") == flag)
-        reg = wls(sub, "log_wage", ["female_share_10", *controls], "workers")
-        out[f"slope_E{flag}"] = reg["female_share_10"][0]
-        rows.append([name, sub.height, describe(reg, "female_share_10")])
+        reg = wls(sub, "log_wage", ["_f10", *controls], "workers")
+        out[f"slope_E{flag}"] = reg["_f10"][0]
+        rows.append([name, sub.height, describe(reg, "_f10")])
     diff = out["slope_E1"] - out["slope_E0"]
     print(md_table(["群", "職業数", "女性比率 +10pt の係数（log 賃金、統制後）"], rows))
     print(
@@ -289,11 +340,20 @@ def h5_block(label: str, d: pl.DataFrame, controls: list[str]) -> dict[str, floa
     return out
 
 
+def _zone(coef: float) -> str:
+    if abs(coef) < 0.05:
+        return "整合域"
+    if coef <= -0.10:
+        return "不支持域"
+    return "中間帯"
+
+
 def h0_block(label: str, d: pl.DataFrame, controls: list[str]) -> dict[str, float]:
     print(f"\n### H0 {label}（統合回帰、log 賃金比、雇用者数加重、HC1）")
+    has_hours = "scheduled_hours" in controls
     specs = {
         "E のみ": ["essential"],
-        "E + L + F + 学歴" + ("+時間+勤続" if "scheduled_hours" in controls else ""): [
+        "E + L + F + 学歴" + ("+時間+勤続" if has_hours else ""): [
             "essential",
             "licensed",
             "female_share",
@@ -318,27 +378,62 @@ def h0_block(label: str, d: pl.DataFrame, controls: list[str]) -> dict[str, floa
             *controls,
         ],
     }
-    rows = []
+    rows: list[list[object]] = []
     out: dict[str, float] = {}
     for name, xs in specs.items():
         data = d.filter(pl.col("boundary") == 0) if "境界" in name else d
+        p_eq_t = (
+            "admin_price" in xs
+            and "third_party" in xs
+            and data.filter(pl.col("admin_price") != pl.col("third_party")).height == 0
+        )
         reg = wls(data, "log_ratio", xs, "workers")
         out[name] = reg["essential"][0]
-        cells = [name, int(reg["_n"][0]), f"{reg['_n'][1]:.2f}"]
+        cells: list[object] = [name, int(reg["_n"][0]), f"{reg['_n'][1]:.2f}"]
         for v in ("essential", "licensed", "admin_price", "third_party", "female_share"):
-            cells.append(describe(reg, v) if v in reg else "–")
+            if v in reg:
+                cells.append(
+                    describe(reg, v)
+                    + (
+                        "（P=T で識別不能）"
+                        if p_eq_t and v in ("admin_price", "third_party")
+                        else ""
+                    )
+                )
+            else:
+                cells.append("–")
+        cells.append(_zone(reg["essential"][0]))
         rows.append(cells)
-    print(md_table(["仕様", "n", "R²", "β_E", "β_L", "β_P", "β_T", "β_F"], rows))
-    raw = out["E のみ"]
-    full = out["+ P + T"]
-    v_raw = "再現" if raw <= -0.10 else "逆説が弱い"
-    v_full = (
-        "整合（必要性の係数は消える）"
-        if abs(full) < 0.05
-        else ("不支持（必要性そのものが下げる）" if full <= -0.10 else "中間")
+    print(md_table(["仕様", "n", "R²", "β_E", "β_L", "β_P", "β_T", "β_F", "β_E の帯"], rows))
+    # sensitivity: unweighted and HC3 for the +P+T spec
+    xs_full = specs["+ P + T"]
+    unw = wls(d.with_columns(pl.lit(1.0).alias("_one")), "log_ratio", xs_full, "_one")
+    hc3 = wls(d, "log_ratio", xs_full, "workers", cov_type="HC3")
+    print(
+        f"感度（+ P + T 仕様）: 重みなし β_E {describe(unw, 'essential')}"
+        f"（{_zone(unw['essential'][0])}）、"
+        f"HC3 β_E {describe(hc3, 'essential')}"
     )
-    print(f"判定: E 単独 {raw:+.3f}（{v_raw}）、統制後 {full:+.3f} → {v_full}")
+    raw = out["E のみ"]
+    zones = {k: _zone(v) for k, v in out.items() if k != "E のみ"}
+    v_raw = "再現" if raw <= -0.10 else "逆説が弱い"
+    n_ok = sum(z == "整合域" for z in zones.values())
+    n_bad = sum(z == "不支持域" for z in zones.values())
+    print(
+        f"判定: E 単独 {raw:+.3f}（{v_raw}）。統制後の 5 仕様の帯: 整合域 {n_ok}、中間帯 "
+        f"{len(zones) - n_ok - n_bad}、不支持域 {n_bad}。+ P + T {out['+ P + T']:+.3f}。"
+        "→ 判定不能（点推定は仕様により整合域〜不支持域にまたがり、区間は両域にかかる。"
+        "事前登録に ±0.05 と −0.10 の間の帯の扱いは無い）"
+    )
     return out
+
+
+def np_corr(d: pl.DataFrame) -> str:
+    import numpy as np
+
+    a = d["female_share"].to_numpy().astype(float)
+    b = d["female_share_census"].to_numpy().astype(float)
+    return f"{float(np.corrcoef(a, b)[0, 1]):.3f}（n={len(a)}）"
 
 
 # ---- figures ---------------------------------------------------------------------------------
@@ -434,6 +529,7 @@ def main() -> None:
     bsws = pl.read_parquet(args.marts / "bsws_occupation_wages.parquet")
     acs = pl.read_parquet(args.marts / "acs_occupation_earnings.parquet")
     tele = pl.read_parquet(args.marts / "us_occupation_teleworkable.parquet")
+    census = pl.read_parquet(args.marts / "jp_census2020_occupation_sex.parquet")
 
     jp = with_derived(jp_frame(bsws, JP_LATEST))
     us = with_derived(us_frame(acs, tele, US_LATEST))
@@ -533,6 +629,15 @@ def main() -> None:
     # H5
     h5_block("日本 2025", jp, ["education_years", "scheduled_hours", "tenure_years"])
     h5_block("米国 2024", us, ["education_years"])
+    jp_c = add_census_female_share(jp, census)
+    h5_block(
+        "日本 2025（頑健性: 女性比率 = 国勢調査 2020 の全就業者ベース）",
+        jp_c,
+        ["education_years", "scheduled_hours", "tenure_years"],
+        fcol="female_share_census",
+    )
+    both_f = jp_c.filter(pl.col("female_share_census").is_not_null())
+    print(f"女性比率の相関（一般労働者ベース vs 国勢調査）: r = {np_corr(both_f)}")
     # H0
     h0_block("日本 2025", jp, ["education_years", "scheduled_hours", "tenure_years"])
     h0_block("米国 2024", us, ["education_years"])

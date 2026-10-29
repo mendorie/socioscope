@@ -126,7 +126,7 @@ def group_ratio(df: pl.DataFrame, flag: str, wage: str, weight: str) -> dict[str
 
 
 def wls(
-    df: pl.DataFrame, y: str, xs: Sequence[str], weight: str
+    df: pl.DataFrame, y: str, xs: Sequence[str], weight: str, cov_type: str = "HC1"
 ) -> dict[str, tuple[float, float, float, float]]:
     """Weighted least squares of y on xs (+ const), weights = weight. Returns
     {name: (coef, se, ci_low, ci_high)} with HC1 robust standard errors."""
@@ -136,7 +136,7 @@ def wls(
         raise ValueError(msg)
     x = sm.add_constant(d.select(xs).to_numpy().astype(float), has_constant="add")
     res = sm.WLS(d[y].to_numpy().astype(float), x, weights=d[weight].to_numpy().astype(float)).fit(
-        cov_type="HC1"
+        cov_type=cov_type
     )
     names = ["const", *xs]
     ci = np.asarray(res.conf_int())
