@@ -1,9 +1,14 @@
 """fetch -> stage -> mart for essential-work-wages. All I/O goes through ports.
 
-No data source is wired yet (adoption order: design/themes/essential-work-wages.md). Each source
-gets its own pure-transform module plus a ``# ---- <source>`` block here; a missing raw is
-reported in ``skipped`` and the others still run.
+Each data source is one module in this package that exposes ``SOURCE`` (raw-store source name)
+and three functions ``fetch(ctx, written, skipped)``, ``stage(ctx, written, skipped)``,
+``mart(ctx, written, skipped)`` (see ``CLAUDE.md`` "ソースモジュールの契約"). ``SOURCES`` lists
+them in adoption order (design/themes/essential-work-wages.md). Sources are independent: a
+missing raw is reported in ``skipped`` and the others still run.
 """
+
+from collections.abc import Callable
+from types import ModuleType
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 
@@ -24,6 +29,11 @@ PANEL_COLUMNS: tuple[str, ...] = (
 
 PANEL_KEY: tuple[str, ...] = ("iso3", "year", "occupation", "classification", "metric", "source")
 
+# Source modules in adoption order. Registered by the integrator only (see CLAUDE.md).
+SOURCES: tuple[ModuleType, ...] = ()
+
+StepFn = Callable[[Context, list[str], list[str]], tuple[list[str], list[str]]]
+
 
 def build_panel(rows: list[dict[str, object]]) -> list[dict[str, object]]:
     """Deterministic mart: keep only the panel columns, sort by key, reject duplicate keys."""
@@ -39,14 +49,32 @@ def build_panel(rows: list[dict[str, object]]) -> list[dict[str, object]]:
     return out
 
 
+def _run(stage: Stage, ctx: Context) -> StageResult:
+    written: list[str] = []
+    skipped: list[str] = []
+    for mod in SOURCES:
+        if not ctx.wants(mod.SOURCE):
+            continue
+        step: StepFn = getattr(mod, stage.value)
+        written, skipped = step(ctx, written, skipped)
+    notes = () if SOURCES else (f"{THEME}: no source wired yet",)
+    return StageResult(stage=stage, written=tuple(written), skipped=tuple(skipped), notes=notes)
+
+
 def fetch(ctx: Context) -> StageResult:
-    return StageResult(stage=Stage.FETCH, notes=(f"{THEME}: no source wired yet",))
+    return _run(Stage.FETCH, ctx)
 
 
 def stage(ctx: Context) -> StageResult:
-    return StageResult(stage=Stage.STAGE, notes=(f"{THEME}: no source wired yet",))
+    return _run(Stage.STAGE, ctx)
 
 
 def mart(ctx: Context) -> StageResult:
+    result = _run(Stage.MART, ctx)
     ctx.tables.write_table(PANEL_TABLE, build_panel([]))
-    return StageResult(stage=Stage.MART, written=(PANEL_TABLE,))
+    return StageResult(
+        stage=Stage.MART,
+        written=(*result.written, PANEL_TABLE),
+        skipped=result.skipped,
+        notes=result.notes,
+    )

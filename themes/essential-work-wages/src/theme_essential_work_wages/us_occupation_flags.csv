@@ -1,0 +1,567 @@
+occupation_code,occupation,soc_code,classification,cisa_sector,licensed,admin_price,third_party,boundary,education_years,group,rationale
+0010,Chief Executives,11-1011,us_census2018,0,0,0,0,0,16,control2,Chief executives
+0020,General and Operations Managers,11-1021,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0030,Legislators,11-1031,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0040,Advertising and Promotions Managers,11-2011,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0051,Marketing Managers,11-2021,us_census2018,0,0,0,0,0,16,control2,Marketing managers
+0052,Sales Managers,11-2022,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0060,Public Relations and Fundraising Managers,11-2030,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0101,Administrative Services Managers,11-3012,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0102,Facilities Managers,11-3013,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0110,Computer and Information Systems Managers,11-3021,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0120,Financial Managers,11-3031,us_census2018,0,0,0,0,0,16,control2,Financial managers
+0135,Compensation and Benefits Managers,11-3111,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0136,Human Resources Managers,11-3121,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0137,Training and Development Managers,11-3131,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0140,Industrial Production Managers,11-3051,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0150,Purchasing Managers,11-3061,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0160,"Transportation, Storage, and Distribution Managers",11-3071,us_census2018,1,0,0,0,1,14,essential_low,"Transportation, storage, distribution managers"
+0205,"Farmers, Ranchers, and Other Agricultural Managers",11-9013,us_census2018,1,0,0,0,1,12,essential_low,"Farmers, ranchers, agricultural managers"
+0220,Construction Managers,11-9021,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0230,Education and Childcare Administrators ,11-9030,us_census2018,1,0,1,1,1,16,essential_low,Education and childcare administrators. boundary
+0300,Architectural and Engineering Managers,11-9041,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0310,Food Service Managers,11-9051,us_census2018,1,0,0,0,1,12,essential_low,Food service managers
+0325,Funeral Home Managers,11-9171,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0335,Entertainment and Recreation Managers,11-9070,us_census2018,0,0,0,0,0,16,reference,Entertainment and recreation managers
+0340,Lodging Managers,11-9081,us_census2018,0,0,0,0,0,12,reference,Lodging managers
+0350,Medical and Health Services Managers,11-9111,us_census2018,1,0,0,1,1,16,essential_low,Medical and health services managers (remote-capable partly). boundary
+0360,Natural Sciences Managers,11-9121,us_census2018,0,0,0,0,0,18,reference,Natural sciences managers
+0400,Postmasters and Mail Superintendents,11-9131,us_census2018,1,0,1,0,1,14,essential_low,Postmasters
+0410,"Property, Real Estate, and Community Association Managers",11-9141,us_census2018,0,0,0,0,0,14,reference,Property managers
+0420,Social and Community Service Managers,11-9151,us_census2018,1,0,1,1,1,16,essential_low,Social and community service managers
+0425,Emergency Management Directors,11-9161,us_census2018,1,0,1,0,1,16,essential_low,Emergency management directors
+0426,"Personal Service Managers, All Other",11-9179,us_census2018,0,0,0,0,0,16,reference,SOC 11 default
+0440,"Managers, All Other",11-9199,us_census2018,0,0,0,0,0,16,reference,"Managers, all other"
+0500,"Agents and Business Managers of Artists, Performers, and Athletes",13-1011,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0510,"Buyers and Purchasing Agents, Farm Products",13-1021,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0520,"Wholesale and Retail Buyers, Except Farm Products",13-1022,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0530,"Purchasing Agents, Except Wholesale, Retail, and Farm Products",13-1023,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0540,"Claims Adjusters, Appraisers, Examiners, and Investigators",13-1030,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0565,Compliance Officers,13-1041,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0600,Cost Estimators,13-1051,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0630,Human Resources Workers,13-1070,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0640,"Compensation, Benefits, and Job Analysis Specialists",13-1141,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0650,Training and Development Specialists,13-1151,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0700,Logisticians,13-1081,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0705,Project Management Specialists,13-1082,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0710,Management Analysts,13-1111,us_census2018,0,0,0,0,0,16,control2,Management analysts (consultants)
+0725,"Meeting, Convention, and Event Planners",13-1121,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0726,Fundraisers,13-1131,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0650,Training and Development Specialists,13-1151,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0735,Market Research Analysts and Marketing Specialists,13-1161,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0750,"Business Operations Specialists, All Other",13-1199,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0800,Accountants and Auditors,13-2011,us_census2018,0,0,0,0,1,16,reference,Accountants; CPA not required to practice. boundary
+0810,Property Appraisers and Assessors,13-2020,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0820,Budget Analysts,13-2031,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0830,Credit Analysts,13-2041,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0845,Financial and Investment Analysts,13-2051,us_census2018,0,0,0,0,0,16,control2,Financial and investment analysts
+0850,Personal Financial Advisors,13-2052,us_census2018,0,0,0,0,1,16,reference,Personal financial advisors; exams not caps. boundary
+0860,Insurance Underwriters,13-2053,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0900,Financial Examiners,13-2061,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0910,Credit Counselors and Loan Officers,13-2070,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0930,"Tax Examiners and Collectors, and Revenue Agents",13-2081,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0940,Tax Preparers,13-2082,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
+0960,Other Financial Specialists,13-20XX,us_census2018,0,0,0,0,0,16,control2,Other financial specialists
+1005,Computer and Information Research Scientists,15-1221,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1006,Computer Systems Analysts,15-1211,us_census2018,0,0,0,0,0,16,control2,Computer systems analysts
+1007,Information Security Analysts,15-1212,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1010,Computer Programmers,15-1251,us_census2018,0,0,0,0,0,16,control2,Computer programmers
+1021,Software Developers,15-1252,us_census2018,0,0,0,0,0,16,control2,Software developers
+1022,Software Quality Assurance Analysts and Testers,15-1253,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1050,Computer Support Specialists,15-1230,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1065,Database Administrators and Architects,15-124X,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1031,Web Developers,15-1254,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1032,Web and Digital Interface Designers,15-1255,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1105,Network and Computer Systems Administrators,15-1244,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1106,Computer Network Architects,15-1241,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1108,"Computer Occupations, All Other",15-1299,us_census2018,0,0,0,0,0,16,control2,"Computer occupations, all other"
+1200,Actuaries,15-2011,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1210,Mathematicians,15-2021,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1220,Operations Research Analysts,15-2031,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1230,Statisticians,15-2041,us_census2018,0,0,0,0,0,16,reference,SOC 15 default
+1240,Other Mathematical Science Occupations,15-20XX,us_census2018,0,0,0,0,0,16,control2,Other mathematical science occupations (incl. data scientists in 2018 list)
+1305,"Architects, Except Landscape and Naval",17-1011,us_census2018,0,1,0,0,0,17,control3,Architects (licensed)
+1306,Landscape Architects,17-1012,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1310,"Surveyors, Cartographers, and Photogrammetrists",17-1020,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1320,Aerospace Engineers,17-2011,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1330,Agricultural Engineers,17-2021,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1340,Bioengineers and biomedical engineers,17-2031,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1350,Chemical Engineers,17-2041,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1360,Civil Engineers,17-2051,us_census2018,0,0,0,0,1,16,reference,Civil engineers (PE optional). boundary
+1400,Computer Hardware Engineers,17-2061,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1410,Electrical and Electronics Engineers,17-2070,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1420,Environmental Engineers,17-2081,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1430,"Industrial Engineers, including Health and Safety ",17-2110,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1440,Marine Engineers and Naval Architects,17-2121,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1450,Materials Engineers,17-2131,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1460,Mechanical Engineers,17-2141,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1500,"Mining and Geological Engineers, Including Mining Safety Engineers",17-2151,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1510,Nuclear Engineers,17-2161,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1520,Petroleum Engineers,17-2171,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1530,"Engineers, All Other",17-2199,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1541,Architectural and Civil Drafters,17-3011,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1545,Other Drafters,17-301X,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1551,Electrical and Electronic Engineering Technologists and Technicians,17-3023,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1555,"Other Engineering Technologists and Technicians, Except Drafters",17-302X,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1560,Surveying and Mapping Technicians,17-3031,us_census2018,0,0,0,0,0,16,reference,SOC 17 default
+1600,Agricultural and Food Scientists,19-1010,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1610,Biological Scientists,19-1020,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1640,Conservation Scientists and Foresters,19-1030,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1650,Medical Scientists,19-1040,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1660,"Life Scientists, All Other",19-1099,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1700,Astronomers and Physicists,19-2010,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1710,Atmospheric and Space Scientists,19-2021,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1720,Chemists and Materials Scientists,19-2030,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1745,"Environmental Scientists and Specialists, Including Health",19-2041,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1750,"Geoscientists and Hydrologists, Except Geographers",19-204X,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1760,"Physical Scientists, All Other",19-2099,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1800,Economists,19-3011,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1815,Survey Researchers,19-3022,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1821,Clinical and Counseling Psychologists,19-3033,us_census2018,0,1,0,0,1,20,control3,Clinical and counseling psychologists (licensed). CISA mental health boundary
+1822,School Psychologists,19-3034,us_census2018,1,1,1,1,1,18,control1b,School psychologists. boundary
+1825,Other Psychologists,19-303X,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1830,Sociologists,19-3041,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1840,Urban and Regional Planners,19-3051,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1860,Miscellaneous Social Scientists and Related Workers,19-3090,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1900,Agricultural and Food Science Technicians,19-4010,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1910,Biological Technicians,19-4021,us_census2018,1,0,0,0,1,14,essential_low,Biological technicians (labs)
+1920,Chemical Technicians,19-4031,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1935,Environmental Science and Geoscience Technicians,19-4040,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1940,Nuclear Technicians,19-4051,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1950,Social Science Research Assistants,19-4061,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1970,"Other Life, Physical, and Social Science Technicians",19-40XX,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+1980,Occupational Health and Safety Specialists and Technicians,19-5010,us_census2018,0,0,0,0,0,16,reference,SOC 19 default
+2001,Substance Abuse and Behavioral Disorder Counselors,21-1011,us_census2018,1,0,1,1,1,16,essential_low,Substance abuse counselors. boundary
+2002,"Educational, Guidance, and Career Counselors and Advisors",21-1012,us_census2018,1,0,1,1,1,18,essential_low,School counselors. boundary
+2003,Marriage and Family Therapists,21-1013,us_census2018,1,1,0,1,1,18,control1b,Marriage and family therapists (licensed). boundary
+2004,Mental Health Counselors,21-1014,us_census2018,1,1,1,1,1,18,control1b,Mental health counselors (licensed). boundary
+2005,Rehabilitation Counselors,21-1015,us_census2018,1,0,1,1,1,16,essential_low,Rehabilitation counselors. boundary
+2006,"Counselors, All Other",21-1019,us_census2018,1,0,1,1,1,16,essential_low,"Counselors, all other. boundary"
+2011,"Child, Family, and School Social Workers",21-1021,us_census2018,1,0,1,1,1,16,essential_low,"Child, family, school social workers. boundary"
+2012,Healthcare Social Workers,21-1022,us_census2018,1,0,1,1,1,18,essential_low,Healthcare social workers. boundary
+2013,Mental Health and Substance Abuse Social Workers,21-1023,us_census2018,1,0,1,1,1,18,essential_low,Mental health social workers. boundary
+2014,"Social Workers, All Other",21-1029,us_census2018,1,0,1,1,1,16,essential_low,"Social workers, all other. boundary"
+2015,Probation Officers and Correctional Treatment Specialists,21-1092,us_census2018,1,0,1,0,1,16,essential_low,Probation officers
+2016,Social and Human Service Assistants,21-1093,us_census2018,1,0,1,1,0,12,essential_low,Social and human service assistants
+2025,Other Community and Social Service Specialists,21-109X,us_census2018,1,0,1,1,1,16,essential_low,Other community and social service specialists (incl. community health workers). boundary
+2040,Clergy,21-2011,us_census2018,0,0,0,0,0,16,reference,Clergy
+2050,"Directors, Religious Activities and Education",21-2021,us_census2018,0,0,0,0,0,16,reference,Directors of religious activities
+2060,"Religious Workers, All Other",21-2099,us_census2018,0,0,0,0,0,16,reference,"Religious workers, all other"
+2100,Lawyers,23-1011,us_census2018,0,1,0,0,0,19,control3,Lawyers (bar)
+2105,Judicial Law Clerks,23-1012,us_census2018,0,0,0,0,0,16,reference,SOC 23 default
+2110,"Judges, Magistrates, and Other Judicial Workers",23-1020,us_census2018,0,0,0,0,0,16,reference,SOC 23 default
+2145,Paralegals and Legal Assistants,23-2011,us_census2018,0,0,0,0,0,16,reference,SOC 23 default
+2170,"Title Examiners, Abstractors, and Searchers",23-2093,us_census2018,0,0,0,0,0,16,reference,SOC 23 default
+2180,"Legal Support Workers, All Other",23-2099,us_census2018,0,0,0,0,0,16,reference,SOC 23 default
+2205,Postsecondary Teachers,25-1000,us_census2018,0,0,0,0,0,20,reference,Postsecondary teachers: remote-capable
+2300,Preschool and Kindergarten Teachers,25-2010,us_census2018,1,1,1,1,1,16,control1b,Preschool and kindergarten teachers (public licensed; private preschool often not). boundary
+2310,Elementary and Middle School Teachers,25-2020,us_census2018,1,1,1,1,0,16,control1b,Elementary and middle school teachers
+2320,Secondary School Teachers,25-2030,us_census2018,1,1,1,1,0,16,control1b,Secondary school teachers
+2330,Special Education Teachers,25-2050,us_census2018,1,1,1,1,0,16,control1b,Special education teachers
+2350,Tutors,25-3041,us_census2018,0,0,0,0,0,16,reference,Tutors
+2360,Other Teachers and Instructors,25-30XX,us_census2018,0,0,0,0,1,16,reference,Other teachers and instructors
+2400,"Archivists, Curators, and Museum Technicians",25-4010,us_census2018,0,0,0,0,0,16,reference,"Archivists, curators"
+2435,Librarians and Media Collections Specialists,25-4022,us_census2018,0,0,0,0,0,18,reference,Librarians
+2440,Library Technicians,25-4031,us_census2018,0,0,0,0,0,14,reference,Library technicians
+2545,Teaching Assistants,25-9040,us_census2018,1,0,1,1,0,12,essential_low,Teaching assistants
+2555,Other Educational Instruction and Library Workers,25-90XX,us_census2018,0,0,0,0,1,14,reference,Other educational instruction and library workers
+2600,Artists and Related Workers,27-1010,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2631,Commercial and Industrial Designers,27-1021,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2632,Fashion Designers,27-1022,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2633,Floral Designers,27-1023,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2634,Graphic Designers,27-1024,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2635,Interior Designers,27-1025,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2636,Merchandise Displayers and Window Trimmers,27-1026,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2640,Other Designers,27-102X,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2700,Actors,27-2011,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2710,Producers and Directors,27-2012,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2721,Athletes and Sports Competitors,27-2021,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2722,Coaches and Scouts,27-2022,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2723,"Umpires, Referees, and Other Sports Officials",27-2023,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2740,Dancers and Choreographers,27-2030,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2751,Music Directors and Composers,27-2041,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2752,Musicians and Singers,27-2042,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2755,"Disc jockeys, except radio ",27-2091,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2770,"Entertainers and Performers, Sports and Related Workers, All Other",27-2099,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2805,Broadcast Announcers and Radio Disc Jockeys,27-3011,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2810,"News Analysts, Reporters, and Journalists",27-3023,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2825,Public Relations Specialists,27-3031,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2830,Editors,27-3041,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2840,Technical Writers,27-3042,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2850,Writers and Authors,27-3043,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2861,Interpreters and Translators,27-3091,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2862,Court Reporters and Simultaneous Captioners,27-3092,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2865,"Media and Communication Workers, All Other",27-3099,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2905,"Broadcast, Sound, and Lighting Technicians",27-4010,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2910,Photographers,27-4021,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2920,"Television, Video, and Film Camera Operators and Editors",27-4030,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+2970,"Media and Communication Equipment Workers, All Other",27-4099,us_census2018,0,0,0,0,0,16,reference,SOC 27 default
+3000,Chiropractors,29-1011,us_census2018,1,1,0,1,0,20,control1,Chiropractors
+3010,Dentists,29-1020,us_census2018,1,1,0,1,0,20,control1,Dentists
+3030,Dietitians and Nutritionists,29-1031,us_census2018,1,1,0,1,1,16,control1b,Dietitians: licensed in most states. boundary
+3040,Optometrists,29-1041,us_census2018,1,1,0,1,0,20,control1,Optometrists
+3050,Pharmacists,29-1051,us_census2018,1,1,0,1,0,18,control1,Pharmacists
+3065,Emergency Medicine Physicians,29-1214,us_census2018,1,1,0,1,0,20,control1,Emergency medicine physicians
+3070,Radiologists,29-1224,us_census2018,1,1,0,1,0,20,control1,Radiologists
+3090,Other Physicians,29-12XX,us_census2018,1,1,0,1,0,20,control1,Other physicians
+3100,Surgeons,29-1240,us_census2018,1,1,0,1,0,20,control1,Surgeons
+3110,Physician Assistants,29-1071,us_census2018,1,1,0,1,0,18,control1,Physician assistants
+3120,Podiatrists,29-1081,us_census2018,1,1,0,1,0,20,control1,Podiatrists
+3140,Audiologists,29-1181,us_census2018,1,1,0,1,0,20,control1,Audiologists
+3150,Occupational Therapists,29-1122,us_census2018,1,1,0,1,0,18,control1b,Occupational therapists
+3160,Physical Therapists,29-1123,us_census2018,1,1,0,1,0,19,control1b,Physical therapists
+3200,Radiation Therapists,29-1124,us_census2018,1,1,0,1,0,16,control1b,SOC 29 default
+3210,Recreational Therapists,29-1125,us_census2018,1,1,0,1,0,16,control1b,SOC 29 default
+3220,Respiratory Therapists,29-1126,us_census2018,1,1,0,1,0,16,control1b,Respiratory therapists
+3230,Speech-Language Pathologists,29-1127,us_census2018,1,1,0,1,0,18,control1b,Speech-language pathologists
+3235,Exercise Physiologists,29-1128,us_census2018,1,1,0,1,0,16,control1b,SOC 29 default
+3245,"Therapists, All Other",29-1129,us_census2018,1,1,0,1,0,16,control1b,SOC 29 default
+3250,Veterinarians,29-1131,us_census2018,0,1,0,0,1,20,control3,Veterinarians: licensed; CISA animal health boundary
+3255,Registered Nurses,29-1141,us_census2018,1,1,0,1,0,15,control1b,Registered nurses (ADN/BSN mix)
+3256,Nurse Anesthetists,29-1151,us_census2018,1,1,0,1,0,18,control1,Nurse anesthetists
+3257,Nurse Midwives,29-1161,us_census2018,1,1,0,1,0,18,control1,Nurse midwives
+3258,Nurse Practitioners,29-1171,us_census2018,1,1,0,1,0,18,control1,Nurse practitioners
+3261,Acupuncturists,29-1291,us_census2018,0,1,0,0,0,18,control3,Acupuncturists (licensed)
+3270,"Healthcare Diagnosing or Treating Practitioners, All Other",29-1299,us_census2018,1,1,0,1,1,18,control1b,Other diagnosing/treating practitioners. boundary
+3300,Clinical Laboratory Technologists and Technicians,29-2010,us_census2018,1,0,0,1,1,16,essential_low,Clinical lab technologists/technicians: licensed only in ~12 states. boundary
+3310,Dental Hygienists,29-1292,us_census2018,1,1,0,1,0,14,control1b,Dental hygienists (licensed)
+3321,Cardiovascular Technologists and Technicians,29-2031,us_census2018,1,0,0,1,1,14,essential_low,Cardiovascular technologists. boundary
+3322,Diagnostic Medical Sonographers,29-2032,us_census2018,1,0,0,1,1,14,essential_low,"Diagnostic medical sonographers (certified, few licenses). boundary"
+3323,Radiologic Technologists and Technicians,29-2034,us_census2018,1,1,0,1,0,14,control1b,Radiologic technologists
+3324,Magnetic Resonance Imaging Technologists,29-2035,us_census2018,1,0,0,1,1,14,essential_low,MRI technologists. boundary
+3330,Nuclear Medicine Technologists and Medical Dosimetrists,29-203X,us_census2018,1,1,0,1,1,14,control1b,Nuclear medicine technologists (licensed in ~30 states). boundary
+3401,Emergency Medical Technicians,29-2042,us_census2018,1,1,0,1,0,13,control1b,EMTs (state certification required)
+3402,Paramedics,29-2043,us_census2018,1,1,0,1,0,14,control1b,Paramedics (licensed)
+3421,Pharmacy Technicians,29-2052,us_census2018,1,0,0,1,1,12,essential_low,"Pharmacy technicians: registration, not supply cap. boundary"
+3422,Psychiatric Technicians,29-2053,us_census2018,1,0,0,1,1,12,essential_low,Psychiatric technicians. boundary
+3423,Surgical Technologists,29-2055,us_census2018,1,0,0,1,1,14,essential_low,Surgical technologists. boundary
+3424,Veterinary Technologists and Technicians,29-2056,us_census2018,0,1,0,0,1,14,control3,Veterinary technicians (credentialed). boundary
+3430,Dietetic Technicians and Ophthalmic Medical Technicians,29-205X,us_census2018,1,0,0,1,1,14,essential_low,Dietetic / ophthalmic medical technicians. boundary
+3500,Licensed Practical and Licensed Vocational Nurses,29-2061,us_census2018,1,1,1,1,0,13,control1b,LPN/LVN: licensed; nursing homes Medicaid-rate
+3515,Medical Records Specialists,29-2072,us_census2018,1,0,0,0,0,12,essential_low,"Medical records specialists: teleworkable, not frontline"
+3520,"Opticians, Dispensing",29-2081,us_census2018,0,1,0,0,1,12,control3,Opticians (licensed in ~20 states). boundary
+3545,Miscellaneous Health Technologists and Technicians,29-2090,us_census2018,1,0,0,1,1,14,essential_low,Misc health technologists. boundary
+3550,Other Healthcare Practitioners and Technical Occupations,29-9000,us_census2018,1,1,0,1,0,16,control1b,SOC 29 default
+3601,Home Health Aides,31-1121,us_census2018,1,0,1,1,0,12,essential_low,Home health aides: Medicaid/Medicare rates; main subject
+3602,Personal Care Aides,31-1122,us_census2018,1,0,1,1,0,12,essential_low,Personal care aides: Medicaid HCBS rates; main subject
+3603,Nursing Assistants,31-1131,us_census2018,1,0,1,1,0,12,essential_low,Nursing assistants (CNA certification is weeks-long): Medicaid/Medicare rates; main subject
+3605,Orderlies and Psychiatric Aides,31-113X,us_census2018,1,0,1,1,0,12,essential_low,Orderlies and psychiatric aides
+3610,Occupational Therapy Assistants and Aides,31-2010,us_census2018,1,0,0,1,1,14,essential_low,OT assistants and aides (assistants licensed in most states). boundary
+3620,Physical Therapist Assistants and Aides,31-2020,us_census2018,1,0,0,1,1,14,essential_low,PT assistants and aides. boundary
+3630,Massage Therapists,31-9011,us_census2018,0,1,0,0,0,12,control3,"Massage therapists: licensed, not essential"
+3640,Dental Assistants,31-9091,us_census2018,1,0,0,1,1,12,essential_low,Dental assistants. boundary
+3645,Medical Assistants,31-9092,us_census2018,1,0,0,1,0,12,essential_low,Medical assistants
+3646,Medical Transcriptionists,31-9094,us_census2018,0,0,0,0,0,12,reference,Medical transcriptionists (teleworkable)
+3647,Pharmacy Aides,31-9095,us_census2018,1,0,0,1,0,12,essential_low,Pharmacy aides
+3648,Veterinary Assistants and Laboratory Animal Caretakers,31-9096,us_census2018,0,0,0,0,1,12,reference,Veterinary assistants. boundary
+3649,Phlebotomists,31-9097,us_census2018,1,0,0,1,0,12,essential_low,Phlebotomists
+3655,Other Healthcare Support Workers,31-909X,us_census2018,1,0,0,1,1,12,essential_low,Other healthcare support. boundary
+3700,First-Line Supervisors of Correctional Officers,33-1011,us_census2018,1,0,1,0,1,14,essential_low,First-line supervisors of law enforcement (via 33-1010)
+3710,First-Line Supervisors of Police and Detectives,33-1012,us_census2018,1,0,1,0,1,14,essential_low,First-line supervisors of law enforcement (via 33-1010)
+3720,First-Line Supervisors of Firefighting and Prevention Workers,33-1021,us_census2018,1,0,1,0,1,14,essential_low,First-line supervisors of firefighters
+3725,First-Line Supervisors of Security Workers,33-1091,us_census2018,1,0,1,0,1,12,essential_low,SOC 33 default
+3735,"First-Line Supervisors of Protective Service Workers, All Other",33-1099,us_census2018,1,0,1,0,1,12,essential_low,SOC 33 default
+3740,Firefighters,33-2011,us_census2018,1,0,1,0,1,12,essential_low,Firefighters: public. boundary
+3750,Fire Inspectors ,33-2020,us_census2018,1,0,1,0,1,12,essential_low,SOC 33 default
+3801,Bailiffs,33-3011,us_census2018,1,0,1,0,1,12,essential_low,Bailiffs
+3802,Correctional Officers and Jailers,33-3012,us_census2018,1,0,1,0,1,12,essential_low,Correctional officers
+3820,Detectives and Criminal Investigators,33-3021,us_census2018,1,0,1,0,1,14,essential_low,Detectives
+3830,Fish and Game Wardens,33-3031,us_census2018,1,0,1,0,1,14,essential_low,Fish and game wardens
+3840,Parking Enforcement Workers,33-3041,us_census2018,1,0,1,0,1,12,essential_low,Parking enforcement
+3870,Police Officers,33-3050,us_census2018,1,0,1,0,1,14,essential_low,Police officers: public pay; academy certification. boundary
+3900,Animal Control Workers,33-9011,us_census2018,1,0,1,0,1,12,essential_low,Animal control workers
+3910,Private Detectives and Investigators,33-9021,us_census2018,0,0,0,0,0,12,reference,Private detectives
+3930,Security Guards and Gambling Surveillance Officers,33-9030,us_census2018,1,0,0,0,0,12,essential_low,Security guards and gambling surveillance officers (guards dominate): main subject
+3940,Crossing Guards and Flaggers,33-9091,us_census2018,1,0,0,0,1,12,essential_low,Crossing guards
+3945,Transportation Security Screeners,33-9093,us_census2018,1,0,0,0,1,12,essential_low,TSA screeners (federal)
+3946,School Bus Monitors,33-9094,us_census2018,1,0,1,1,0,12,essential_low,School bus monitors
+3960,Other Protective Service Workers,33-909X,us_census2018,1,0,0,0,1,12,essential_low,Other protective service. boundary
+4000,Chefs and Head Cooks,35-1011,us_census2018,0,0,0,0,0,14,reference,Chefs and head cooks
+4010,First-Line Supervisors of Food Preparation and Serving Workers,35-1012,us_census2018,1,0,0,0,1,12,essential_low,Food service supervisors
+4020,Cooks,35-2010,us_census2018,1,0,0,0,1,12,essential_low,Cooks (combined). boundary
+4030,Food Preparation Workers,35-2021,us_census2018,1,0,0,0,0,12,essential_low,Food preparation workers
+4040,Bartenders,35-3011,us_census2018,0,0,0,0,0,12,reference,Bartenders
+4055,Fast Food and Counter Workers,35-3023,us_census2018,1,0,0,0,1,12,essential_low,Fast food and counter workers. boundary
+4110,Waiters and Waitresses,35-3031,us_census2018,0,0,0,0,1,12,reference,Waiters: dine-in closed in 2020. boundary
+4120,"Food Servers, Nonrestaurant",35-3041,us_census2018,0,0,0,0,1,12,reference,"Food servers, nonrestaurant (hospitals) boundary"
+4130,Dining Room and Cafeteria Attendants and Bartender Helpers,35-9011,us_census2018,0,0,0,0,1,12,reference,Dining room attendants
+4140,Dishwashers,35-9021,us_census2018,1,0,0,0,0,12,essential_low,Dishwashers
+4150,"Hosts and Hostesses, Restaurant, Lounge, and Coffee Shop",35-9031,us_census2018,0,0,0,0,1,12,reference,Hosts and hostesses
+4160,"Food Preparation and Serving Related Workers, All Other",35-9099,us_census2018,0,0,0,0,1,12,reference,"Food prep and serving, all other (via 35-9090)"
+4200,First-Line Supervisors of Housekeeping and Janitorial Workers,37-1011,us_census2018,1,0,0,0,1,12,essential_low,Supervisors of housekeeping
+4210,"First-Line Supervisors of Landscaping, Lawn Service, and Groundskeeping Workers",37-1012,us_census2018,0,0,0,0,1,12,reference,Supervisors of landscaping
+4220,Janitors and Building Cleaners,37-201X,us_census2018,1,0,0,0,0,9,essential_low,Janitors and building cleaners: main subject
+4230,Maids and Housekeeping Cleaners,37-2012,us_census2018,1,0,0,0,0,9,essential_low,Maids and housekeeping cleaners (hospitals/hotels) 
+4240,Pest Control Workers,37-2021,us_census2018,1,0,0,0,1,12,essential_low,Pest control. boundary
+4251,Landscaping and Groundskeeping Workers,37-3011,us_census2018,0,0,0,0,1,12,reference,Landscaping workers. boundary
+4252,Tree Trimmers and Pruners,37-3013,us_census2018,0,0,0,0,1,12,reference,Grounds maintenance (via 37-3010)
+4255,Other Grounds Maintenance Workers,37-301X,us_census2018,0,0,0,0,1,12,reference,Grounds maintenance (via 37-3010)
+4330,Supervisors of Personal Care and Service Workers,39-1000,us_census2018,0,0,0,0,0,12,reference,SOC 39 default
+4340,Animal Trainers,39-2011,us_census2018,0,0,0,0,0,12,reference,Animal trainers
+4350,Animal Caretakers,39-2021,us_census2018,1,0,0,0,1,12,essential_low,Animal caretakers (CISA animal care). boundary
+4400,Gambling Services Workers,39-3010,us_census2018,0,0,0,0,0,12,reference,Gambling services workers (reference low-wage non-essential)
+4420,"Ushers, Lobby Attendants, and Ticket Takers",39-3031,us_census2018,0,0,0,0,0,12,reference,"Ushers, lobby attendants"
+4435,Other Entertainment Attendants and Related Workers,39-30XX,us_census2018,0,0,0,0,0,12,reference,SOC 39 default
+4461,"Embalmers, Crematory Operators and Funeral Attendants",39-40XX,us_census2018,0,0,0,0,0,12,reference,SOC 39 default
+4465,"Morticians, Undertakers, and Funeral Arrangers",39-4031,us_census2018,1,0,0,0,1,14,essential_low,"Morticians, undertakers (licensed in most states; CISA mortuary). boundary"
+4500,Barbers,39-5011,us_census2018,0,1,0,0,0,12,control3,Barbers: state license
+4510,"Hairdressers, Hairstylists, and Cosmetologists",39-5012,us_census2018,0,1,0,0,0,12,control3,Hairdressers/cosmetologists: state license
+4521,Manicurists and Pedicurists,39-5092,us_census2018,0,1,0,0,1,12,control3,Manicurists: licensed in most states. boundary
+4522,Skincare Specialists,39-5094,us_census2018,0,1,0,0,1,12,control3,Skincare specialists (licensed). boundary
+4525,Other Personal Appearance Workers,39-509X,us_census2018,0,1,0,0,1,12,control3,Other personal appearance workers. boundary
+4530,"Baggage Porters, Bellhops, and Concierges",39-6010,us_census2018,0,0,0,0,0,12,reference,"Baggage porters, bellhops, concierges"
+4540,Tour and Travel Guides,39-7010,us_census2018,0,0,0,0,0,12,reference,Tour and travel guides
+4600,Childcare Workers,39-9011,us_census2018,1,0,1,1,0,12,essential_low,Childcare workers: CISA (childcare for essential workers); subsidy rates
+4621,Exercise Trainers and Group Fitness Instructors,39-9031,us_census2018,0,0,0,0,0,12,reference,Fitness trainers
+4622,Recreation Workers,39-9032,us_census2018,0,0,0,0,0,12,reference,Recreation workers
+4640,Residential Advisors,39-9041,us_census2018,0,0,0,0,0,12,reference,Residential advisors
+4655,"Personal Care and Service Workers, All Other",39-9099,us_census2018,0,0,0,0,1,12,reference,"Personal care and service, all other"
+4700,First-Line Supervisors of Retail Sales Workers,41-1011,us_census2018,1,0,0,0,1,12,essential_low,Supervisors of retail sales. boundary
+4710,First-Line Supervisors of Non-Retail Sales Workers,41-1012,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4720,Cashiers,41-2010,us_census2018,1,0,0,0,1,12,essential_low,Cashiers. boundary
+4740,Counter and Rental Clerks,41-2021,us_census2018,0,0,0,0,0,12,reference,Counter and rental clerks
+4750,Parts Salespersons,41-2022,us_census2018,0,0,0,0,1,12,reference,Parts salespersons. boundary
+4760,Retail Salespersons,41-2031,us_census2018,1,0,0,0,1,12,essential_low,Retail salespersons. boundary
+4800,Advertising Sales Agents,41-3011,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4810,Insurance Sales Agents,41-3021,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4820,"Securities, Commodities, and Financial Services Sales Agents",41-3031,us_census2018,0,0,0,0,1,16,control2,"Securities/commodities/financial services sales; Series 7 is an exam, not a supply cap. boundary"
+4830,Travel Agents,41-3041,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4840,"Sales representatives of services, except advertising, insurance, financial services, and travel",41-3091,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4850,"Sales Representatives, Wholesale and Manufacturing",41-4010,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4900,"Models, Demonstrators, and Product Promoters",41-9010,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4920,Real Estate Brokers and Sales Agents,41-9020,us_census2018,0,1,0,0,0,12,control3,Real estate brokers and sales agents: state license
+4930,Sales Engineers,41-9031,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4940,Telemarketers,41-9041,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4950,"Door-to-Door Sales Workers, News and Street Vendors, and Related Workers",41-9091,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+4965,"Sales and Related Workers, All Other",41-9099,us_census2018,0,0,0,0,0,12,reference,SOC 41 default
+5000,First-Line Supervisors of Office and Administrative Support Workers,43-1011,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5010,"Switchboard Operators, Including Answering Service",43-2011,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5020,Telephone Operators,43-2021,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5040,"Communications Equipment Operators, All Other",43-2099,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5100,Bill and Account Collectors,43-3011,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5110,Billing and Posting Clerks,43-3021,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5120,"Bookkeeping, Accounting, and Auditing Clerks",43-3031,us_census2018,0,0,0,0,0,14,reference,Bookkeeping clerks
+5130,Gambling Cage Workers,43-3041,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5140,Payroll and Timekeeping Clerks,43-3051,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5150,Procurement Clerks,43-3061,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5160,Tellers,43-3071,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5165,"Financial Clerks, All Other",43-3099,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5200,Brokerage Clerks,43-4011,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5210,Correspondence Clerks,43-4021,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5220,"Court, Municipal, and License Clerks",43-4031,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5230,"Credit Authorizers, Checkers, and Clerks",43-4041,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5240,Customer Service Representatives,43-4051,us_census2018,0,0,0,0,0,12,reference,Customer service reps (reference low-wage non-essential)
+5250,"Eligibility Interviewers, Government Programs",43-4061,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5260,File Clerks,43-4071,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5300,"Hotel, Motel, and Resort Desk Clerks",43-4081,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5310,"Interviewers, Except Eligibility and Loan",43-4111,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5320,"Library Assistants, Clerical",43-4121,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5330,Loan Interviewers and Clerks,43-4131,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5340,New Accounts Clerks,43-4141,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5350,Order Clerks,43-4151,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5360,"Human Resources Assistants, Except Payroll and Timekeeping",43-4161,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5400,Receptionists and Information Clerks,43-4171,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5410,Reservation and Transportation Ticket Agents and Travel Clerks,43-4181,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5420,"Information and Record Clerks, All Other",43-4199,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5500,Cargo and Freight Agents,43-5011,us_census2018,1,0,0,0,0,12,essential_low,Cargo and freight agents
+5510,Couriers and Messengers,43-5021,us_census2018,1,0,0,0,0,12,essential_low,Couriers and messengers
+5521,Public Safety Telecommunicators,43-5031,us_census2018,1,0,1,0,0,12,essential_low,Public safety telecommunicators (911)
+5522,"Dispatchers, Except Police, Fire, and Ambulance",43-5032,us_census2018,1,0,0,0,1,12,essential_low,Dispatchers (logistics). boundary
+5530,"Meter Readers, Utilities",43-5041,us_census2018,1,0,1,0,1,12,essential_low,"Meter readers, utilities"
+5540,Postal Service Clerks,43-5051,us_census2018,1,0,1,0,0,12,essential_low,Postal service clerks: USPS pay scales
+5550,Postal Service Mail Carriers,43-5052,us_census2018,1,0,1,0,0,12,essential_low,Postal mail carriers
+5560,"Postal Service Mail Sorters, Processors, and Processing Machine Operators",43-5053,us_census2018,1,0,1,0,0,12,essential_low,Postal sorters/processors
+5600,"Production, Planning, and Expediting Clerks",43-5061,us_census2018,1,0,0,0,1,12,essential_low,Production/planning clerks. boundary
+5610,"Shipping, Receiving, and Inventory Clerks",43-5071,us_census2018,1,0,0,0,0,12,essential_low,"Shipping, receiving, inventory clerks (logistics)"
+5630,"Weighers, Measurers, Checkers, and Samplers, Recordkeeping",43-5111,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5710,Executive Secretaries and Executive Administrative Assistants,43-6011,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5720,Legal Secretaries and Administrative Assistants,43-6012,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5730,Medical Secretaries and Administrative Assistants,43-6013,us_census2018,1,0,0,1,1,12,essential_low,Medical secretaries. boundary
+5740,"Secretaries and Administrative Assistants, Except Legal, Medical, and Executive",43-6014,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5810,Data Entry Keyers,43-9021,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5820,Word Processors and Typists,43-9022,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5830,Desktop Publishers,43-9031,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5840,Insurance Claims and Policy Processing Clerks,43-9041,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5850,"Mail Clerks and Mail Machine Operators, Except Postal Service",43-9051,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5860,"Office Clerks, General",43-9061,us_census2018,0,0,0,0,0,12,reference,"Office clerks, general (reference)"
+5900,"Office Machine Operators, Except Computer",43-9071,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5910,Proofreaders and Copy Markers,43-9081,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5920,Statistical Assistants,43-9111,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+5940,"Office and Administrative Support Workers, All Other",43-9199,us_census2018,0,0,0,0,0,12,reference,SOC 43 default
+6005,"First-Line Supervisors of Farming, Fishing, and Forestry Workers",45-1011,us_census2018,1,0,0,0,0,12,essential_low,SOC 45 default
+6010,Agricultural Inspectors,45-2011,us_census2018,1,0,0,0,0,12,essential_low,SOC 45 default
+6020,Animal Breeders,45-2021,us_census2018,1,0,0,0,0,12,essential_low,SOC 45 default
+6040,"Graders and Sorters, Agricultural Products",45-2041,us_census2018,1,0,0,0,0,12,essential_low,SOC 45 default
+6050,Miscellaneous Agricultural Workers,45-2090,us_census2018,1,0,0,0,0,12,essential_low,SOC 45 default
+6115,Fishing and Hunting Workers,45-3031,us_census2018,1,0,0,0,0,12,essential_low,SOC 45 default
+6120,Forest and Conservation Workers,45-4011,us_census2018,1,0,0,0,0,12,essential_low,SOC 45 default
+6130,Logging Workers,45-4020,us_census2018,1,0,0,0,0,12,essential_low,SOC 45 default
+6200,First-Line Supervisors of Construction Trades and Extraction Workers,47-1011,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6210,Boilermakers,47-2011,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6220,"Brickmasons, Blockmasons, and Stonemasons",47-2020,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6230,Carpenters,47-2031,us_census2018,0,0,0,0,1,12,reference,Carpenters. boundary
+6240,"Carpet, Floor, and Tile Installers and Finishers",47-2040,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6250,"Cement Masons, Concrete Finishers, and Terrazzo Workers",47-2050,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6260,Construction Laborers,47-2061,us_census2018,1,0,0,0,1,12,essential_low,Construction laborers (infrastructure). boundary
+6305,Construction Equipment Operators,47-2070,us_census2018,1,0,0,0,1,12,essential_low,Construction equipment operators. boundary
+6330,"Drywall Installers, Ceiling Tile Installers, and Tapers",47-2080,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6355,Electricians,47-2111,us_census2018,1,1,0,0,0,12,control1,Electricians: licensed in most states; critical infrastructure. essential+licensed control
+6360,Glaziers,47-2121,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6400,Insulation Workers,47-2130,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6410,Painters and Paperhangers,47-2140,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6441,Pipelayers,47-2151,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6442,"Plumbers, Pipefitters, and Steamfitters",47-2152,us_census2018,1,1,0,0,0,12,control1,Plumbers/pipefitters/steamfitters: licensed; water/gas
+6460,Plasterers and Stucco Masons,47-2161,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6500,Reinforcing Iron and Rebar Workers,47-2171,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6515,Roofers,47-2181,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6520,Sheet Metal Workers,47-2211,us_census2018,0,0,0,0,1,12,reference,Sheet metal workers
+6530,Structural Iron and Steel Workers,47-2221,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6540,Solar Photovoltaic Installers,47-2231,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6600,"Helpers, Construction Trades",47-3010,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6660,Construction and Building Inspectors,47-4011,us_census2018,0,0,0,0,1,12,reference,Construction and building inspectors
+6700,Elevator and Escalator Installers and Repairers,47-4021,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6710,Fence Erectors,47-4031,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6720,Hazardous Materials Removal Workers,47-4041,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6730,Highway Maintenance Workers,47-4051,us_census2018,1,0,0,0,1,12,essential_low,Highway maintenance workers
+6740,Rail-Track Laying and Maintenance Equipment Operators,47-4061,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6750,Septic Tank Servicers and Sewer Pipe Cleaners,47-4071,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6765,Miscellaneous Construction and Related Workers,47-4090,us_census2018,0,0,0,0,1,12,reference,SOC 47 default
+6800,"Derrick, Rotary Drill, and Service Unit Operators, Oil and Gas  ",47-5010,us_census2018,1,0,0,0,1,12,essential_low,Extraction workers (energy). boundary (via 47-5000)
+6821,"Excavating and Loading Machine and Dragline Operators, Surface Mining",47-5022,us_census2018,1,0,0,0,1,12,essential_low,Extraction workers (energy). boundary (via 47-5000)
+6825,"Earth Drillers, Except Oil and Gas",47-5023,us_census2018,1,0,0,0,1,12,essential_low,Extraction workers (energy). boundary (via 47-5000)
+6835,"Explosives Workers, Ordnance Handling Experts, and Blasters",47-5032,us_census2018,1,0,0,0,1,12,essential_low,Extraction workers (energy). boundary (via 47-5000)
+6850,Underground Mining Machine Operators,47-5040,us_census2018,1,0,0,0,1,12,essential_low,Extraction workers (energy). boundary (via 47-5000)
+6920,"Roustabouts, Oil and Gas",47-5071,us_census2018,1,0,0,0,1,12,essential_low,Extraction workers (energy). boundary (via 47-5000)
+6950,Other Extraction Workers,47-50XX,us_census2018,1,0,0,0,1,12,essential_low,Extraction workers (energy). boundary (via 47-5000)
+7000,"First-Line Supervisors of Mechanics, Installers, and Repairers",49-1011,us_census2018,1,0,0,0,1,12,essential_low,Supervisors of mechanics. boundary
+7010,"Computer, Automated Teller, and Office Machine Repairers",49-2011,us_census2018,0,0,0,0,0,14,reference,Computer/ATM repairers
+7020,Radio and Telecommunications Equipment Installers and Repairers,49-2020,us_census2018,1,0,0,0,1,12,essential_low,Radio and telecom equipment installers
+7030,Avionics Technicians,49-2091,us_census2018,1,0,0,0,1,14,essential_low,Avionics technicians
+7040,"Electric Motor, Power Tool, and Related Repairers",49-2092,us_census2018,0,0,0,0,0,12,reference,Electric motor repairers
+7050,"Electrical and Electronics Installers and Repairers, Transportation Equipment",49-2093,us_census2018,0,0,0,0,0,12,reference,"Electrical repairers, transportation equipment"
+7100,"Electrical and Electronics Repairers, Industrial and Utility ",49-209X,us_census2018,1,0,0,0,1,12,essential_low,"Electrical repairers, industrial and utility. boundary"
+7110,"Electronic Equipment Installers and Repairers, Motor Vehicles",49-2096,us_census2018,0,0,0,0,0,12,reference,"Electronic equipment installers, motor vehicles"
+7120,Audiovisual Equipment Installers and Repairers,49-2097,us_census2018,0,0,0,0,0,12,reference,Audiovisual equipment repairers
+7130,Security and Fire Alarm Systems Installers,49-2098,us_census2018,0,0,0,0,0,12,reference,Security and fire alarm installers
+7140,Aircraft Mechanics and Service Technicians,49-3011,us_census2018,1,1,0,1,1,14,control1b,Aircraft mechanics (FAA A&P license). boundary
+7150,Automotive Body and Related Repairers,49-3021,us_census2018,0,0,0,0,0,12,reference,Auto body repairers
+7160,Automotive Glass Installers and Repairers,49-3022,us_census2018,0,0,0,0,0,12,reference,Auto glass installers
+7200,Automotive Service Technicians and Mechanics,49-3023,us_census2018,1,0,0,0,1,12,essential_low,Automotive technicians (logistics vehicles). boundary
+7210,Bus and Truck Mechanics and Diesel Engine Specialists,49-3031,us_census2018,1,0,0,0,0,12,essential_low,Bus and truck mechanics
+7220,Heavy Vehicle and Mobile Equipment Service Technicians and Mechanics,49-3040,us_census2018,0,0,0,0,0,12,reference,Heavy vehicle mechanics
+7240,Small Engine Mechanics,49-3050,us_census2018,0,0,0,0,0,12,reference,Small engine mechanics
+7260,"Miscellaneous Vehicle and Mobile Equipment Mechanics, Installers, and Repairers",49-3090,us_census2018,0,0,0,0,0,12,reference,Misc vehicle equipment repairers
+7300,Control and Valve Installers and Repairers,49-9010,us_census2018,0,0,0,0,0,12,reference,Control and valve installers
+7315,"Heating, Air Conditioning, and Refrigeration Mechanics and Installers",49-9021,us_census2018,1,0,0,0,1,12,essential_low,HVAC mechanics (EPA 608 cert). boundary
+7320,Home Appliance Repairers,49-9031,us_census2018,0,0,0,0,0,12,reference,Home appliance repairers
+7330,Industrial and Refractory Machinery Mechanics,49-904X,us_census2018,0,0,0,0,1,12,reference,Industrial machinery mechanics. boundary
+7340,"Maintenance and Repair Workers, General",49-9071,us_census2018,1,0,0,0,1,12,essential_low,"Maintenance and repair workers, general. boundary"
+7350,"Maintenance Workers, Machinery",49-9043,us_census2018,0,0,0,0,1,12,reference,"Maintenance workers, machinery"
+7360,Millwrights,49-9044,us_census2018,0,0,0,0,0,12,reference,Millwrights
+7410,Electrical Power-Line Installers and Repairers,49-9051,us_census2018,1,0,1,0,1,12,essential_low,Electrical power-line installers (utilities). boundary
+7420,Telecommunications Line Installers and Repairers,49-9052,us_census2018,1,0,0,0,1,12,essential_low,Telecommunications line installers
+7430,Precision Instrument and Equipment Repairers,49-9060,us_census2018,0,0,0,0,0,14,reference,Precision instrument repairers
+7440,Wind Turbine Service Technicians,49-9081,us_census2018,0,0,0,0,0,12,reference,Wind turbine service techs
+7510,"Coin, Vending, and Amusement Machine Servicers and Repairers",49-9091,us_census2018,0,0,0,0,0,12,reference,Coin/vending machine servicers
+7520,Commercial Divers,49-9092,us_census2018,0,0,0,0,0,12,reference,Commercial divers
+7540,Locksmiths and Safe Repairers,49-9094,us_census2018,0,0,0,0,0,12,reference,Locksmiths
+7550,Manufactured Building and Mobile Home Installers,49-9095,us_census2018,0,0,0,0,0,12,reference,Manufactured building installers
+7560,Riggers,49-9096,us_census2018,0,0,0,0,0,12,reference,Riggers
+7610,"Helpers--Installation, Maintenance, and Repair Workers",49-9098,us_census2018,1,0,0,0,1,12,essential_low,"Helpers, installation/repair"
+7640,"Other Installation, Maintenance, and Repair Workers",49-909X,us_census2018,0,0,0,0,1,12,reference,Other installation/repair
+7700,First-Line Supervisors of Production and Operating Workers,51-1011,us_census2018,0,0,0,0,1,12,reference,Supervisors of production
+7710,"Aircraft Structure, Surfaces, Rigging, and Systems Assemblers",51-2011,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+7720,"Electrical, Electronics, and Electromechanical Assemblers",51-2020,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+7730,Engine and Other Machine Assemblers,51-2031,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+7740,Structural Metal Fabricators and Fitters,51-2041,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+7750,Other Assemblers and Fabricators,51-20XX,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+7800,Bakers,51-3011,us_census2018,1,0,0,0,0,12,essential_low,Bakers
+7810,"Butchers and Other Meat, Poultry, and Fish Processing Workers",51-3020,us_census2018,1,0,0,0,0,12,essential_low,Butchers and meat processing
+7830,"Food and Tobacco Roasting, Baking, and Drying Machine Operators and Tenders",51-3091,us_census2018,1,0,0,0,0,12,essential_low,Food and tobacco roasting/baking machine operators
+7840,Food Batchmakers,51-3092,us_census2018,1,0,0,0,0,12,essential_low,Food batchmakers
+7850,Food Cooking Machine Operators and Tenders,51-3093,us_census2018,1,0,0,0,0,12,essential_low,Food cooking machine operators
+7855,"Food Processing Workers, All Other",51-3099,us_census2018,1,0,0,0,0,12,essential_low,"Food processing, all other"
+7905,Computer numerically controlled tool operators and programmers,51-9160,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+7925,"Forming Machine Setters, Operators, and Tenders, Metal and Plastic",51-4020,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+7950,"Cutting, Punching, and Press Machine Setters, Operators, and Tenders, Metal and Plastic",51-4031,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8000,"Grinding, Lapping, Polishing, and Buffing Machine Tool Setters, Operators, and Tenders, Metal and Plastic",51-4033,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8025,"Other Machine Tool Setters, Operators, and Tenders, Metal and Plastic",51-403X,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8030,Machinists,51-4041,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8040,"Metal Furnace Operators, Tenders, Pourers, and Casters",51-4050,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8060,"Model Makers and Patternmakers, Metal and Plastic",51-4060,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8100,"Molders and Molding Machine Setters, Operators, and Tenders, Metal and Plastic",51-4070,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8130,Tool and Die Makers,51-4111,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8140,"Welding, Soldering, and Brazing Workers",51-4120,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8225,Other Metal Workers and Plastic Workers,51-4XXX,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8250,Prepress Technicians and Workers,51-5111,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8255,Printing Press Operators,51-5112,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8256,Print Binding and Finishing Workers,51-5113,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8300,Laundry and Dry-Cleaning Workers,51-6011,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8310,"Pressers, Textile, Garment, and Related Materials",51-6021,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8320,Sewing Machine Operators,51-6031,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8335,Shoe and Leather Workers,51-6040,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8350,"Tailors, Dressmakers, and Sewers",51-6050,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8365,"Textile Machine Setters, Operators, and Tenders",51-6060,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8450,Upholsterers,51-6093,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8465,"Other Textile, Apparel, and Furnishings Workers",51-609X,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8500,Cabinetmakers and Bench Carpenters,51-7011,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8510,Furniture Finishers,51-7021,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8530,"Sawing Machine Setters, Operators, and Tenders, Wood",51-7041,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8540,"Woodworking Machine Setters, Operators, and Tenders, Except Sawing",51-7042,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8555,Other Woodworkers,51-70XX,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8600,"Power Plant Operators, Distributors, and Dispatchers",51-8010,us_census2018,1,0,1,1,1,14,essential_low,Power plant operators (nuclear ones NRC-licensed). boundary
+8610,Stationary Engineers and Boiler Operators,51-8021,us_census2018,1,0,0,0,1,12,essential_low,Stationary engineers and boiler operators (licensed in some cities). boundary
+8620,Water and Wastewater Treatment Plant and System Operators,51-8031,us_census2018,1,0,1,1,1,12,essential_low,Water and wastewater treatment plant operators (state certified). boundary
+8630,Miscellaneous Plant and System Operators,51-8090,us_census2018,1,0,0,0,1,12,essential_low,Misc plant and system operators
+8640,"Chemical Processing Machine Setters, Operators, and Tenders",51-9010,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8650,"Crushing, Grinding, Polishing, Mixing, and Blending Workers",51-9020,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8710,Cutting Workers,51-9030,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8720,"Extruding, Forming, Pressing, and Compacting Machine Setters, Operators, and Tenders",51-9041,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8730,"Furnace, Kiln, Oven, Drier, and Kettle Operators and Tenders",51-9051,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8740,"Inspectors, Testers, Sorters, Samplers, and Weighers",51-9061,us_census2018,0,0,0,0,1,12,reference,Inspectors/testers. boundary
+8750,Jewelers and Precious Stone and Metal Workers,51-9071,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8760,Dental and Ophthalmic Laboratory Technicians and Medical Appliance Technicians,51-9080,us_census2018,1,0,0,1,1,12,essential_low,"Medical, dental, ophthalmic lab techs"
+8800,Packaging and Filling Machine Operators and Tenders,51-9111,us_census2018,1,0,0,0,1,12,essential_low,Packaging and filling machine operators (food). boundary
+8810,Painting Workers,51-9120,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8830,Photographic Process Workers and Processing Machine Operators,51-9151,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8850,Adhesive Bonding Machine Operators and Tenders,51-9191,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8910,Etchers and Engravers,51-9194,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8920,"Molders, Shapers, and Casters, Except Metal and Plastic",51-9195,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8930,"Paper Goods Machine Setters, Operators, and Tenders",51-9196,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8940,Tire Builders,51-9197,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8950,Helpers--Production Workers,51-9198,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8865,Other Production Equipment Operators and Tenders,51-919X,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+8990,Other Production Workers,51-91XX,us_census2018,0,0,0,0,0,12,reference,SOC 51 default
+9005,Supervisors of Transportation and Material Moving Workers,53-1000,us_census2018,1,0,0,0,0,12,essential_low,SOC 53 default
+9030,Aircraft Pilots and Flight Engineers,53-2010,us_census2018,1,1,0,1,1,16,control1,Aircraft pilots and flight engineers (ATP/commercial certificates: strong supply cap). E boundary
+9040,Air Traffic Controllers and Airfield Operations Specialists,53-2020,us_census2018,1,1,1,1,0,14,control1,"Air traffic controllers and airfield operations specialists (FAA certified, federal)"
+9050,Flight Attendants,53-2031,us_census2018,1,0,0,1,1,12,essential_low,Flight attendants (FAA certificate; employer-issued). boundary
+9110,"Ambulance Drivers and Attendants, Except Emergency Medical Technicians",53-3011,us_census2018,1,0,0,1,0,12,essential_low,Ambulance drivers and attendants
+9121,"Bus Drivers, School",53-3051,us_census2018,1,1,1,1,1,12,essential_low,"Bus drivers, school: CDL; public pay. L boundary"
+9122,"Bus Drivers, Transit and Intercity",53-3052,us_census2018,1,1,1,1,1,12,essential_low,"Bus drivers, transit and intercity: CDL; public fares. L boundary"
+9130,Driver/Sales Workers and Truck Drivers,53-3030,us_census2018,1,0,0,0,1,12,essential_low,Driver/sales workers and truck drivers (combined)
+9141,Shuttle Drivers and Chauffeurs,53-3053,us_census2018,1,0,0,1,1,12,essential_low,Shuttle drivers and chauffeurs
+9142,Taxi Drivers,53-3054,us_census2018,1,0,0,0,1,12,essential_low,Taxi drivers (regulated fares in many cities). boundary
+9150,"Motor Vehicle Operators, All Other",53-3099,us_census2018,1,0,0,0,1,12,essential_low,"Motor vehicle operators, all other. boundary"
+9210,Locomotive Engineers and Operators,53-4010,us_census2018,1,1,1,1,1,12,control1,Locomotive engineers and operators
+9240,Railroad Conductors and Yardmasters,53-4031,us_census2018,1,0,1,1,1,12,essential_low,Railroad conductors
+9265,Other Rail Transportation Workers,53-40XX,us_census2018,1,0,1,1,1,12,essential_low,Other rail transportation workers
+9300,Sailors and Marine Oilers,53-5011,us_census2018,1,0,0,0,1,12,essential_low,Sailors and marine oilers
+9330,Ship Engineers ,53-5031,us_census2018,1,0,0,0,1,14,essential_low,Ship engineers
+9310,Ship and Boat Captains and Operators,53-5020,us_census2018,1,1,0,0,1,14,control1,Ship and boat captains and operators (USCG license)
+9350,Parking Attendants,53-6021,us_census2018,0,0,0,0,0,12,reference,Parking attendants
+9365,Transportation Service Attendants,53-6030,us_census2018,1,0,0,0,0,12,essential_low,Service station attendants
+9410,Transportation Inspectors,53-6051,us_census2018,1,0,0,0,1,12,essential_low,Transportation inspectors
+9415,Passenger Attendants,53-6061,us_census2018,0,0,0,0,0,12,reference,Passenger attendants
+9430,Other Transportation Workers,53-60XX,us_census2018,1,0,0,0,0,12,essential_low,SOC 53 default
+9510,Crane and Tower Operators,53-7021,us_census2018,1,0,0,0,1,12,essential_low,Crane and tower operators
+9570,"Conveyor, Dredge, and Hoist and Winch Operators",53-70XX,us_census2018,1,0,0,0,1,12,essential_low,"Conveyor, dredge, hoist operators"
+9600,Industrial Truck and Tractor Operators,53-7051,us_census2018,1,0,0,0,0,12,essential_low,Industrial truck/forklift operators
+9610,Cleaners of Vehicles and Equipment,53-7061,us_census2018,1,0,0,0,1,12,essential_low,Cleaners of vehicles and equipment
+9620,"Laborers and Freight, Stock, and Material Movers, Hand",53-7062,us_census2018,1,0,0,0,0,12,essential_low,Laborers and freight/stock/material movers: main subject
+9630,Machine Feeders and Offbearers,53-7063,us_census2018,1,0,0,0,1,12,essential_low,Machine feeders and offbearers
+9640,"Packers and Packagers, Hand",53-7064,us_census2018,1,0,0,0,0,12,essential_low,Packers and packagers
+9645,Stockers and Order Fillers,53-7065,us_census2018,1,0,0,0,0,12,essential_low,Stockers and order fillers
+9650,Pumping Station Operators,53-7070,us_census2018,1,0,0,0,1,12,essential_low,Pumping station operators
+9720,Refuse and Recyclable Material Collectors,53-7081,us_census2018,1,0,1,1,1,12,essential_low,Refuse and recyclable material collectors (municipal/contract). boundary on P
+9760,Other Material Moving Workers,53-71XX,us_census2018,1,0,0,0,0,12,essential_low,SOC 53 default
