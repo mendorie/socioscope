@@ -187,6 +187,15 @@ def residuals_with_year_fe(d: pl.DataFrame) -> tuple[pl.DataFrame, float, float]
     return d.with_columns(pl.Series("resid", np.asarray(res.resid))), b, se
 
 
+def residuals_no_fe(d: pl.DataFrame) -> pl.DataFrame:
+    """設計の文言どおり年固定効果なし: Δlog 賃金 = a + b·log 求人倍率（加重）。
+
+    残差の符号の感度用。"""
+    x = sm.add_constant(d["log_ratio"].to_numpy(), has_constant="add")
+    res = sm.WLS(d["dlog_wage"].to_numpy(), x, weights=d["workers"].to_numpy()).fit()
+    return d.with_columns(pl.Series("resid_nofe", np.asarray(res.resid)))
+
+
 def did_series(bsws: pl.DataFrame) -> pl.DataFrame:
     """year -> treated wage, control wage (weighted), with old/new names across the 2020 break."""
     b = bsws.filter((pl.col("sex") == "T") & (pl.col("size_class") == "all"))
@@ -440,6 +449,19 @@ def main() -> None:
         v = "整合" if share >= 9 / 13 else ("不支持" if share <= 5 / 13 else "中間")
         verdicts.append(f"{k}: 負の年 {neg}/{n}（{share:.2f}）→ {v}")
     print("判定（負の年の割合 ≥ 0.69 整合 / ≤ 0.38 不支持）: " + "; ".join(verdicts))
+    dn = residuals_no_fe(d)
+    v2 = []
+    for k in ADMIN_KEYS:
+        sub = dn.filter(pl.col("key") == k)
+        neg = int((sub["resid_nofe"] < 0).sum())
+        share = neg / sub.height if sub.height else math.nan
+        rv2 = "整合" if share >= 9 / 13 else ("不支持" if share <= 5 / 13 else "中間")
+        v2.append(f"{k}: 負の年 {neg}/{sub.height}（{share:.2f}）→ {rv2}")
+    print("年固定効果なし（設計の回帰式どおり）の残差で: " + "; ".join(v2))
+    print(
+        "注: 残差はゼロ近傍（±0.3 pt）の年が多く、符号の数は小さなノイズに左右される。"
+        "主判定は年固定効果つき（年ごとの全体の賃上げを除いた区分間の比較）とし、固定効果なしも併記する。"
+    )
     pooled = dr.filter(pl.col("key").is_in(list(ADMIN_KEYS)))
     pooled_mean = as_float(pooled["resid"].mean())
     pooled_neg = as_float((pooled["resid"] < 0).mean())
@@ -546,6 +568,14 @@ def main() -> None:
         + " ".join(f"{100 * x:+.1f}" for x in j0["non_event_values"])
     )
     print(f"**H3b 判定（事前登録 5 回）: {j0['verdict']}**")
+    j25 = h3b_judge(
+        ds, {**{k: v for k, v in EVENTS_PRE.items() if k != 2024}, 2025: "2024-06 一本化（翌年）"}
+    )
+    print(
+        f"2024-06 の改定を 2025 年調査に当てた場合: 翌年 ≥ +2% {j25['hits']}/{j25['n_events']}、"
+        f"改定年の中央値 {100 * j25['event_median']:+.2f}%、"
+        f"非改定年 {100 * j25['non_event_median']:+.2f}% → {j25['verdict']}"
+    )
     jc = h3b_judge(ds, EVENTS_PRE, col="rel_change_cash")
     print(
         f"きまって支給する現金給与で: 翌年 ≥ +2% {jc['hits']}/{jc['n_events']}、"
@@ -641,8 +671,10 @@ def main() -> None:
     ax.legend(frameon=False, fontsize=8)
     ax = axes[1]
     ax.plot(ds["year"], ds["gap"] * 100, marker="o", color=SERIES[0])
-    for y in EVENT_YEARS:
-        ax.axvline(y - 0.5, color=SERIES[1], linestyle=":", linewidth=1)
+    for y in EVENTS_PRE:
+        ax.axvline(y - 0.5, color=SERIES[1], linestyle="--", linewidth=1.2)  # 事前登録 5 回
+    for y in (2015, 2017):
+        ax.axvline(y - 0.5, color=SERIES[1], linestyle=":", linewidth=1)  # 事後追加
     ax.axvline(2019.5, color=MUTED, linestyle="--", linewidth=1)
     ax.set_ylabel("log(介護 ÷ 対照) × 100", color=INK)
     ax.set_title(

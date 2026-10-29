@@ -460,7 +460,7 @@ def fig_strip(jp: pl.DataFrame, us: pl.DataFrame, path: Path) -> None:
             y = sub["wage"].to_numpy() / (1.0 if name.startswith("日本") else 1000.0)
             w = sub["workers"].to_numpy()
             s = 8 + 60 * (w / w.max()) if len(w) else []
-            jitter = (hash(g) % 7 - 3) / 40
+            jitter = ((i * 3) % 7 - 3) / 40  # 決定的なずらし（hash は実行ごとに変わる）
             ax.scatter(
                 [i + jitter] * len(y),
                 y,
@@ -624,8 +624,15 @@ def main() -> None:
     )
 
     # H2
-    h2_block("日本 2025", jp)
-    h2_block("米国 2024", us)
+    h2_jp = h2_block("日本 2025", jp)
+    h2_us = h2_block("米国 2024", us)
+    ok_jp = h2_jp["licensed"] >= 0.20
+    ok_us = h2_us["licensed"] >= 0.20
+    print(
+        f"\n**H2 総合判定（事前規則: 2 か国中 2 か国で学歴統制後の差 ≥ 0.20）: "
+        f"{'整合' if ok_jp and ok_us else '整合基準を満たさない'}**"
+        f"（日本 {h2_jp['licensed']:+.3f}、米国 {h2_us['licensed']:+.3f}。国別は上表）"
+    )
     # H5
     h5_block("日本 2025", jp, ["education_years", "scheduled_hours", "tenure_years"])
     h5_block("米国 2024", us, ["education_years"])
