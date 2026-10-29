@@ -18,6 +18,7 @@ members = [
     "socioscope-core",
     "socioscope-workspace",
     "theme-bicycle-industry",
+    "theme-essential-work-wages",
     "theme-growth-fertility",
     "theme-parliament-size",
     "theme-wealth-population-distribution",
@@ -1926,6 +1927,7 @@ dev = [
     { name = "ruff" },
     { name = "socioscope-core" },
     { name = "theme-bicycle-industry" },
+    { name = "theme-essential-work-wages" },
     { name = "theme-growth-fertility" },
     { name = "theme-parliament-size" },
     { name = "theme-wealth-population-distribution" },
@@ -1947,6 +1949,7 @@ dev = [
     { name = "ruff", specifier = ">=0.8" },
     { name = "socioscope-core", editable = "packages/core" },
     { name = "theme-bicycle-industry", editable = "themes/bicycle-industry" },
+    { name = "theme-essential-work-wages", editable = "themes/essential-work-wages" },
     { name = "theme-growth-fertility", editable = "themes/growth-fertility" },
     { name = "theme-parliament-size", editable = "themes/parliament-size" },
     { name = "theme-wealth-population-distribution", editable = "themes/wealth-population-distribution" },
@@ -2045,6 +2048,31 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=17" },
     { name = "pydantic", specifier = ">=2.9" },
     { name = "pypdf", specifier = ">=6.21.1" },
+    { name = "socioscope-core", editable = "packages/core" },
+    { name = "statsmodels", specifier = ">=0.14" },
+]
+
+[[package]]
+name = "theme-essential-work-wages"
+version = "0.1.0"
+source = { editable = "themes/essential-work-wages" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "openpyxl" },
+    { name = "polars" },
+    { name = "pyarrow" },
+    { name = "pydantic" },
+    { name = "socioscope-core" },
+    { name = "statsmodels" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "matplotlib", specifier = ">=3.9" },
+    { name = "openpyxl", specifier = ">=3.1" },
+    { name = "polars", specifier = ">=1.0" },
+    { name = "pyarrow", specifier = ">=17" },
+    { name = "pydantic", specifier = ">=2.9" },
     { name = "socioscope-core", editable = "packages/core" },
     { name = "statsmodels", specifier = ">=0.14" },
 ]

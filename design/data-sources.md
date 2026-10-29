@@ -84,6 +84,22 @@
 | 財務省 令和 7 年度 一般会計歳入歳出予算（衆参修正後）PDF、歳費法・秘書給与法（e-Gov 法令 API v1 XML） | 歳出の所管別内訳（国会 1,315 億円、合計 115.2 兆円）、議員 1 人当たり法定経費（parliament-size H5） | PDF（AES 暗号化だが空パスワードで pypdf が読める）/ `laws.e-gov.go.jp/api/1/lawdata/<law_id>` | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size、2026-10-27。`marts/jp_budget_by_organ`。法定額は `jp_member_costs.csv` に手入力） |
 | 衆議院 HP「衆議院議員定数の変遷」（1946–2004）＋ 法令、e-Stat 人口推計 長期時系列 表 1（1920–2000） | 定数の時系列 1890–2022（手入力表 `jp_seats_history.csv`）、総人口 1920–2000（parliament-size H6） | HTML（Shift_JIS）/ `file-download?statInfId=000000090261&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_population_longterm`。2001 年以降の人口は IPU Parline） |
 | e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1 | 都道府県別 国籍総数・日本人 人口（parliament-size H4b: アダムズ方式の基礎人口） | `file-download?statInfId=000032142404&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_census2020_prefecture`） |
+| e-Stat 賃金構造基本統計調査 職種別（厚労省） | 職種 × 性 × 企業規模 の所定内給与・年間賞与・労働時間・勤続年数・年齢・労働者数（一般労働者、2009–2024。**2020 年に職種分類を大幅改定**、小分類ベースへ）（essential-work-wages H1・H2・H5・H0・H3b） | e-Stat 統計表ファイル直接ダウンロード（`file-download?statInfId=…&fileKind=…`、appId 不要。statInfId は年ごとに解決） | 政府標準利用規約 2.0 | 候補（essential-work-wages ①） |
+| e-Stat 職業安定業務統計 職業別 有効求人倍率（厚労省） | 職業分類中分類別の有効求人数・有効求職者数・有効求人倍率（パート除く常用、月次 2012–）（essential-work-wages H3） | e-Stat CSV（appId 不要） | 政府標準利用規約 2.0 | 候補（essential-work-wages ③） |
+| 厚労省 介護従事者処遇状況等調査、介護報酬改定・処遇改善加算の経緯 | 介護職員の平均給与の改定前後比較（2009–）、改定日・改定率（essential-work-wages H3b の自然実験） | PDF / HTML → 改定日は手入力 CSV（出典列） | 政府標準利用規約 2.0 | 候補（essential-work-wages ③） |
+| e-Stat 労働争議統計調査・労働組合基礎調査（厚労省） | 産業別 争議件数・参加人員・労働損失日数、産業別 推定組織率（essential-work-wages H4） | e-Stat CSV | 政府標準利用規約 2.0 | 候補（essential-work-wages ④） |
+| e-Stat 令和 2 年国勢調査 就業状態等基本集計（職業小分類 × 性）、就業構造基本調査 2022（職業 × 学歴） | 職業別 女性比率・学歴構成（essential-work-wages H5 の F、H0 の統制変数） | e-Stat xlsx | 政府標準利用規約 2.0 | 候補（essential-work-wages ⑤） |
+| 財務省 法人企業統計 年次（産業別） | 産業別 付加価値・営業利益・従業員数（essential-work-wages H6 の R、日本） | e-Stat CSV / 財務省 xlsx | 政府標準利用規約 2.0 | 候補（essential-work-wages ⑥） |
+| 内閣官房 新型コロナウイルス感染症対策の基本的対処方針 別添（2020-04-07）「緊急事態宣言時に事業の継続が求められる事業者」 | エッセンシャル職の操作的定義 (i)、日本（essential-work-wages） | PDF → 業種 → 職業の対応は手入力 CSV（出典列・判断理由列） | 政府標準利用規約 2.0 | 候補（essential-work-wages ①） |
+| US BLS OEWS（Occupational Employment and Wage Statistics） | 職業 × 産業 の雇用者数・年収 p10/p25/中央値/p75/p90（2012–2024）（essential-work-wages H1 米国・H2・H6・H6b・H0） | 静的 xlsx（`bls.gov/oes/tables.htm`、鍵不要） | パブリックドメイン | 候補（essential-work-wages ②） |
+| US BLS CPS 職業別 資格・免許保有率 | 職業別の免許保有者比率（2015–）（essential-work-wages L の操作的定義、米国） | 静的 xlsx（`bls.gov/cps/certifications-and-licenses.htm`） | パブリックドメイン | 候補（essential-work-wages ②） |
+| Dingel & Neiman (2020) 職業別 teleworkable 指標 | SOC 別の在宅勤務可能性（0/1 と連続値）（essential-work-wages E の操作的定義 (ii)） | GitHub `jdingel/DingelNeiman-workathome` CSV | **ライセンス 確認要**（MIT 表記の有無） | 候補（essential-work-wages ②） |
+| US CISA Essential Critical Infrastructure Workers（2020-03 v1.0〜v4.0） | エッセンシャル職の操作的定義 (i)、米国。SOC への対応は Blau・Koebe・Meyerhofer (2021) の対応表を参照 | PDF → 手入力 CSV。対応表の再配布条件 **確認要** | パブリックドメイン（CISA） | 候補（essential-work-wages ②） |
+| US BEA GDP by Industry | 産業別 付加価値・雇用（essential-work-wages H6 の R、米国） | REST JSON（`apps.bea.gov/api`、**API 鍵が要る**）／静的 xlsx（鍵不要） | パブリックドメイン | 候補（essential-work-wages ⑥。静的 xlsx 優先） |
+| ONS ASHE（英国）、ONS key workers 定義（2020） | 職業（SOC2020）別 賃金中央値、key worker の職業リスト（essential-work-wages H1 英国） | xlsx / CSV | OGL v3.0 | 候補（essential-work-wages ⑦） |
+| ILOSTAT `EAR_4MTH_SEX_OCU_CUR_NB`・`STR_TSTR_ECO_NB`・`STR_DAYS_ECO_NB` | ISCO-08 別 月収、産業別 争議件数・労働損失日数（essential-work-wages H3c・H4） | REST JSON（`rplumber.ilo.org`、鍵不要） | CC BY 4.0 | 候補（essential-work-wages ④⑧） |
+| OECD Health Statistics（看護師の報酬 対平均賃金比、保健支出の公的シェア） | 看護師の相対賃金と価格統制の度合い（essential-work-wages H3c・H4b） | SDMX REST CSV（鍵不要） | OECD Terms & Conditions（出典表示） | 候補（essential-work-wages ⑧） |
+| Eurostat SES `earn_ses18_*` / `earn_ses22_*` | ISCO 2 桁 × 産業 × 性 の時給（2018・2022）（essential-work-wages H5・H6 欧州） | dissemination API JSON-stat（鍵不要） | Eurostat copyright notice（出典表示） | 候補（essential-work-wages ⑧） |
 
 ## 採用ソースの記録
 
