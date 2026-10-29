@@ -47,7 +47,6 @@ occupation_code,occupation,soc_code,classification,cisa_sector,licensed,admin_pr
 0710,Management Analysts,13-1111,us_census2018,0,0,0,0,0,16,control2,Management analysts (consultants)
 0725,"Meeting, Convention, and Event Planners",13-1121,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
 0726,Fundraisers,13-1131,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
-0650,Training and Development Specialists,13-1151,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
 0735,Market Research Analysts and Marketing Specialists,13-1161,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
 0750,"Business Operations Specialists, All Other",13-1199,us_census2018,0,0,0,0,0,16,reference,SOC 13 default
 0800,Accountants and Auditors,13-2011,us_census2018,0,0,0,0,1,16,reference,Accountants; CPA not required to practice. boundary

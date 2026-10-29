@@ -1,0 +1,213 @@
+{
+ "version": "2.0",
+ "class": "dataset",
+ "label": "Employment by detailed industry (NACE Rev.2) - national accounts",
+ "source": "ESTAT",
+ "updated": "2026-10-27T11:00:00+0100",
+ "value": {
+  "0": 207233.51,
+  "1": 214989.23,
+  "2": 44878.0,
+  "3": 45622.0,
+  "4": 4650.3,
+  "5": 5037.4,
+  "6": 176392.34,
+  "7": 183819.22,
+  "8": 40649.0,
+  "9": 41742.0,
+  "10": 3377.2,
+  "11": 3687.3,
+  "12": 33502.95,
+  "13": 33430.2,
+  "14": 8323.0,
+  "15": 8104.0,
+  "16": 423.1,
+  "17": 473.9,
+  "18": 31667.11,
+  "19": 31609.29,
+  "20": 8057.0,
+  "21": 7871.0,
+  "22": 356.4,
+  "23": 395.9,
+  "24": 30314.81,
+  "25": 30088.87,
+  "26": 7731.0,
+  "27": 7486.0,
+  "28": 355.1,
+  "29": 403.8,
+  "30": 28558.1,
+  "31": 28354.97,
+  "32": 7476.0,
+  "33": 7262.0,
+  "34": 297.6,
+  "35": 338.0,
+  "36": 4561.56,
+  "37": 4733.03,
+  "38": 940.0,
+  "39": 932.0,
+  "40": 130.3,
+  "41": 151.5,
+  "42": 4303.9,
+  "43": 4456.55,
+  "44": 904.0,
+  "45": 901.0,
+  "46": 113.4,
+  "47": 129.7,
+  "48": 4789.4,
+  "49": 4851.99,
+  "50": 1104.0,
+  "51": 1075.0,
+  "52": 81.9,
+  "53": 81.2,
+  "54": 4322.45,
+  "55": 4375.0,
+  "56": 973.0,
+  "57": 948.0,
+  "58": 68.0,
+  "59": 66.7,
+  "60": 2681.85,
+  "61": 2611.3,
+  "62": 607.0,
+  "63": 560.0,
+  "64": 47.3,
+  "65": 42.4,
+  "66": 2655.19,
+  "67": 2578.48,
+  "68": 607.0,
+  "69": 560.0,
+  "70": 47.3,
+  "71": 42.4,
+  "72": 0.0,
+  "73": 0.0,
+  "76": 0.0,
+  "77": 0.0,
+  "78": 0.0,
+  "79": 0.0,
+  "82": 0.0,
+  "83": 0.0,
+  "84": 25980.75,
+  "85": 27620.88,
+  "86": 6215.0,
+  "87": 6216.0,
+  "88": 407.4,
+  "89": 468.6,
+  "90": 20886.26,
+  "91": 22208.27,
+  "92": 5350.0,
+  "93": 5441.0,
+  "94": 260.9,
+  "95": 304.3
+ },
+ "status": {},
+ "id": [
+  "freq",
+  "unit",
+  "nace_r2",
+  "na_item",
+  "geo",
+  "time"
+ ],
+ "size": [
+  1,
+  1,
+  8,
+  2,
+  3,
+  2
+ ],
+ "dimension": {
+  "freq": {
+   "label": "Time frequency",
+   "category": {
+    "index": {
+     "A": 0
+    },
+    "label": {
+     "A": "Annual"
+    }
+   }
+  },
+  "unit": {
+   "label": "Unit of measure",
+   "category": {
+    "index": {
+     "THS_PER": 0
+    },
+    "label": {
+     "THS_PER": "Thousand persons"
+    }
+   }
+  },
+  "nace_r2": {
+   "label": "Statistical classification of economic activities in the European Community (NACE Rev. 2)",
+   "category": {
+    "index": {
+     "TOTAL": 0,
+     "B-E": 1,
+     "C": 2,
+     "C10-C12": 3,
+     "K": 4,
+     "K64": 5,
+     "L68A": 6,
+     "M_N": 7
+    },
+    "label": {
+     "TOTAL": "Total - all NACE activities",
+     "B-E": "Industry (except construction)",
+     "C": "Manufacturing",
+     "C10-C12": "Manufacture of food products; beverages and tobacco products",
+     "K": "Financial and insurance activities",
+     "K64": "Financial service activities, except insurance and pension funding",
+     "L68A": "Imputed rents of owner-occupied dwellings",
+     "M_N": "Professional, scientific and technical activities; administrative and support service activities"
+    }
+   }
+  },
+  "na_item": {
+   "label": "National accounts indicator (ESA 2010)",
+   "category": {
+    "index": {
+     "EMP_DC": 0,
+     "SAL_DC": 1
+    },
+    "label": {
+     "EMP_DC": "Total employment domestic concept",
+     "SAL_DC": "Employees domestic concept"
+    }
+   }
+  },
+  "geo": {
+   "label": "Geopolitical entity (reporting)",
+   "category": {
+    "index": {
+     "EU27_2020": 0,
+     "DE": 1,
+     "EL": 2
+    },
+    "label": {
+     "EU27_2020": "European Union - 27 countries (from 2020)",
+     "DE": "Germany",
+     "EL": "Greece"
+    }
+   }
+  },
+  "time": {
+   "label": "Time",
+   "category": {
+    "index": {
+     "2018": 0,
+     "2022": 1
+    },
+    "label": {
+     "2018": "2018",
+     "2022": "2022"
+    }
+   }
+  }
+ },
+ "extension": {
+  "lang": "EN",
+  "id": "NAMA_10_A64_E",
+  "agencyId": "ESTAT"
+ }
+}

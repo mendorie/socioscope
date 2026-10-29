@@ -1,0 +1,62 @@
+[
+ {
+  "ref_area": "JPN",
+  "source": "DA:262",
+  "indicator": "STR_TSTR_ECO_NB",
+  "classif1": "ECO_SECTOR_TOTAL",
+  "time": "2023",
+  "obs_value": 75,
+  "note_indicator": "T17:170",
+  "note_source": "S3:24"
+ },
+ {
+  "ref_area": "JPN",
+  "source": "DA:262",
+  "indicator": "STR_TSTR_ECO_NB",
+  "classif1": "ECO_AGGREGATE_TOTAL",
+  "time": "2023",
+  "obs_value": 75,
+  "note_indicator": "T17:170",
+  "note_source": "S3:24"
+ },
+ {
+  "ref_area": "JPN",
+  "source": "DA:262",
+  "indicator": "STR_TSTR_ECO_NB",
+  "classif1": "ECO_ISIC4_TOTAL",
+  "time": "2023",
+  "obs_value": 75,
+  "note_indicator": "T17:170",
+  "note_source": "S3:24"
+ },
+ {
+  "ref_area": "JPN",
+  "source": "DA:262",
+  "indicator": "STR_TSTR_ECO_NB",
+  "classif1": "ECO_ISIC4_H",
+  "time": "2023",
+  "obs_value": 10,
+  "note_indicator": "T17:170",
+  "note_source": "S3:24"
+ },
+ {
+  "ref_area": "JPN",
+  "source": "DA:262",
+  "indicator": "STR_TSTR_ECO_NB",
+  "classif1": "ECO_ISIC4_Q",
+  "time": "2023",
+  "obs_value": 28,
+  "note_indicator": "T17:170",
+  "note_source": "S3:24"
+ },
+ {
+  "ref_area": "DEU",
+  "source": "FX:308",
+  "indicator": "STR_TSTR_ECO_NB",
+  "classif1": "ECO_ISIC4_P",
+  "time": "2016",
+  "obs_status": "U",
+  "note_indicator": "T17:4165",
+  "note_source": "S9:66"
+ }
+]

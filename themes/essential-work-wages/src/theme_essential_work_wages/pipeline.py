@@ -7,6 +7,7 @@ them in adoption order (design/themes/essential-work-wages.md). Sources are inde
 missing raw is reported in ``skipped`` and the others still run.
 """
 
+import importlib
 from collections.abc import Callable
 from types import ModuleType
 
@@ -29,9 +30,6 @@ PANEL_COLUMNS: tuple[str, ...] = (
 
 PANEL_KEY: tuple[str, ...] = ("iso3", "year", "occupation", "classification", "metric", "source")
 
-# Source modules in adoption order. Registered by the integrator only (see CLAUDE.md).
-SOURCES: tuple[ModuleType, ...] = ()
-
 StepFn = Callable[[Context, list[str], list[str]], tuple[list[str], list[str]]]
 
 
@@ -49,15 +47,40 @@ def build_panel(rows: list[dict[str, object]]) -> list[dict[str, object]]:
     return out
 
 
+# Source module names in adoption order. Registered by the integrator only (see CLAUDE.md).
+# Imported lazily because every source module imports THEME from this module.
+SOURCE_MODULES: tuple[str, ...] = (
+    "bsws",
+    "acs",
+    "teleworkable",
+    "jobs",
+    "ses",
+    "nama",
+    "oecd_remun",
+    "ilo_strikes",
+    "hojin",
+    "census_occ",
+    "unions",
+    "disputes",
+)
+
+
+def sources() -> tuple[ModuleType, ...]:
+    return tuple(
+        importlib.import_module(f"theme_essential_work_wages.{name}") for name in SOURCE_MODULES
+    )
+
+
 def _run(stage: Stage, ctx: Context) -> StageResult:
     written: list[str] = []
     skipped: list[str] = []
-    for mod in SOURCES:
+    mods = sources()
+    for mod in mods:
         if not ctx.wants(mod.SOURCE):
             continue
         step: StepFn = getattr(mod, stage.value)
         written, skipped = step(ctx, written, skipped)
-    notes = () if SOURCES else (f"{THEME}: no source wired yet",)
+    notes = () if mods else (f"{THEME}: no source wired yet",)
     return StageResult(stage=stage, written=tuple(written), skipped=tuple(skipped), notes=notes)
 
 

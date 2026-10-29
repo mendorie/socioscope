@@ -1,0 +1,22 @@
+{
+  "version": "2.0",
+  "class": "dataset",
+  "label": "Mean hourly earnings by sex, economic activity and occupation (2018)",
+  "source": "ESTAT",
+  "updated": "2021-03-03T23:00:00+0100",
+  "id": ["freq", "indic_se", "isco08", "nace_r2", "sex", "sizeclas", "unit", "geo", "time"],
+  "size": [1, 1, 2, 1, 1, 1, 1, 1, 1],
+  "dimension": {
+    "freq": {"label": "Time frequency", "category": {"index": {"A": 0}, "label": {"A": "Annual"}}},
+    "indic_se": {"label": "Structure of earnings indicator", "category": {"index": {"ERN": 0}, "label": {"ERN": "Gross earnings"}}},
+    "isco08": {"label": "Occupation", "category": {"index": {"OC2": 0, "OC5": 1}, "label": {"OC2": "Professionals", "OC5": "Service and sales workers"}}},
+    "nace_r2": {"label": "Statistical classification of economic activities in the European Community (NACE Rev. 2)", "category": {"index": {"Q": 0}, "label": {"Q": "Human health and social work activities"}}},
+    "sex": {"label": "Sex", "category": {"index": {"T": 0}, "label": {"T": "Total"}}},
+    "sizeclas": {"label": "Size classes in number of employees", "category": {"index": {"TOTAL": 0}, "label": {"TOTAL": "Total"}}},
+    "unit": {"label": "Unit of measure", "category": {"index": {"EUR": 0}, "label": {"EUR": "Euro"}}},
+    "geo": {"label": "Geopolitical entity (reporting)", "category": {"index": {"UK": 0}, "label": {"UK": "United Kingdom"}}},
+    "time": {"label": "Time", "category": {"index": {"2018": 0}, "label": {"2018": "2018"}}}
+  },
+  "value": {"0": 25.4, "1": 12.3},
+  "extension": {"datasetId": "earn_ses18_47", "lang": "EN"}
+}

@@ -26,21 +26,39 @@ def test_theme_is_discoverable_through_the_entry_point() -> None:
     assert discover_themes()["essential-work-wages"] is PIPELINE
 
 
-def test_fetch_and_stage_touch_nothing_while_no_source_is_wired() -> None:
-    ctx = make_ctx()
+def test_every_registered_source_follows_the_module_contract() -> None:
+    from theme_essential_work_wages.pipeline import sources
+
+    mods = sources()
+    assert mods, "at least one source is wired"
+    names = [m.SOURCE for m in mods]
+    assert len(set(names)) == len(names)
+    for mod in mods:
+        assert isinstance(mod.LICENSE, str) and mod.LICENSE
+        for fn in ("fetch", "stage", "mart"):
+            assert callable(getattr(mod, fn))
+
+
+def test_source_filter_skips_sources_not_wanted_without_touching_raw() -> None:
+    ctx = Context(
+        fetcher=FakeFetcher({}),
+        raw=InMemoryRawStore(),
+        tables=InMemoryTableStore(),
+        sources=frozenset({"no-such-source"}),
+    )
     for st in (Stage.FETCH, Stage.STAGE):
         result = PIPELINE.run(st, ctx)
         assert result.written == ()
         assert result.skipped == ()
-        assert result.notes == (f"{THEME}: no source wired yet",)
     assert ctx.raw.records() == []
     assert ctx.tables.list_tables() == []
 
 
-def test_mart_writes_an_empty_panel_from_empty_input() -> None:
+def test_mart_writes_an_empty_panel_when_no_source_has_staged_data() -> None:
     ctx = make_ctx()
     result = PIPELINE.run(Stage.MART, ctx)
     assert result.written == (PANEL_TABLE,)
+    assert result.skipped  # every source reports its missing staged table
     assert ctx.tables.read_table(PANEL_TABLE) == []
 
 
