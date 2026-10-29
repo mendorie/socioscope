@@ -1208,7 +1208,7 @@ def parliament_size() -> Path:
     title_block(
         bg,
         "国会議員は多すぎるのか、少なすぎるのか",
-        "定数削減の 6 つの論点を、国内外の公開データで一つずつ確かめる",
+        "定数削減の論点を、国内外の公開データで一つずつ確かめる",
     )
     ax = fig.add_axes([0.11, 0.10, 0.46, 0.58])
     ys = np.arange(len(picks))[::-1]
@@ -1234,7 +1234,7 @@ def parliament_size() -> Path:
         ("人口当たりでは", f"少ない方から {rank_pm} 位", ORANGE),
         ("人口規模を補正すると", f"{rank_cb} 位（真ん中）", BLUE),
         ("比例 45 減で浮く国費", "国民 1 人 25 円/年", INK),
-        ("比例削減で小政党の議席は", "3 分の 1 減（7 選挙で同じ）", INK),
+        ("世論の不満に応えるのは", "人数ではなく報酬と透明性", INK),
     ]
     for i, (label, value, color) in enumerate(items):
         y = 372 - i * 78
