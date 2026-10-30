@@ -11,5 +11,6 @@ uv run python themes/essential-work-wages/src/theme_essential_work_wages/analysi
 uv run python themes/essential-work-wages/src/theme_essential_work_wages/analysis/a20261030_r4_strikes.py      # R4（H4・H4b、争議）
 uv run python themes/essential-work-wages/src/theme_essential_work_wages/analysis/a20261030_r5_mechanisms.py   # R5（事後追加 H7〜H10: 女性化・定員制限・介護の構成・変化どうし）
 uv run python themes/essential-work-wages/src/theme_essential_work_wages/analysis/a20261030_r6_public_share.py # R6（H3c: 公的シェア × 看護師相対賃金、WDI）
+uv run python themes/essential-work-wages/src/theme_essential_work_wages/analysis/a20261030_r7_minwage.py       # R7（事後追加 第 2 弾 H7c 女性化の切り分け、H11 最低賃金への連動）
 ```
 定義表（賃金を見る前に固定）: `src/theme_essential_work_wages/{jp_occupation_flags,jp_occupation_flags_2009,us_occupation_flags}.csv`、区分対応 `jp_jobs_category_map.csv`、改定日 `jp_care_policy_events.csv`、最低賃金 `jp_minimum_wage.csv`、国勢調査対応 `jp_bsws2020_census_map.csv`。
