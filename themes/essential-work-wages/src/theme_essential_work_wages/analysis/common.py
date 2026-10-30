@@ -42,6 +42,7 @@ INT_COLS = (
     "third_party",
     "boundary",
     "education_years",
+    "capacity_capped",
 )
 
 

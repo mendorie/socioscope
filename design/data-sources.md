@@ -102,6 +102,7 @@
 | Eurostat SES `earn_ses18_*` / `earn_ses22_*` | ISCO 2 桁 × 産業 × 性 の時給（2018・2022）（essential-work-wages H5・H6 欧州） | dissemination API JSON-stat（鍵不要） | Eurostat copyright notice（出典表示） | **採用**（`earn_ses22_47`・`earn_ses18_47`・`_14`、JSON-stat 4 リクエスト、`marts/ses_occupation_industry_earnings` 31,890 行、2026-10-29）。**ISCO は 1 桁のみ**、値があるのは 17 か国 × 2 波 |
 | Eurostat `nama_10_a64`・`nama_10_a64_e` | 産業（NACE A*64 ＋ 大分類）別 付加価値（B1G、経常価格 百万ユーロ）・就業者（EMP_DC、千人）、2015〜2023（essential-work-wages H6 の R） | JSON-stat 2 リクエスト（鍵不要） | Eurostat copyright notice（出典表示） | **採用**（`marts/nama_industry_value_added_employment` 34,303 行、2026-10-29。英国なし） |
 | Census ACS 1 年推計 table-based summary file（B24121〜B24126） | 職業（Census 2018 コード 565）別 中央値年収（フルタイム通年、男女計・男・女）と就業者数、2021〜2024 年、全米（essential-work-wages H1・H2・H5・H0 米国） | `www2.census.gov/programs-surveys/acs/summary_file/<YEAR>/table-based-SF/data/1YRData/acsdt1y<YEAR>-b2412N.dat`（パイプ区切り、鍵不要）＋ shells ＋ 2018 職業コード表 xlsx | パブリックドメイン | **採用**（`marts/acs_occupation_earnings` 2,264 行、2026-10-29。2020 年は未公表、2019 以前は旧形式） |
+| World Bank WDI `SH.XPD.GHED.CH.ZS`・`SH.XPD.CHEX.GD.ZS`・`SH.XPD.CHEX.PC.CD` | 国内一般政府保健支出 ÷ 経常保健支出（%）、経常保健支出 %GDP、1 人当たり保健支出 USD、2010〜2024、全経済体（essential-work-wages H3c） | REST JSON（`api.worldbank.org/v2`、指標ごと 1 ページ、鍵不要） | CC BY 4.0 | **採用**（`marts/wdi_health_expenditure` 3,318 行、2026-10-30。集計地域コードを含むので分析側で OECD に絞る） |
 
 ## 採用ソースの記録
 

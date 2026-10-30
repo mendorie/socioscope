@@ -1,0 +1,108 @@
+[
+ {
+  "page": 1,
+  "pages": 1,
+  "per_page": 20000,
+  "total": 6,
+  "sourceid": "2",
+  "lastupdated": "2026-10-08"
+ },
+ [
+  {
+   "indicator": {
+    "id": "SH.XPD.CHEX.PC.CD",
+    "value": "Current health expenditure per capita (current US$)"
+   },
+   "country": {
+    "id": "ZH",
+    "value": "Africa Eastern and Southern"
+   },
+   "countryiso3code": "AFE",
+   "date": "2024",
+   "value": null,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.CHEX.PC.CD",
+    "value": "Current health expenditure per capita (current US$)"
+   },
+   "country": {
+    "id": "XD",
+    "value": "High income"
+   },
+   "countryiso3code": "",
+   "date": "2023",
+   "value": 6100.42177813648,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.CHEX.PC.CD",
+    "value": "Current health expenditure per capita (current US$)"
+   },
+   "country": {
+    "id": "JP",
+    "value": "Japan"
+   },
+   "countryiso3code": "JPN",
+   "date": "2021",
+   "value": 4843.94433594,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.CHEX.PC.CD",
+    "value": "Current health expenditure per capita (current US$)"
+   },
+   "country": {
+    "id": "JP",
+    "value": "Japan"
+   },
+   "countryiso3code": "JPN",
+   "date": "2020",
+   "value": 4581.60986328,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.CHEX.PC.CD",
+    "value": "Current health expenditure per capita (current US$)"
+   },
+   "country": {
+    "id": "US",
+    "value": "United States"
+   },
+   "countryiso3code": "USA",
+   "date": "2021",
+   "value": 12080.07324219,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.CHEX.PC.CD",
+    "value": "Current health expenditure per capita (current US$)"
+   },
+   "country": {
+    "id": "US",
+    "value": "United States"
+   },
+   "countryiso3code": "USA",
+   "date": "2020",
+   "value": 11648.49511719,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  }
+ ]
+]

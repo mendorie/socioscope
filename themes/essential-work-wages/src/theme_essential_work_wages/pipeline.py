@@ -62,6 +62,7 @@ SOURCE_MODULES: tuple[str, ...] = (
     "census_occ",
     "unions",
     "disputes",
+    "wdi_health",
 )
 
 

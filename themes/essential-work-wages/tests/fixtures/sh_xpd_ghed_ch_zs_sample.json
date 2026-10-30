@@ -1,0 +1,92 @@
+[
+ {
+  "page": 1,
+  "pages": 1,
+  "per_page": 20000,
+  "total": 5,
+  "sourceid": "2",
+  "lastupdated": "2026-10-08"
+ },
+ [
+  {
+   "indicator": {
+    "id": "SH.XPD.GHED.CH.ZS",
+    "value": "Domestic general government health expenditure (% of current health expenditure)"
+   },
+   "country": {
+    "id": "ZH",
+    "value": "Africa Eastern and Southern"
+   },
+   "countryiso3code": "AFE",
+   "date": "2024",
+   "value": null,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.GHED.CH.ZS",
+    "value": "Domestic general government health expenditure (% of current health expenditure)"
+   },
+   "country": {
+    "id": "XD",
+    "value": "High income"
+   },
+   "countryiso3code": "",
+   "date": "2023",
+   "value": 62.9547309347985,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.GHED.CH.ZS",
+    "value": "Domestic general government health expenditure (% of current health expenditure)"
+   },
+   "country": {
+    "id": "JP",
+    "value": "Japan"
+   },
+   "countryiso3code": "JPN",
+   "date": "2021",
+   "value": 86.26395416,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.GHED.CH.ZS",
+    "value": "Domestic general government health expenditure (% of current health expenditure)"
+   },
+   "country": {
+    "id": "JP",
+    "value": "Japan"
+   },
+   "countryiso3code": "JPN",
+   "date": "2020",
+   "value": 85.3972702,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  },
+  {
+   "indicator": {
+    "id": "SH.XPD.GHED.CH.ZS",
+    "value": "Domestic general government health expenditure (% of current health expenditure)"
+   },
+   "country": {
+    "id": "US",
+    "value": "United States"
+   },
+   "countryiso3code": "USA",
+   "date": "2021",
+   "value": 55.45219421,
+   "unit": "",
+   "obs_status": "",
+   "decimal": 2
+  }
+ ]
+]
