@@ -20,6 +20,7 @@ members = [
     "theme-bicycle-industry",
     "theme-growth-fertility",
     "theme-parliament-size",
+    "theme-public-debt",
     "theme-wealth-population-distribution",
 ]
 constraints = [
@@ -1928,6 +1929,7 @@ dev = [
     { name = "theme-bicycle-industry" },
     { name = "theme-growth-fertility" },
     { name = "theme-parliament-size" },
+    { name = "theme-public-debt" },
     { name = "theme-wealth-population-distribution" },
     { name = "types-pyyaml" },
 ]
@@ -1949,6 +1951,7 @@ dev = [
     { name = "theme-bicycle-industry", editable = "themes/bicycle-industry" },
     { name = "theme-growth-fertility", editable = "themes/growth-fertility" },
     { name = "theme-parliament-size", editable = "themes/parliament-size" },
+    { name = "theme-public-debt", editable = "themes/public-debt" },
     { name = "theme-wealth-population-distribution", editable = "themes/wealth-population-distribution" },
     { name = "types-pyyaml" },
 ]
@@ -2105,6 +2108,27 @@ requires-dist = [
     { name = "pypdf", specifier = ">=6.21.1" },
     { name = "socioscope-core", editable = "packages/core" },
     { name = "xlrd", specifier = ">=2.0" },
+]
+
+[[package]]
+name = "theme-public-debt"
+version = "0.1.0"
+source = { editable = "themes/public-debt" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "polars" },
+    { name = "pyarrow" },
+    { name = "pydantic" },
+    { name = "socioscope-core" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "matplotlib", specifier = ">=3.9" },
+    { name = "polars", specifier = ">=1.0" },
+    { name = "pyarrow", specifier = ">=17" },
+    { name = "pydantic", specifier = ">=2.9" },
+    { name = "socioscope-core", editable = "packages/core" },
 ]
 
 [[package]]

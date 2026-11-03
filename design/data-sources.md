@@ -84,6 +84,12 @@
 | 財務省 令和 7 年度 一般会計歳入歳出予算（衆参修正後）PDF、歳費法・秘書給与法（e-Gov 法令 API v1 XML） | 歳出の所管別内訳（国会 1,315 億円、合計 115.2 兆円）、議員 1 人当たり法定経費（parliament-size H5） | PDF（AES 暗号化だが空パスワードで pypdf が読める）/ `laws.e-gov.go.jp/api/1/lawdata/<law_id>` | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size、2026-10-27。`marts/jp_budget_by_organ`。法定額は `jp_member_costs.csv` に手入力） |
 | 衆議院 HP「衆議院議員定数の変遷」（1946–2004）＋ 法令、e-Stat 人口推計 長期時系列 表 1（1920–2000） | 定数の時系列 1890–2022（手入力表 `jp_seats_history.csv`）、総人口 1920–2000（parliament-size H6） | HTML（Shift_JIS）/ `file-download?statInfId=000000090261&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_population_longterm`。2001 年以降の人口は IPU Parline） |
 | e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1 | 都道府県別 国籍総数・日本人 人口（parliament-size H4b: アダムズ方式の基礎人口） | `file-download?statInfId=000032142404&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_census2020_prefecture`） |
+| Jordà–Schularick–Taylor Macrohistory Database R6（macrohistory.net） | 18 先進国 1870–2020 の政府債務比率・歳入歳出・長期金利・名目 GDP・CPI・家計／企業信用・危機ダミー（public-debt H1〜H4） | xlsx 1 ファイル（`JSTdatasetR6.xlsx`） | **CC BY-NC-SA 4.0**（2026-11-03 確認。非商用・出典表示・継承。商用データ提供者への組み込み禁止） | 候補（public-debt、採用順 ①） |
+| IMF Global Debt Database 2025 vintage（DataMapper） | 190 か国 1950– の中央政府・一般政府・民間（家計・企業）債務 対 GDP 比（public-debt H3b 拡張） | DataMapper API（JSON、鍵の要否 **確認要**） | IMF 利用規約（出典表示で再利用可と推定、**確認要**） | 候補（public-debt ②） |
+| IMF Public Finances in Modern History（2025）／Historical Public Debt Database | 1800 年以降の政府債務比率・基礎的財政収支・歳入・歳出（public-debt H1・H2b） | DataMapper / xlsx（**確認要**） | IMF 利用規約（**確認要**） | 候補（public-debt ②） |
+| OECD Economic Outlook（一般政府 利払い・純債務）または IMF WEO `GGXONLB`・`GGXWDN_NGDP` | 利払い対 GDP 比、純債務（public-debt H5・H6b） | SDMX-JSON / DataMapper API | OECD Terms & Conditions / IMF 規約 | 候補（public-debt ③） |
+| 財務省 国債統計（現在高・戦後の国債管理政策）、日本銀行 時系列統計（国債保有者別） | 1875 年以降の国債残高、日銀保有分（public-debt H6） | xlsx / PDF / CSV | 政府標準利用規約（第 2.0 版）、日銀は出典表示 | 候補（public-debt ④） |
+| BIS 総信用統計 `WS_TC`、中央銀行総資産 | 民間非金融部門信用 1940 年代–、中銀資産（public-debt H3・H3b 検算） | SDMX REST / CSV | 出典表示で利用自由（bis.org/terms_statistics、2026-11-03 確認） | 候補（public-debt ⑤） |
 
 ## 採用ソースの記録
 
