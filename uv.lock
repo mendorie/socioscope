@@ -2116,6 +2116,7 @@ version = "0.1.0"
 source = { editable = "themes/public-debt" }
 dependencies = [
     { name = "matplotlib" },
+    { name = "openpyxl" },
     { name = "polars" },
     { name = "pyarrow" },
     { name = "pydantic" },
@@ -2125,6 +2126,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "matplotlib", specifier = ">=3.9" },
+    { name = "openpyxl", specifier = ">=3.1" },
     { name = "polars", specifier = ">=1.0" },
     { name = "pyarrow", specifier = ">=17" },
     { name = "pydantic", specifier = ">=2.9" },

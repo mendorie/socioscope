@@ -84,10 +84,10 @@
 | 財務省 令和 7 年度 一般会計歳入歳出予算（衆参修正後）PDF、歳費法・秘書給与法（e-Gov 法令 API v1 XML） | 歳出の所管別内訳（国会 1,315 億円、合計 115.2 兆円）、議員 1 人当たり法定経費（parliament-size H5） | PDF（AES 暗号化だが空パスワードで pypdf が読める）/ `laws.e-gov.go.jp/api/1/lawdata/<law_id>` | 政府標準利用規約（第 2.0 版） | **採用**（parliament-size、2026-10-27。`marts/jp_budget_by_organ`。法定額は `jp_member_costs.csv` に手入力） |
 | 衆議院 HP「衆議院議員定数の変遷」（1946–2004）＋ 法令、e-Stat 人口推計 長期時系列 表 1（1920–2000） | 定数の時系列 1890–2022（手入力表 `jp_seats_history.csv`）、総人口 1920–2000（parliament-size H6） | HTML（Shift_JIS）/ `file-download?statInfId=000000090261&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_population_longterm`。2001 年以降の人口は IPU Parline） |
 | e-Stat 令和 2 年国勢調査 人口等基本集計 表 2-1 | 都道府県別 国籍総数・日本人 人口（parliament-size H4b: アダムズ方式の基礎人口） | `file-download?statInfId=000032142404&fileKind=0`（xlsx、appId 不要） | 政府標準利用規約 2.0 | **採用**（parliament-size、2026-10-27。`marts/jp_census2020_prefecture`） |
-| Jordà–Schularick–Taylor Macrohistory Database R6（macrohistory.net） | 18 先進国 1870–2020 の政府債務比率・歳入歳出・長期金利・名目 GDP・CPI・家計／企業信用・危機ダミー（public-debt H1〜H4） | xlsx 1 ファイル（`JSTdatasetR6.xlsx`） | **CC BY-NC-SA 4.0**（2026-11-03 確認。非商用・出典表示・継承。商用データ提供者への組み込み禁止） | 候補（public-debt、採用順 ①） |
-| IMF Global Debt Database 2025 vintage（DataMapper） | 190 か国 1950– の中央政府・一般政府・民間（家計・企業）債務 対 GDP 比（public-debt H3b 拡張） | DataMapper API（JSON、鍵の要否 **確認要**） | IMF 利用規約（出典表示で再利用可と推定、**確認要**） | 候補（public-debt ②） |
+| Jordà–Schularick–Taylor Macrohistory Database R6（macrohistory.net） | 18 先進国 1870–2020 の政府債務比率・歳入歳出・長期金利・名目 GDP・CPI・家計／企業信用・危機ダミー（public-debt H1〜H4） | xlsx 1 ファイル（`JSTdatasetR6.xlsx`） | **CC BY-NC-SA 4.0**（2026-11-03 確認。非商用・出典表示・継承。商用データ提供者への組み込み禁止） | **採用**（public-debt ①、2026-11-03。記録は「採用ソースの記録」） |
+| IMF Global Debt Database 2025 vintage（DataMapper） | 190 か国 1950– の中央政府・一般政府・民間（家計・企業）債務 対 GDP 比（public-debt H3b 拡張） | DataMapper API（JSON、鍵の要否 **確認要**） | IMF 利用規約（出典表示で再利用可と推定、**確認要**） | **採用**（public-debt ②、2026-11-03。DataMapper API） |
 | IMF Public Finances in Modern History（2025）／Historical Public Debt Database | 1800 年以降の政府債務比率・基礎的財政収支・歳入・歳出（public-debt H1・H2b） | DataMapper / xlsx（**確認要**） | IMF 利用規約（**確認要**） | 候補（public-debt ②） |
-| OECD Economic Outlook（一般政府 利払い・純債務）または IMF WEO `GGXONLB`・`GGXWDN_NGDP` | 利払い対 GDP 比、純債務（public-debt H5・H6b） | SDMX-JSON / DataMapper API | OECD Terms & Conditions / IMF 規約 | 候補（public-debt ③） |
+| OECD Economic Outlook（一般政府 利払い・純債務）または IMF WEO `GGXONLB`・`GGXWDN_NGDP` | 利払い対 GDP 比、純債務（public-debt H5・H6b） | SDMX-JSON / DataMapper API | OECD Terms & Conditions / IMF 規約 | **採用**（public-debt ③、IMF WEO・Fiscal Monitor を DataMapper API で。OECD は未使用） |
 | 財務省 国債統計（現在高・戦後の国債管理政策）、日本銀行 時系列統計（国債保有者別） | 1875 年以降の国債残高、日銀保有分（public-debt H6） | xlsx / PDF / CSV | 政府標準利用規約（第 2.0 版）、日銀は出典表示 | 候補（public-debt ④） |
 | BIS 総信用統計 `WS_TC`、中央銀行総資産 | 民間非金融部門信用 1940 年代–、中銀資産（public-debt H3・H3b 検算） | SDMX REST / CSV | 出典表示で利用自由（bis.org/terms_statistics、2026-11-03 確認） | 候補（public-debt ⑤） |
 
@@ -692,6 +692,20 @@
 - ライセンス・利用規約（確認日）: 政府標準利用規約（第 2.0 版、CC BY 4.0 互換。2026-10-27 確認）。出典表記「政府統計の総合窓口(e-Stat)、人口推計（総務省統計局）を加工」。
 - 取得方法（adapter 名）: `theme_parliament_size.estat`（`LONGPOP_URL`、`parse_longpop`、`build_longpop_mart`）。
 - 既知の欠損・断絶・定義変更: 1945・1946 年は注記付き推計（1946 年 75,750 千人）。1920–1945 は内地人口。2001 年以降は IPU Parline の `population_in_thousands`（2016–2020 を欠く）で接続。
+
+### Jordà–Schularick–Taylor Macrohistory Database R6（macrohistory.net、public-debt H1〜H4・H6a: 18 先進国の政府債務・歳入歳出・金利・名目 GDP・CPI・民間信用 1870–2020）
+- URL / API: `https://www.macrohistory.net/app/download/9834512569/JSTdatasetR6.xlsx`（jimcontent.com へ 302 リダイレクト。HttpxFetcher が追う）。xlsx 1 ファイル 1.4 MB、sha256 は `data/raw/manifest.jsonl`。
+- 対象指標・粒度: 国 × 年（18 か国 AUS BEL CAN CHE DEU DNK ESP FIN FRA GBR IRL ITA JPN NLD NOR PRT SWE USA、1870–2020）。採用列は `jst.COLUMNS`（iso, year, country, pop, gdp, cpi, stir, ltrate, debtgdp, revenue, expenditure, tloans, thh, tbus, crisisJST）。
+- ライセンス・利用規約（確認 2026-11-03）: **CC BY-NC-SA 4.0**。非商用・出典表示・継承。商用データ提供者への組み込み禁止。引用は Jordà, Schularick & Taylor (2017) "Macrofinancial History and the New Business Cycle Facts", NBER Macroeconomics Annual 2016。派生 Parquet（`staged/jst/*`、`marts/jst_debt_panel`、`marts/public_debt_panel`）も非商用に限る（`data/README.md`）。
+- 取得方法: `theme_public_debt.jst`（`workbook_rows` → `parse`（期待する列が全部あるシートを探す。欠けていれば ValueError、国数 < 17 でも ValueError）→ `build_mart`（long 形式。公的 `general_gov_gross`、家計 `households`、企業 `nfc`、民間合計 `private_nonfin`、総負債 `total_nonfin`、`macro` に金利・成長率・インフレ・人口・危機ダミー））＋ `pipeline._fetch/_stage/_mart_jst`。レート制限なし、1 リクエスト。
+- 既知の欠損・断絶・定義変更: `debtgdp` は概ね一般政府総債務だが国・時代により中央政府（JST 文書に記載。report で限界として書く）。日本 1945 年、ドイツ 1945〜1949 年など戦争・通貨改革の年は欠損。`revenue − expenditure` は利払い込みの総合収支で基礎的財政収支ではない。`thh`/`tbus` は 1870 年代から一部の国にしかない（家計 1,374、企業 1,299 国・年）。ドイツ 1923 年のハイパーインフレで `cpi_inflation`・`ngdp_growth` が 1e11 になる（分析では分布の割合・中央値で扱う）。
+
+### IMF DataMapper API（WEO・Fiscal Monitor・Global Debt Database、public-debt H3b 拡張・H5・H6b: 一般政府 総債務・純債務・総合収支・基礎的財政収支、GDD の中央／一般政府・家計・企業・民間債務）
+- URL / API: `https://www.imf.org/external/datamapper/api/v1/<code>`（鍵不要、JSON。`periods` パラメータはサーバが無視し全年が返る）。採用コード: WEO `GGXWDG_NGDP`（総債務）・`GGXCNL_NGDP`（総合収支）、FM `GGXWDN_G01_GDP_PT`（純債務）・`GGXONLB_G01_GDP_PT`（基礎的財政収支）、GDD `GG_DEBT_GDP`・`CG_DEBT_GDP`・`HH_LS`・`NFC_LS`・`PVD_LS`。9 リクエスト。
+- 対象指標・粒度: 国（ISO3）× 年、% of GDP。WEO 1980–2031（2026 年 10 月版。**2026 年以降は見通し**なので `imf.LAST_ACTUAL_YEAR = 2025` で切る。2025 年も一部推計）、FM 1990–、GDD 1950–2024。集計コード（ADVEC・EURO・FM_* など 3 文字でないもの）は捨てる。利払い対 GDP 比は `基礎的財政収支 − 総合収支` で導出（`interest_gdp`、source `imf_fm`）。
+- ライセンス・利用規約（確認 2026-11-03、https://www.imf.org/en/About/copyright-and-terms）: ダウンロード・複製・再配布・派生物は出典表示で可（「Source: International Monetary Fund, World Economic Outlook / Fiscal Monitor / Global Debt Database, <link>」）。**商用再利用は事前許可**が要る。大量自動ダウンロードは許可が要る（本 adapter は 9 件）。LLM 学習への利用は許可が要る。
+- 取得方法: `theme_public_debt.imf`（`url`/`raw_name`、`parse`（Pydantic 検証、空応答・未知コードは ValueError。WEO の応答に混じる空名キー `""`: null は無視）、`build_mart`）＋ `pipeline._fetch/_stage/_mart_imf`。指標ごとに独立に skip。
+- 既知の欠損・断絶・定義変更: WEO/FM の債務は一般政府、GDD は中央政府と一般政府を別コードで持つ（`unit` で分ける）。WEO は国によって 1980 年より後から始まる（米国の総合収支は 2001–）。FM の純債務は 86 か国のみ。GDD の家計・企業は貸出＋債券（`_LS`）で JST の銀行貸出より広い。
 
 ## 記録テンプレート（ソース採用時）
 ```
