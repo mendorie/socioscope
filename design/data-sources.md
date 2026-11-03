@@ -87,8 +87,8 @@
 | Jordà–Schularick–Taylor Macrohistory Database R6（macrohistory.net） | 18 先進国 1870–2020 の政府債務比率・歳入歳出・長期金利・名目 GDP・CPI・家計／企業信用・危機ダミー（public-debt H1〜H4） | xlsx 1 ファイル（`JSTdatasetR6.xlsx`） | **CC BY-NC-SA 4.0**（2026-11-03 確認。非商用・出典表示・継承。商用データ提供者への組み込み禁止） | **採用**（public-debt ①、2026-11-03。記録は「採用ソースの記録」） |
 | IMF Global Debt Database 2025 vintage（DataMapper） | 190 か国 1950– の中央政府・一般政府・民間（家計・企業）債務 対 GDP 比（public-debt H3b 拡張） | DataMapper API（JSON、鍵の要否 **確認要**） | IMF 利用規約（出典表示で再利用可と推定、**確認要**） | **採用**（public-debt ②、2026-11-03。DataMapper API） |
 | IMF Public Finances in Modern History（2025）／Historical Public Debt Database | 1800 年以降の政府債務比率・基礎的財政収支・歳入・歳出（public-debt H1・H2b） | DataMapper / xlsx（**確認要**） | IMF 利用規約（**確認要**） | 候補（public-debt ②） |
-| OECD Economic Outlook（一般政府 利払い・純債務）または IMF WEO `GGXONLB`・`GGXWDN_NGDP` | 利払い対 GDP 比、純債務（public-debt H5・H6b） | SDMX-JSON / DataMapper API | OECD Terms & Conditions / IMF 規約 | **採用**（public-debt ③、IMF WEO・Fiscal Monitor を DataMapper API で。OECD は未使用） |
-| 財務省 国債統計（現在高・戦後の国債管理政策）、日本銀行 時系列統計（国債保有者別） | 1875 年以降の国債残高、日銀保有分（public-debt H6） | xlsx / PDF / CSV | 政府標準利用規約（第 2.0 版）、日銀は出典表示 | 候補（public-debt ④） |
+| OECD Economic Outlook（一般政府 利払い・純債務）または IMF WEO `GGXONLB`・`GGXWDN_NGDP` | 利払い対 GDP 比、純債務（public-debt H5・H6b） | SDMX-JSON / DataMapper API | OECD Terms & Conditions / IMF 規約 | **採用**（public-debt ③、IMF WEO・Fiscal Monitor を DataMapper API で。OECD Economic Outlook のグロス利払いも 2026-11-03 採用） |
+| 財務省 国債統計（現在高・戦後の国債管理政策）、日本銀行 時系列統計（国債保有者別） | 1875 年以降の国債残高、日銀保有分（public-debt H6） | xlsx / PDF / CSV | 政府標準利用規約（第 2.0 版）、日銀は出典表示 | **一部採用**（public-debt ④: 財務省「国債等の保有者別内訳」PDF 最新 1 時点を H13 に。長期系列は未採用） |
 | BIS 総信用統計 `WS_TC`、中央銀行総資産 | 民間非金融部門信用 1940 年代–、中銀資産（public-debt H3・H3b 検算） | SDMX REST / CSV | 出典表示で利用自由（bis.org/terms_statistics、2026-11-03 確認） | 候補（public-debt ⑤） |
 
 ## 採用ソースの記録
@@ -706,6 +706,20 @@
 - ライセンス・利用規約（確認 2026-11-03、https://www.imf.org/en/About/copyright-and-terms）: ダウンロード・複製・再配布・派生物は出典表示で可（「Source: International Monetary Fund, World Economic Outlook / Fiscal Monitor / Global Debt Database, <link>」）。**商用再利用は事前許可**が要る。大量自動ダウンロードは許可が要る（本 adapter は 13 件）。LLM 学習への利用は許可が要る。
 - 取得方法: `theme_public_debt.imf`（`url`/`raw_name`、`parse`（Pydantic 検証、空応答・未知コードは ValueError。WEO の応答に混じる空名キー `""`: null は無視）、`build_mart`）＋ `pipeline._fetch/_stage/_mart_imf`。指標ごとに独立に skip。
 - 既知の欠損・断絶・定義変更: WEO/FM の債務は一般政府、GDD は中央政府と一般政府を別コードで持つ（`unit` で分ける）。WEO は国によって 1980 年より後から始まる（米国の総合収支は 2001–）。FM の純債務は 86 か国のみ。GDD の家計・企業は貸出＋債券（`_LS`）で JST の銀行貸出より広い。
+
+### OECD Economic Outlook 119（SDMX-JSON、public-debt H14: 一般政府のグロス利払い・利子受取・純利払い、名目 GDP）
+- URL / API: `https://sdmx.oecd.org/public/rest/data/OECD.ECO.MAD,DSD_EO@DF_EO,/<18 か国>.GGINTP+GGINTR+GNINTP+GDP.A?startPeriod=1990&dimensionAtObservation=AllDimensions&format=jsondata`（鍵不要、1 リクエスト）。
+- 対象指標・粒度: 国 × 年、1990–2027（**2026 年以降は見通し**。`oecd.LAST_ACTUAL_YEAR = 2025` で切る。2025 年も推計を含む）。単位は現地通貨（`XDC`）なので mart で同年の名目 GDP（`GDP`）で割って % にする。
+- ライセンス・利用規約（確認 2026-11-03）: OECD Terms & Conditions（2024-07-01 改定。出典表示で商用含め自由利用）。出典表記「OECD (2026), OECD Economic Outlook 119, https://sdmx.oecd.org (accessed 2026-11-03)」。
+- 取得方法: `theme_public_debt.oecd`（`parse`: AllDimensions の観測キーを次元値に戻し、採用国・採用指標・`XDC` のみ。重複キーで値が違えば ValueError。`build_mart`: gross_interest_gdp / interest_received_gdp / net_interest_gdp）＋ `pipeline._fetch/_stage/_mart_oecd`。
+- 既知の欠損・断絶・定義変更: 英国の系列キーが応答内で重複する（値が同じなら許容）。EO の一般政府は SNA ベースで、IMF FM の純利払いとは定義・版が違う（H14 で両者を並べる）。
+
+### 財務省「国債等の保有者別内訳」PDF（public-debt H13: 日本銀行の国債保有比率、最新 1 時点）
+- URL / API: `https://www.mof.go.jp/jgbs/reference/appendix/holdings01.pdf`（1 ページ、AES 暗号化だが空パスワードで開く。URL は固定で中身が四半期ごとに差し替わる＝過去時点は取れない）。取得時点は 令和 8 年 6 月末（速報）、出所は日本銀行「資金循環統計」（令和 8 年 9 月 17 日公表）。
+- 対象指標・粒度: 保有者 9 区分 × 金額（億円）× 比率（%）。本テーマは「国債（国庫短期証券を除く、財投債を含む）」ブロックのみ使う（T-Bill ブロックは捨てる）。
+- ライセンス・利用規約（確認 2026-11-03）: 政府標準利用規約（第 2.0 版）。出典「財務省「国債等の保有者別内訳」（日本銀行「資金循環統計」より作成）」。
+- 取得方法: `theme_public_debt.mof`（`pdf_pages` → `parse`: 年月末・合計・保有者 3 行組を読み、金額の和と比率の和を合計で検算、失敗で ValueError → `build_mart`: iso3=JPN, unit=jgb_holders, metric=share_<holder>）＋ `pipeline._fetch/_stage/_mart_mof`。
+- 既知の欠損・断絶・定義変更: 1 時点のみ。日銀保有比率は「国債」の比率で、一般政府総債務（地方債・借入金・T-Bill を含む）全体に掛けると日銀保有を過大に差し引く向き（H13 の近似に明記）。
 
 ## 記録テンプレート（ソース採用時）
 ```

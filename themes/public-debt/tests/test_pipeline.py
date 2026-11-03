@@ -50,10 +50,10 @@ def test_fetch_stores_jst_xlsx_with_provenance() -> None:
     result = PIPELINE.run(Stage.FETCH, ctx)
 
     assert result.written == ("public-debt/jst/JSTdatasetR6.xlsx",)
-    assert all(
-        n.endswith(".json: no fake response for " + imf.url(c))
-        for n, c in zip(result.skipped, imf.INDICATORS, strict=True)
-    )
+    imf_urls = tuple(imf.url(c) for c in imf.INDICATORS)
+    assert sum(n.endswith(imf_urls) for n in result.skipped) == len(imf.INDICATORS)
+    assert any(n.startswith("eo_interest") for n in result.skipped)
+    assert any(n.startswith("holdings01.pdf") for n in result.skipped)
     (rec,) = ctx.raw.records()
     assert rec.url == jst.URL and "CC BY-NC-SA" in rec.license and rec.theme == THEME
     assert ctx.raw.get(theme=THEME, source=jst.SOURCE, name=jst.RAW_NAME) == payload
@@ -120,7 +120,7 @@ def test_fetch_stage_mart_end_to_end_builds_the_panel() -> None:
     marted = PIPELINE.run(Stage.MART, ctx)
 
     assert staged.written == (jst.STAGED_TABLE,)
-    assert marted.written == (jst.MART_TABLE, PANEL_TABLE)  # imf skipped (no raw)
+    assert marted.written == (jst.MART_TABLE, PANEL_TABLE)  # imf/oecd skipped (no raw)
     panel = ctx.tables.read_table(PANEL_TABLE)
     assert [tuple(r) for r in panel[:1]] == [PANEL_COLUMNS]
     jp = {(r["year"], r["unit"], r["metric"]): r["value"] for r in panel if r["iso3"] == "JPN"}

@@ -2120,6 +2120,7 @@ dependencies = [
     { name = "polars" },
     { name = "pyarrow" },
     { name = "pydantic" },
+    { name = "pypdf" },
     { name = "socioscope-core" },
 ]
 
@@ -2130,6 +2131,7 @@ requires-dist = [
     { name = "polars", specifier = ">=1.0" },
     { name = "pyarrow", specifier = ">=17" },
     { name = "pydantic", specifier = ">=2.9" },
+    { name = "pypdf", specifier = ">=6.21.1" },
     { name = "socioscope-core", editable = "packages/core" },
 ]
 

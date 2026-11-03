@@ -7,7 +7,7 @@ Each data source gets its own pure-transform module (``jst.py``, ``imf.py`` …)
 
 from socioscope_core.core.pipeline import Context, Stage, StageResult
 from socioscope_core.ports.fetcher import FetchError
-from theme_public_debt import imf, jst
+from theme_public_debt import imf, jst, mof, oecd
 
 THEME = "public-debt"
 PANEL_TABLE = "marts/public_debt_panel"
@@ -45,6 +45,8 @@ def fetch(ctx: Context) -> StageResult:
     skipped: list[str] = []
     written, skipped = _fetch_jst(ctx, written, skipped)
     written, skipped = _fetch_imf(ctx, written, skipped)
+    written, skipped = _fetch_oecd(ctx, written, skipped)
+    written, skipped = _fetch_mof(ctx, written, skipped)
     return StageResult(stage=Stage.FETCH, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -53,6 +55,8 @@ def stage(ctx: Context) -> StageResult:
     skipped: list[str] = []
     written, skipped = _stage_jst(ctx, written, skipped)
     written, skipped = _stage_imf(ctx, written, skipped)
+    written, skipped = _stage_oecd(ctx, written, skipped)
+    written, skipped = _stage_mof(ctx, written, skipped)
     return StageResult(stage=Stage.STAGE, written=tuple(written), skipped=tuple(skipped))
 
 
@@ -61,10 +65,12 @@ def mart(ctx: Context) -> StageResult:
     skipped: list[str] = []
     written, skipped = _mart_jst(ctx, written, skipped)
     written, skipped = _mart_imf(ctx, written, skipped)
+    written, skipped = _mart_oecd(ctx, written, skipped)
+    written, skipped = _mart_mof(ctx, written, skipped)
     # The cross-source panel is written only once it has rows: a zero-row Parquet has no
     # columns and DuckDB cannot build a view on it.
     panel_rows: list[dict[str, object]] = []
-    for table in (jst.MART_TABLE, imf.MART_TABLE):
+    for table in (jst.MART_TABLE, imf.MART_TABLE, oecd.MART_TABLE, mof.MART_TABLE):
         if table in ctx.tables.list_tables():
             panel_rows.extend(ctx.tables.read_table(table))
     if panel_rows:
@@ -183,4 +189,118 @@ def _mart_imf(ctx: Context, written: list[str], skipped: list[str]) -> tuple[lis
     rows = imf.build_mart(ctx.tables.read_table(imf.STAGED_TABLE))
     ctx.tables.write_table(imf.MART_TABLE, rows)
     written.append(imf.MART_TABLE)
+    return written, skipped
+
+
+# ---- OECD Economic Outlook SDMX-JSON: gross/net interest and nominal GDP, one request ---------
+
+
+def _fetch_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(oecd.SOURCE):
+        return written, skipped
+    try:
+        payload = ctx.fetcher.fetch(oecd.URL)
+    except FetchError as e:
+        skipped.append(f"{oecd.RAW_NAME}: {e}")
+        return written, skipped
+    if not payload.lstrip().startswith(oecd.MAGIC):
+        skipped.append(f"{oecd.RAW_NAME}: non-JSON payload")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=oecd.SOURCE,
+        name=oecd.RAW_NAME,
+        url=oecd.URL,
+        license=oecd.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_oecd(
+    ctx: Context, written: list[str], skipped: list[str]
+) -> tuple[list[str], list[str]]:
+    if not ctx.wants(oecd.SOURCE):
+        return written, skipped
+    payload = ctx.raw.get(theme=THEME, source=oecd.SOURCE, name=oecd.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{oecd.RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows = oecd.parse(payload)
+    except ValueError as e:
+        skipped.append(f"{oecd.RAW_NAME}: {e}")
+        return written, skipped
+    ctx.tables.write_table(oecd.STAGED_TABLE, rows)
+    written.append(oecd.STAGED_TABLE)
+    return written, skipped
+
+
+def _mart_oecd(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    if not ctx.wants(oecd.SOURCE):
+        return written, skipped
+    if oecd.STAGED_TABLE not in ctx.tables.list_tables():
+        skipped.append(f"{oecd.MART_TABLE}: staged missing ({oecd.STAGED_TABLE}; run stage)")
+        return written, skipped
+    rows = oecd.build_mart(ctx.tables.read_table(oecd.STAGED_TABLE))
+    ctx.tables.write_table(oecd.MART_TABLE, rows)
+    written.append(oecd.MART_TABLE)
+    return written, skipped
+
+
+# ---- 財務省 国債等の保有者別内訳 PDF（最新 1 時点）----------------------------------------
+
+
+def _fetch_mof(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    if not ctx.wants(mof.SOURCE):
+        return written, skipped
+    try:
+        payload = ctx.fetcher.fetch(mof.URL)
+    except FetchError as e:
+        skipped.append(f"{mof.RAW_NAME}: {e}")
+        return written, skipped
+    if not payload.startswith(mof.MAGIC):
+        skipped.append(f"{mof.RAW_NAME}: non-PDF payload")
+        return written, skipped
+    rec = ctx.raw.put(
+        theme=THEME,
+        source=mof.SOURCE,
+        name=mof.RAW_NAME,
+        url=mof.URL,
+        license=mof.LICENSE,
+        payload=payload,
+    )
+    written.append(rec.relative_path)
+    return written, skipped
+
+
+def _stage_mof(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    if not ctx.wants(mof.SOURCE):
+        return written, skipped
+    payload = ctx.raw.get(theme=THEME, source=mof.SOURCE, name=mof.RAW_NAME)
+    if payload is None:
+        skipped.append(f"{mof.RAW_NAME}: raw missing (run fetch)")
+        return written, skipped
+    try:
+        rows = mof.parse(mof.pdf_pages(payload))
+    except ValueError as e:
+        skipped.append(f"{mof.RAW_NAME}: {e}")
+        return written, skipped
+    ctx.tables.write_table(mof.STAGED_TABLE, rows)
+    written.append(mof.STAGED_TABLE)
+    return written, skipped
+
+
+def _mart_mof(ctx: Context, written: list[str], skipped: list[str]) -> tuple[list[str], list[str]]:
+    if not ctx.wants(mof.SOURCE):
+        return written, skipped
+    if mof.STAGED_TABLE not in ctx.tables.list_tables():
+        skipped.append(f"{mof.MART_TABLE}: staged missing ({mof.STAGED_TABLE}; run stage)")
+        return written, skipped
+    rows = mof.build_mart(ctx.tables.read_table(mof.STAGED_TABLE))
+    ctx.tables.write_table(mof.MART_TABLE, rows)
+    written.append(mof.MART_TABLE)
     return written, skipped
