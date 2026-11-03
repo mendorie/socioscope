@@ -13,7 +13,7 @@ and the cut is documented in the report. Aggregates (ADVEC, EURO, FM_* …) are 
 License: IMF Copyright and Usage (https://www.imf.org/en/About/copyright-and-terms, confirmed
 2026-11-03): data may be downloaded, copied, redistributed and used in derivative works with
 attribution "Source: International Monetary Fund, <Database>, <link>"; commercial reuse needs
-prior permission; bulk automated download needs permission (this adapter sends 10 requests).
+prior permission; bulk automated download needs permission (this adapter sends 13 requests).
 """
 
 from __future__ import annotations
@@ -40,6 +40,9 @@ INDICATORS: dict[str, tuple[str, str, str]] = {
     "GGXWDN_G01_GDP_PT": ("fm", "general_gov_net", "debt_gdp"),
     "GGXCNL_G01_GDP_PT": ("fm", "general_gov_gross", "fiscal_balance_gdp"),
     "GGXONLB_G01_GDP_PT": ("fm", "general_gov_gross", "primary_balance_gdp"),
+    "GGR_G01_GDP_PT": ("fm", "general_gov_gross", "revenue_gdp"),
+    "NGDP_RPCH": ("weo", "macro", "rgdp_growth"),
+    "PCPIPCH": ("weo", "macro", "cpi_inflation"),
     "GG_DEBT_GDP": ("gdd", "general_gov_gross", "debt_gdp"),
     "CG_DEBT_GDP": ("gdd", "central_gov_gross", "debt_gdp"),
     "HH_LS": ("gdd", "households", "debt_gdp"),

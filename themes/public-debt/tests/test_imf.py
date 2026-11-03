@@ -65,6 +65,8 @@ def test_build_mart_maps_units_and_derives_interest() -> None:
         *imf.parse(payload("GGXWDN_G01_GDP_PT", {"JPN": {"2019": 150.0}}), "GGXWDN_G01_GDP_PT"),
         *imf.parse(payload("CG_DEBT_GDP", {"JPN": {"2019": 200.0}}), "CG_DEBT_GDP"),
         *imf.parse(payload("HH_LS", {"JPN": {"2019": 60.0}}), "HH_LS"),
+        *imf.parse(payload("GGR_G01_GDP_PT", {"JPN": {"2019": 34.0}}), "GGR_G01_GDP_PT"),
+        *imf.parse(payload("PCPIPCH", {"JPN": {"2019": 0.5}}), "PCPIPCH"),
     ]
     out = imf.build_mart(staged)
     got = {(r["year"], r["unit"], r["metric"], r["source"]): r["value"] for r in out}
@@ -78,4 +80,6 @@ def test_build_mart_maps_units_and_derives_interest() -> None:
     assert got[(2019, "general_gov_net", "debt_gdp", "imf_fm")] == 150.0
     assert got[(2019, "central_gov_gross", "debt_gdp", "imf_gdd")] == 200.0
     assert got[(2019, "households", "debt_gdp", "imf_gdd")] == 60.0
+    assert got[(2019, "general_gov_gross", "revenue_gdp", "imf_fm")] == 34.0
+    assert got[(2019, "macro", "cpi_inflation", "imf_weo")] == 0.5
     assert [tuple(r) for r in out[:1]] == [("iso3", "year", "unit", "metric", "value", "source")]
