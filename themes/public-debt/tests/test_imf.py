@@ -57,6 +57,10 @@ def test_parse_fails_closed() -> None:
 def test_build_mart_maps_units_and_derives_interest() -> None:
     staged = [
         *imf.parse(payload("GGXCNL_NGDP", {"JPN": {"2019": -3.0, "2024": -2.5}}), "GGXCNL_NGDP"),
+        *imf.parse(
+            payload("GGXCNL_G01_GDP_PT", {"JPN": {"2019": -3.04, "2024": -1.66}}),
+            "GGXCNL_G01_GDP_PT",
+        ),
         *imf.parse(payload("GGXONLB_G01_GDP_PT", {"JPN": {"2019": -2.5}}), "GGXONLB_G01_GDP_PT"),
         *imf.parse(payload("GGXWDN_G01_GDP_PT", {"JPN": {"2019": 150.0}}), "GGXWDN_G01_GDP_PT"),
         *imf.parse(payload("CG_DEBT_GDP", {"JPN": {"2019": 200.0}}), "CG_DEBT_GDP"),
@@ -66,8 +70,10 @@ def test_build_mart_maps_units_and_derives_interest() -> None:
     got = {(r["year"], r["unit"], r["metric"], r["source"]): r["value"] for r in out}
 
     assert got[(2019, "general_gov_gross", "fiscal_balance_gdp", "imf_weo")] == -3.0
+    assert got[(2019, "general_gov_gross", "fiscal_balance_gdp", "imf_fm")] == -3.04
     assert got[(2019, "general_gov_gross", "primary_balance_gdp", "imf_fm")] == -2.5
-    assert got[(2019, "general_gov_gross", "interest_gdp", "imf_fm")] == pytest.approx(0.5)
+    # net interest uses the FM overall balance (unrounded), not the WEO one
+    assert got[(2019, "general_gov_gross", "interest_gdp", "imf_fm")] == pytest.approx(0.54)
     assert (2024, "general_gov_gross", "interest_gdp", "imf_fm") not in got  # no primary
     assert got[(2019, "general_gov_net", "debt_gdp", "imf_fm")] == 150.0
     assert got[(2019, "central_gov_gross", "debt_gdp", "imf_gdd")] == 200.0

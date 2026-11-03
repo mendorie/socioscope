@@ -13,7 +13,7 @@ and the cut is documented in the report. Aggregates (ADVEC, EURO, FM_* …) are 
 License: IMF Copyright and Usage (https://www.imf.org/en/About/copyright-and-terms, confirmed
 2026-11-03): data may be downloaded, copied, redistributed and used in derivative works with
 attribution "Source: International Monetary Fund, <Database>, <link>"; commercial reuse needs
-prior permission; bulk automated download needs permission (this adapter sends 9 requests).
+prior permission; bulk automated download needs permission (this adapter sends 10 requests).
 """
 
 from __future__ import annotations
@@ -38,6 +38,7 @@ INDICATORS: dict[str, tuple[str, str, str]] = {
     "GGXWDG_NGDP": ("weo", "general_gov_gross", "debt_gdp"),
     "GGXCNL_NGDP": ("weo", "general_gov_gross", "fiscal_balance_gdp"),
     "GGXWDN_G01_GDP_PT": ("fm", "general_gov_net", "debt_gdp"),
+    "GGXCNL_G01_GDP_PT": ("fm", "general_gov_gross", "fiscal_balance_gdp"),
     "GGXONLB_G01_GDP_PT": ("fm", "general_gov_gross", "primary_balance_gdp"),
     "GG_DEBT_GDP": ("gdd", "general_gov_gross", "debt_gdp"),
     "CG_DEBT_GDP": ("gdd", "central_gov_gross", "debt_gdp"),
@@ -108,8 +109,9 @@ def parse(payload: bytes, code: str) -> list[dict[str, object]]:
 
 def build_mart(staged: Sequence[dict[str, object]]) -> list[dict[str, object]]:
     """Staged rows (all indicators) → long panel rows (iso3, year, unit, metric, value, source)
-    with ``source`` = ``imf_<dataset>``. Adds ``interest_gdp`` = primary − overall balance for
-    (iso3, year) where both WEO overall balance and FM primary balance exist (source imf_fm)."""
+    with ``source`` = ``imf_<dataset>``. Adds ``interest_gdp`` = primary − overall balance
+    (net interest: paid minus received) for (iso3, year) where both come from the Fiscal
+    Monitor (unrounded; the WEO overall balance is rounded to 0.1 and is not used here)."""
     out: list[dict[str, object]] = []
     overall: dict[tuple[str, int], float] = {}
     primary: dict[tuple[str, int], float] = {}
@@ -128,7 +130,7 @@ def build_mart(staged: Sequence[dict[str, object]]) -> list[dict[str, object]]:
                 "source": f"{SOURCE}_{dataset}",
             }
         )
-        if code == "GGXCNL_NGDP":
+        if code == "GGXCNL_G01_GDP_PT":
             overall[key] = value
         elif code == "GGXONLB_G01_GDP_PT":
             primary[key] = value
