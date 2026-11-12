@@ -1497,7 +1497,8 @@ def chiikawa() -> Path:
     bg.text(
         W - 40,
         18,
-        "出典: ビデオリサーチ Kids/ex 2025 年 10 月度・興行通信社の集計（各報道経由）を加工 / socioscope",
+        "出典: ビデオリサーチ Kids/ex 2025 年 10 月度・"
+        "興行通信社の集計（各報道経由）を加工 / socioscope",
         fontsize=9,
         color=MUTED,
         ha="right",
