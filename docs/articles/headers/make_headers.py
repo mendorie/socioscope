@@ -1486,7 +1486,7 @@ def chiikawa() -> Path:
     items = [
         ("女児の人気度", "73.9% で 1 位", ORANGE),
         ("男児では", "TOP10 圏外", BLUE),
-        ("映画（公開 87 日）", "181.0 億円・1,242 万人", INK),
+        ("映画（公開 108 日）", "187.9 億円・1,286 万人", INK),
         ("大人側の指標から子ども 1 位まで", "3 年", INK),
     ]
     for i, (label, value, color) in enumerate(items):
