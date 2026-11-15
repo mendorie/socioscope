@@ -90,7 +90,7 @@ def fig3_capital_gap():
     for y, (d, c) in enumerate([(success, BLUE), (failure, ACCENT)]):
         ax.scatter([v for v, _ in d], [y] * len(d), s=70, color=c, zorder=3)
         for i, (v, k) in enumerate(d):
-            dy = (10 if i % 2 == 0 else 24) if y == 0 else -16
+            dy = (10 if i % 2 == 0 else 24) if y == 0 else (10 if i % 2 == 1 else -16)
             ax.annotate(k, (v, y), textcoords="offset points", xytext=(0, dy), ha="center", fontsize=7.5, color=DARK)
     ax.set_xscale("log")
     ax.set_yticks([0, 1])
