@@ -1444,6 +1444,71 @@ def parliament_size_extra2() -> Path:
     return out
 
 
+def chiikawa() -> Path:
+    # ビデオリサーチ Kids/ex 2025 年 10 月度（2026-01-28 発表）の公表値。
+    # reports/ちいかわ 社会現象の要因分析.md の証拠 1 と同じ数値。
+    girls = [
+        ("ちいかわ", 73.9),
+        ("シナモロール", 72.9),
+        ("すみっコぐらし", 71.4),
+        ("クロミ", 70.0),
+        ("アナと雪の女王", 67.9),
+    ]
+
+    fig, bg = canvas()
+    title_block(
+        bg,
+        "なぜちいかわは社会現象になったのか",
+        "「社会現象が起きにくい時代」という前提から、公開データで確かめる",
+    )
+    ax = fig.add_axes([0.17, 0.10, 0.40, 0.56])
+    ys = np.arange(len(girls))[::-1]
+    for y, (name, v) in zip(ys, girls, strict=True):
+        c = ORANGE if name == "ちいかわ" else BLUE
+        ax.barh(y, v, color=c, height=0.62)
+        ax.text(v + 1.5, y, f"{v:.1f}%", va="center", fontsize=12, color=INK)
+        ax.text(-1.5, y, name, va="center", ha="right", fontsize=13, color=INK)
+    ax.set_xlim(0, 100)
+    ax.set_yticks([])
+    ax.set_xticks([])
+    _bare(ax)
+    bg.text(
+        64, 470, "女児（3〜12 歳）が「好き」と答えた割合", fontsize=14, color=MUTED, va="center"
+    )
+
+    x0 = 790
+    bg.add_patch(
+        FancyBboxPatch(
+            (x0, 100), 430, 350, boxstyle="round,pad=0,rounding_size=18", fc="white", ec="none"
+        )
+    )
+    bg.text(x0 + 28, 420, "数字で見たちいかわ", fontsize=14, color=MUTED, va="center")
+    items = [
+        ("女児の人気度", "73.9% で 1 位", ORANGE),
+        ("男児では", "TOP10 圏外", BLUE),
+        ("映画（公開 108 日）", "187.9 億円・1,286 万人", INK),
+        ("大人側の指標から子ども 1 位まで", "3 年", INK),
+    ]
+    for i, (label, value, color) in enumerate(items):
+        y = 372 - i * 78
+        bg.text(x0 + 28, y, label, fontsize=13, color=MUTED, va="center")
+        bg.text(x0 + 28, y - 30, value, fontsize=19, fontweight="bold", color=color, va="center")
+
+    bg.text(
+        W - 40,
+        18,
+        "出典: ビデオリサーチ Kids/ex 2025 年 10 月度・"
+        "興行通信社の集計（各報道経由）を加工 / socioscope",
+        fontsize=9,
+        color=MUTED,
+        ha="right",
+    )
+    out = OUT / "2026-11-12-note-chiikawa-social-phenomenon.png"
+    fig.savefig(out, dpi=DPI, facecolor=PAPER)
+    plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     for p in (
         growth_fertility(),
@@ -1460,5 +1525,6 @@ if __name__ == "__main__":
         parliament_size(),
         parliament_size_extra(),
         parliament_size_extra2(),
+        chiikawa(),
     ):
         print(p)
