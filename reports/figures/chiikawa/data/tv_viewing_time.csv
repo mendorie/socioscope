@@ -1,0 +1,46 @@
+year,series,value,unit,source,source_url,note
+2012,全年代(13-69歳) 平日TVリアルタイム,184.7,分/日,総務省 情報通信メディアの利用時間と情報行動に関する調査 令和元年度 概要 p.5,https://www.soumu.go.jp/main_content/000708015.pdf,H24
+2013,全年代(13-69歳) 平日TVリアルタイム,168.3,分/日,総務省 同 令和元年度 概要 p.5,https://www.soumu.go.jp/main_content/000708015.pdf,H25
+2014,全年代(13-69歳) 平日TVリアルタイム,170.6,分/日,総務省 同 令和元年度 概要 p.5,https://www.soumu.go.jp/main_content/000708015.pdf,H26
+2015,全年代(13-69歳) 平日TVリアルタイム,174.3,分/日,総務省 同 令和元年度 概要 p.5,https://www.soumu.go.jp/main_content/000708015.pdf,H27
+2016,全年代(13-69歳) 平日TVリアルタイム,168.0,分/日,総務省 同 令和元年度 概要 p.5,https://www.soumu.go.jp/main_content/000708015.pdf,H28
+2017,全年代(13-69歳) 平日TVリアルタイム,159.4,分/日,総務省 同 令和元年度 概要 p.5,https://www.soumu.go.jp/main_content/000708015.pdf,H29
+2018,全年代(13-69歳) 平日TVリアルタイム,156.7,分/日,総務省 同 令和元年度 概要 p.5,https://www.soumu.go.jp/main_content/000708015.pdf,H30
+2019,全年代(13-69歳) 平日TVリアルタイム,161.2,分/日,総務省 同 令和元年度 概要 p.5,https://www.soumu.go.jp/main_content/000708015.pdf,R01
+2020,全年代(13-69歳) 平日TVリアルタイム,163.2,分/日,総務省 同 令和7年度 概要 p.6（参考 13〜69歳 経年）,https://www.soumu.go.jp/main_content/001079136.pdf,R02
+2021,全年代(13-69歳) 平日TVリアルタイム,146.0,分/日,総務省 同 令和7年度 概要 p.6,https://www.soumu.go.jp/main_content/001079136.pdf,R03
+2022,全年代(13-69歳) 平日TVリアルタイム,135.5,分/日,総務省 同 令和7年度 概要 p.6,https://www.soumu.go.jp/main_content/001079136.pdf,R04
+2023,全年代(13-69歳) 平日TVリアルタイム,135.0,分/日,総務省 同 令和7年度 概要 p.6,https://www.soumu.go.jp/main_content/001079136.pdf,R05
+2024,全年代(13-69歳) 平日TVリアルタイム,123.8,分/日,総務省 同 令和7年度 概要 p.6,https://www.soumu.go.jp/main_content/001079136.pdf,R06
+2025,全年代(13-69歳) 平日TVリアルタイム,125.0,分/日,総務省 同 令和7年度 概要 p.6,https://www.soumu.go.jp/main_content/001079136.pdf,R07
+2020,全年代(13-79歳) 平日TVリアルタイム,193.2,分/日,総務省 同 令和7年度 概要 p.4（70代含む再集計）,https://www.soumu.go.jp/main_content/001079136.pdf,R02
+2021,全年代(13-79歳) 平日TVリアルタイム,171.9,分/日,総務省 同 令和7年度 概要 p.4,https://www.soumu.go.jp/main_content/001079136.pdf,R03
+2022,全年代(13-79歳) 平日TVリアルタイム,163.5,分/日,総務省 同 令和7年度 概要 p.4,https://www.soumu.go.jp/main_content/001079136.pdf,R04
+2023,全年代(13-79歳) 平日TVリアルタイム,162.9,分/日,総務省 同 令和7年度 概要 p.4,https://www.soumu.go.jp/main_content/001079136.pdf,R05
+2024,全年代(13-79歳) 平日TVリアルタイム,154.7,分/日,総務省 同 令和7年度 概要 p.4,https://www.soumu.go.jp/main_content/001079136.pdf,R06
+2025,全年代(13-79歳) 平日TVリアルタイム,156.1,分/日,総務省 同 令和7年度 概要 p.4,https://www.soumu.go.jp/main_content/001079136.pdf,R07
+2012,10代 平日TVリアルタイム,102.9,分/日,総務省 同 平成28年 概要 p.6（特集1 経年年代別）,https://www.soumu.go.jp/main_content/000492876.pdf,H24
+2013,10代 平日TVリアルタイム,102.5,分/日,総務省 同 平成28年 概要 p.6,https://www.soumu.go.jp/main_content/000492876.pdf,H25
+2014,10代 平日TVリアルタイム,91.8,分/日,総務省 同 平成28年 概要 p.6,https://www.soumu.go.jp/main_content/000492876.pdf,H26
+2015,10代 平日TVリアルタイム,95.8,分/日,総務省 同 平成28年 概要 p.6,https://www.soumu.go.jp/main_content/000492876.pdf,H27
+2016,10代 平日TVリアルタイム,89.0,分/日,総務省 同 平成28年 概要 p.6,https://www.soumu.go.jp/main_content/000492876.pdf,H28
+2017,10代 平日TVリアルタイム,73.3,分/日,総務省 同 平成29年 概要 p.6,https://www.soumu.go.jp/main_content/000564529.pdf,H29
+2018,10代 平日TVリアルタイム,71.8,分/日,総務省 同 平成30年度 概要 p.6,https://www.soumu.go.jp/main_content/000644166.pdf,H30
+2019,10代 平日TVリアルタイム,69.0,分/日,総務省 同 令和元年度 概要 p.6,https://www.soumu.go.jp/main_content/000708015.pdf,R01
+2020,10代 平日TVリアルタイム,73.1,分/日,総務省 同 令和6年度 報告書 p.13 図1-1-1-9,https://www.soumu.go.jp/main_content/001017160.pdf,R02
+2021,10代 平日TVリアルタイム,57.3,分/日,総務省 同 令和6年度 報告書 p.13 図1-1-1-9,https://www.soumu.go.jp/main_content/001017160.pdf,R03
+2022,10代 平日TVリアルタイム,46.0,分/日,総務省 同 令和6年度 報告書 p.13 図1-1-1-9,https://www.soumu.go.jp/main_content/001017160.pdf,R04
+2023,10代 平日TVリアルタイム,39.2,分/日,総務省 同 令和6年度 報告書 p.13 図1-1-1-9,https://www.soumu.go.jp/main_content/001017160.pdf,R05
+2024,10代 平日TVリアルタイム,39.7,分/日,総務省 同 令和6年度 報告書 p.13 図1-1-1-9,https://www.soumu.go.jp/main_content/001017160.pdf,R06
+2025,10代 平日TVリアルタイム,43.4,分/日,総務省 同 令和7年度 概要 p.5,https://www.soumu.go.jp/main_content/001079136.pdf,R07
+2015,NHK国民生活時間調査 平日テレビ行為者率(全体),85,%,NHK放送文化研究所 2015年国民生活時間調査（president.jp 経由）,https://president.jp/articles/-/47695,15分以上視聴した人の割合
+2020,NHK国民生活時間調査 平日テレビ行為者率(全体),79,%,NHK放送文化研究所 2020年国民生活時間調査（president.jp 経由）,https://president.jp/articles/-/47695,1960年の調査開始以来初めて8割未満
+2025,NHK国民生活時間調査 平日テレビ行為者率(全体),71,%,NHK放送文化研究所 2025年国民生活時間調査（マイナビニュース 2026-06-17 経由）,https://news.mynavi.jp/article/20260617-4594174/,
+2015,NHK国民生活時間調査 平日テレビ行為者率(16-19歳),71,%,president.jp 経由,https://president.jp/articles/-/47695,
+2020,NHK国民生活時間調査 平日テレビ行為者率(16-19歳),47,%,president.jp 経由,https://president.jp/articles/-/47695,
+2025,NHK国民生活時間調査 平日テレビ行為者率(16-19歳),27,%,マイナビニュース 経由,https://news.mynavi.jp/article/20260617-4594174/,
+2015,NHK国民生活時間調査 平日テレビ行為者率(10-15歳),78,%,president.jp 経由,https://president.jp/articles/-/47695,
+2020,NHK国民生活時間調査 平日テレビ行為者率(10-15歳),56,%,president.jp 経由,https://president.jp/articles/-/47695,
+2025,NHK国民生活時間調査 平日テレビ行為者率(10-15歳),42,%,マイナビニュース 経由,https://news.mynavi.jp/article/20260617-4594174/,
+2020,NHK国民生活時間調査 平日テレビ全員平均時間(国民全体),181,分/日,J-STAGE 放送研究と調査 要旨「平日3時間1分」,https://www.jstage.jst.go.jp/article/bunken/71/8/71_2/_article/-char/ja,3時間1分
+2025,NHK国民生活時間調査 平日テレビ全員平均時間(国民全体),194,分/日,マイナビニュース 経由,https://news.mynavi.jp/article/20260617-4594174/,3時間14分（70歳以上の増加が押し上げ）
